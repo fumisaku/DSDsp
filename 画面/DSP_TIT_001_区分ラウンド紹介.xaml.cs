@@ -22,6 +22,11 @@ namespace DSDsp.画面
         private const double SLIDE_TO_RIGHT_POSITION = 50;
         private const int FADE_DELAY_MILLISECONDS = 1000;
         
+        // フォントサイズ調整用の定数
+        private const double MAX_FONT_SIZE = 20;
+        private const double MIN_FONT_SIZE = 6;
+        private const double MAX_TEXT_WIDTH = 500;
+        private const string FONT_FAMILY_NAME = "HGPSoeiKakugothicUB";
         #endregion
 
         #region フィールド
@@ -215,8 +220,30 @@ namespace DSDsp.画面
             PartsTIT001.LB_Title2.Content = ラウンド名;
             
             // COM000_PartsMainの共通機能を使用してフォントサイズを自動調整
-            _partsMain.フォントサイズ自動調整(PartsTIT001.LB_Title1, 区分名);
-            _partsMain.フォントサイズ自動調整(PartsTIT001.LB_Title2, ラウンド名);
+            // 全てのパラメータを明示的に指定
+            _partsMain.フォントサイズ自動調整(
+                label: PartsTIT001.LB_Title1,
+                text: 区分名,
+                maxWidth: MAX_TEXT_WIDTH,
+                maxFontSize: MAX_FONT_SIZE,
+                minFontSize: MIN_FONT_SIZE,
+                fontFamilyName: FONT_FAMILY_NAME);
+            
+            _partsMain.フォントサイズ自動調整(
+                label: PartsTIT001.LB_Title2,
+                text: ラウンド名,
+                maxWidth: MAX_TEXT_WIDTH,
+                maxFontSize: MAX_FONT_SIZE,
+                minFontSize: MIN_FONT_SIZE,
+                fontFamilyName: FONT_FAMILY_NAME);
+            
+            _partsMain.フォントサイズ自動調整(
+                label: PartsTIT001.LB_Title2,
+                text: ラウンド名,
+                maxWidth: MAX_TEXT_WIDTH,
+                maxFontSize: MAX_FONT_SIZE,
+                minFontSize: MIN_FONT_SIZE,
+                fontFamilyName: FONT_FAMILY_NAME);
 
             // タイトルのフェードインアニメーション
             var titleStoryboard = new Storyboard();
