@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -23,11 +22,6 @@ namespace DSDsp.画面
         private const double SLIDE_TO_RIGHT_POSITION = 50;
         private const int FADE_DELAY_MILLISECONDS = 1000;
         
-        // フォントサイズ調整用の定数
-        private const double MAX_FONT_SIZE = 20;
-        private const double MIN_FONT_SIZE = 6;
-        private const double MAX_TEXT_WIDTH = 500;
-        private const string FONT_FAMILY_NAME = "HGPSoeiKakugothicUB";
         #endregion
 
         #region フィールド
@@ -220,8 +214,9 @@ namespace DSDsp.画面
             PartsTIT001.LB_Title1.Content = 区分名;
             PartsTIT001.LB_Title2.Content = ラウンド名;
             
-            AdjustFontSize(PartsTIT001.LB_Title1, 区分名);
-            AdjustFontSize(PartsTIT001.LB_Title2, ラウンド名);
+            // COM000_PartsMainの共通機能を使用してフォントサイズを自動調整
+            _partsMain.フォントサイズ自動調整(PartsTIT001.LB_Title1, 区分名);
+            _partsMain.フォントサイズ自動調整(PartsTIT001.LB_Title2, ラウンド名);
 
             // タイトルのフェードインアニメーション
             var titleStoryboard = new Storyboard();
@@ -248,58 +243,6 @@ namespace DSDsp.画面
             storyboard.Begin();
         }
 
-        /// <summary>
-        /// 文字列の長さに応じてフォントサイズを自動調整
-        /// テキストの実際の幅を測定して、指定幅に収まる最大のフォントサイズを見つける
-        /// </summary>
-        /// <param name="label">対象のLabel</param>
-        /// <param name="text">表示するテキスト</param>
-        private void AdjustFontSize(Label label, string text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                label.FontSize = MAX_FONT_SIZE;
-                return;
-            }
-
-            double fontSize = MIN_FONT_SIZE;
-
-            // フォントサイズを20から6まで1ずつ減らしながら、収まるサイズを探す
-            for (double f = MAX_FONT_SIZE; f >= MIN_FONT_SIZE; f--)
-            {
-                double textWidth = GetTextSize(text, FONT_FAMILY_NAME, f);
-                
-                if (textWidth < MAX_TEXT_WIDTH)
-                {
-                    fontSize = f;
-                    break;
-                }
-            }
-
-            label.FontSize = fontSize;
-        }
-
-        /// <summary>
-        /// 指定されたテキスト、フォントファミリー、フォントサイズでのテキストの幅を取得
-        /// </summary>
-        /// <param name="text">測定するテキスト</param>
-        /// <param name="fontFamilyName">フォントファミリー名</param>
-        /// <param name="fontSize">フォントサイズ</param>
-        /// <returns>テキストの幅（ピクセル）</returns>
-        private double GetTextSize(string text, string fontFamilyName, double fontSize)
-        {
-            var formattedText = new FormattedText(
-                text,
-                CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(new FontFamily(fontFamilyName), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal),
-                fontSize,
-                Brushes.Black,
-                new NumberSubstitution(),
-                VisualTreeHelper.GetDpi(this).PixelsPerDip);
-
-            return formattedText.Width;
-        }
 
         /// <summary>
         /// Step3: タイトルと画像をフェードアウト

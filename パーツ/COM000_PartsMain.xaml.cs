@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -83,7 +84,98 @@ namespace DSDsp.パーツ
             }
         }
 
+        #region フォントサイズ自動調整機能
 
+        /// <summary>
+        /// 文字列の長さに応じてフォントサイズを自動調整
+        /// テキストの実際の幅を測定して、指定幅に収まる最大のフォントサイズを見つける
+        /// </summary>
+        /// <param name="label">対象のLabel</param>
+        /// <param name="text">表示するテキスト</param>
+        /// <param name="maxWidth">最大テキスト幅（デフォルト: 500px）</param>
+        /// <param name="maxFontSize">最大フォントサイズ（デフォルト: 20）</param>
+        /// <param name="minFontSize">最小フォントサイズ（デフォルト: 6）</param>
+        /// <param name="fontFamilyName">フォントファミリー名（デフォルト: HGPSoeiKakugothicUB）</param>
+        public void フォントサイズ自動調整(
+            Label label,
+            string text,
+            double maxWidth = 500,
+            double maxFontSize = 20,
+            double minFontSize = 6,
+            string fontFamilyName = "HGPSoeiKakugothicUB")
+        {
+            if (label == null)
+            {
+                throw new ArgumentNullException(nameof(label));
+            }
 
+            if (string.IsNullOrEmpty(text))
+            {
+                label.FontSize = maxFontSize;
+                return;
+            }
+
+            double fontSize = minFontSize;
+
+            // フォントサイズを最大から最小まで1ずつ減らしながら、収まるサイズを探す
+            for (double f = maxFontSize; f >= minFontSize; f--)
+            {
+                double textWidth = テキスト幅取得(text, fontFamilyName, f, label);
+                
+                if (textWidth < maxWidth)
+                {
+                    fontSize = f;
+                    break;
+                }
+            }
+
+            label.FontSize = fontSize;
+        }
+
+        /// <summary>
+        /// 指定されたテキスト、フォントファミリー、フォントサイズでのテキストの幅を取得
+        /// </summary>
+        /// <param name="text">測定するテキスト</param>
+        /// <param name="fontFamilyName">フォントファミリー名</param>
+        /// <param name="fontSize">フォントサイズ</param>
+        /// <param name="referenceElement">DPI取得用の参照要素</param>
+        /// <returns>テキストの幅（ピクセル）</returns>
+        public double テキスト幅取得(
+            string text,
+            string fontFamilyName,
+            double fontSize,
+            Visual referenceElement)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return 0;
+            }
+
+            try
+            {
+                var formattedText = new FormattedText(
+                    text,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface(
+                        new FontFamily(fontFamilyName),
+                        FontStyles.Normal,
+                        FontWeights.Bold,
+                        FontStretches.Normal),
+                    fontSize,
+                    Brushes.Black,
+                    new NumberSubstitution(),
+                    VisualTreeHelper.GetDpi(referenceElement).PixelsPerDip);
+
+                return formattedText.Width;
+            }
+            catch
+            {
+                // フォントが見つからない場合などのエラー時は、文字数ベースの概算値を返す
+                return text.Length * fontSize * 0.6;
+            }
+        }
+
+        #endregion
     }
 }
