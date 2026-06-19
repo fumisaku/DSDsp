@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -23,10 +24,10 @@ namespace DSDsp.画面
         private const int FADE_DELAY_MILLISECONDS = 1000;
         
         // フォントサイズ調整用の定数
-        private const double DEFAULT_FONT_SIZE = 20;
-        private const double MIN_FONT_SIZE = 12;
-        private const int SHORT_TEXT_LENGTH = 15;
-        private const int MEDIUM_TEXT_LENGTH = 25;
+        private const double MAX_FONT_SIZE = 20;
+        private const double MIN_FONT_SIZE = 6;
+        private const double MAX_TEXT_WIDTH = 500;
+        private const string FONT_FAMILY_NAME = "HGPSoeiKakugothicUB";
         #endregion
 
         #region フィールド
@@ -249,6 +250,7 @@ namespace DSDsp.画面
 
         /// <summary>
         /// 文字列の長さに応じてフォントサイズを自動調整
+        /// テキストの実際の幅を測定して、指定幅に収まる最大のフォントサイズを見つける
         /// </summary>
         /// <param name="label">対象のLabel</param>
         /// <param name="text">表示するテキスト</param>
@@ -256,31 +258,47 @@ namespace DSDsp.画面
         {
             if (string.IsNullOrEmpty(text))
             {
-                label.FontSize = DEFAULT_FONT_SIZE;
+                label.FontSize = MAX_FONT_SIZE;
                 return;
             }
 
-            int textLength = text.Length;
-            double fontSize;
+            double fontSize = MIN_FONT_SIZE;
 
-            if (textLength <= SHORT_TEXT_LENGTH)
+            // フォントサイズを20から6まで1ずつ減らしながら、収まるサイズを探す
+            for (double f = MAX_FONT_SIZE; f >= MIN_FONT_SIZE; f--)
             {
-                // 短い文字列: デフォルトサイズ (20)
-                fontSize = DEFAULT_FONT_SIZE;
-            }
-            else if (textLength <= MEDIUM_TEXT_LENGTH)
-            {
-                // 中程度の文字列: 線形に縮小 (20 → 16)
-                fontSize = DEFAULT_FONT_SIZE - ((textLength - SHORT_TEXT_LENGTH) * 0.4);
-            }
-            else
-            {
-                // 長い文字列: さらに縮小 (16 → 12)
-                fontSize = 16 - ((textLength - MEDIUM_TEXT_LENGTH) * 0.2);
-                fontSize = Math.Max(fontSize, MIN_FONT_SIZE); // 最小サイズを保証
+                double textWidth = GetTextSize(text, FONT_FAMILY_NAME, f);
+                
+                if (textWidth < MAX_TEXT_WIDTH)
+                {
+                    fontSize = f;
+                    break;
+                }
             }
 
             label.FontSize = fontSize;
+        }
+
+        /// <summary>
+        /// 指定されたテキスト、フォントファミリー、フォントサイズでのテキストの幅を取得
+        /// </summary>
+        /// <param name="text">測定するテキスト</param>
+        /// <param name="fontFamilyName">フォントファミリー名</param>
+        /// <param name="fontSize">フォントサイズ</param>
+        /// <returns>テキストの幅（ピクセル）</returns>
+        private double GetTextSize(string text, string fontFamilyName, double fontSize)
+        {
+            var formattedText = new FormattedText(
+                text,
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(new FontFamily(fontFamilyName), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal),
+                fontSize,
+                Brushes.Black,
+                new NumberSubstitution(),
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+            return formattedText.Width;
         }
 
         /// <summary>
