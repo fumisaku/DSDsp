@@ -1,0 +1,27 @@
+﻿<UserControl x:Class="DSDsp.パーツ.COM001_左上"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DSDsp.パーツ"
+             mc:Ignorable="d" 
+             d:DesignHeight="387" d:DesignWidth="641">
+    <Grid>
+        <Canvas x:Name="Canvas_左上" Margin="0,0,348,285">
+            <Image x:Name ="IM_JDSFマーク" Panel.ZIndex ="1" Height="30" Source="/イメージ/JDSFマーク.png" Stretch="Fill" Width="30" Canvas.Left="4" Canvas.Top="10" HorizontalAlignment="Center" VerticalAlignment="Top" />
+            <TextBlock x:Name ="TB_左上1"
+            FontSize="12"   Foreground="Gold"   Text="第49回三笠宮杯全日本ダンススポーツ選手権" FontWeight="Bold" Canvas.Left="36" Canvas.Top="9" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                <TextBlock.Effect>
+                    <BlurEffect KernelType="Box" Radius="0.5" />
+                </TextBlock.Effect>
+            </TextBlock>
+            <TextBlock x:Name ="TB_左上2"
+            FontSize="12"  Foreground="Gold"  Text="全日本選手権スタンダード　決勝" FontWeight="Bold" HorizontalAlignment="Left" Width="306" Canvas.Left="36" Canvas.Top="26" VerticalAlignment="Center">
+                <TextBlock.Effect>
+                    <BlurEffect KernelType="Box" Radius="0.5" />
+                </TextBlock.Effect>
+            </TextBlock>
+        </Canvas>
+    </Grid>
+</UserControl>
+

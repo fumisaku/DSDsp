@@ -1,0 +1,23 @@
+﻿<UserControl x:Class="DSDsp.パーツ.COM003_右上02"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DSDsp.パーツ"
+             mc:Ignorable="d" 
+             d:DesignHeight="387" d:DesignWidth="641">
+    <Grid>
+        <Canvas x:Name="Canvas_右上02" Margin="338,0,0,263" RenderTransformOrigin="0.493,0.491">
+            <Label x:Name ="LB_右上" Content="1組目　999 山田　太郎・加藤　愛子組" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="12"   Foreground="Gold"  Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-110" Canvas.Top="27" Width="381">
+                <Label.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform AngleY="-0.397"/>
+                        <RotateTransform/>
+                        <TranslateTransform Y="1.193"/>
+                    </TransformGroup>
+                </Label.RenderTransform>
+            </Label>
+        </Canvas>
+    </Grid>
+</UserControl>

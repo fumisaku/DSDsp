@@ -1,0 +1,16 @@
+﻿<Window x:Class="DSDsp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DSDsp"
+        xmlns:screens="clr-namespace:DSDsp.画面"
+        mc:Ignorable="d"
+        Title="DSDsp - 区分ラウンド紹介" Height="387" Width="641"
+        
+        Background="Black">
+    <Grid>
+        <!-- DSP_TIT_001_区分ラウンド紹介画面を表示 -->
+        <screens:DSP_TIT_001_区分ラウンド紹介 x:Name="Screen_DSP_TIT_001"/>
+    </Grid>
+</Window>

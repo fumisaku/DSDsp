@@ -1,0 +1,24 @@
+﻿<UserControl x:Class="DSDsp.パーツ.COM002_右上01"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DSDsp.パーツ"
+             mc:Ignorable="d" 
+              d:DesignHeight="387" d:DesignWidth="641">
+    <Grid>
+        <Canvas x:Name="Canvas_右上01" Margin="338,0,0,263" RenderTransformOrigin="0.493,0.491">
+            <Label x:Name ="LB_右上" Content="1種目目　グループ競技　スロー・フォックストロット" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="12"   Foreground="Gold"  Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-16" Canvas.Top="2" Width="299">
+                <Label.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform AngleY="-0.397"/>
+                        <RotateTransform/>
+                        <TranslateTransform Y="1.193"/>
+                    </TransformGroup>
+                </Label.RenderTransform>
+            </Label>
+        </Canvas>
+    </Grid>
+</UserControl>
+

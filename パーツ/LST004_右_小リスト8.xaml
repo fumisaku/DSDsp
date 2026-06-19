@@ -1,0 +1,80 @@
+﻿<UserControl x:Class="DSDsp.パーツ.LST004_右_小リスト8"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DSDsp.パーツ"
+             mc:Ignorable="d" 
+             d:DesignHeight="387" d:DesignWidth="641">
+    <Grid>
+        <Canvas x:Name="COM_結果一覧_小" Margin="446,90,6,40" Background="Transparent"  RenderTransformOrigin="0.5,0.5">
+            <Canvas.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform AngleY="0.003"/>
+                    <RotateTransform/>
+                    <TranslateTransform Y="0.476"/>
+                </TransformGroup>
+            </Canvas.RenderTransform>
+            <Image x:Name="IM_タイトル1" Height="21" Source="..\イメージ\CHR169_結果緑_タイトル1.png" Stretch="Fill" Width="182" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="2" RenderTransformOrigin="0.5,0.5"/>
+            <Image x:Name="IM_タイトル2" Height="24" Source="..\イメージ\CHR169_結果緑_タイトル2.png" Stretch="Fill" Width="184" HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.Top="20"/>
+            <Image x:Name="IM_タイトル3" Height="15" Source="..\イメージ\CHR169_結果緑_タイトル2.png" Stretch="Fill" Width="170" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Top="42" Canvas.Left="5"/>
+
+            <Label x:Name="LB_タイトル1" Content="全日本ＰＤダンススポーツ選手権　準決勝" HorizontalContentAlignment="Left" Width="181" Height="20" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="10" Canvas.Top="2"/>
+            <Label x:Name="LB_タイトル2" Content="ヴィエニーズワルツ" HorizontalContentAlignment="Left" Canvas.Left="4" Canvas.Top="20" Width="168" Height="21" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <Label x:Name="LB_タイトル3" Content="途中結果" HorizontalContentAlignment="Left" Canvas.Left="14" Canvas.Top="39" Width="157" Height="20" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="10"/>
+
+
+            <Image x:Name="IM_明細1" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="56"/>
+            <Image x:Name="IM_明細2" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="76"/>
+            <Image x:Name="IM_明細3" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="96"/>
+            <Image x:Name="IM_明細4" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="116"/>
+            <Image x:Name="IM_明細5" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="136"/>
+            <Image x:Name="IM_明細6" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="156"/>
+            <Image x:Name="IM_明細7" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="176"/>
+            <Image x:Name="IM_明細8" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="196"/>
+
+            <Label x:Name="LB_結果1_順位" Content="1位" HorizontalContentAlignment="Left" Canvas.Top="56" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果1_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="56" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果1_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="56" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果1_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="56" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果2_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="76" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果2_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="76" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果2_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="76" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果2_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="76" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果3_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="96" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果3_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="96" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果3_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="96" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果3_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="96" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果4_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="116" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果4_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="116" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果4_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="116" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果4_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="116" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果5_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="136" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果5_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="136" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果5_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="136" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果5_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="136" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果6_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="156" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果6_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="156" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果6_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="156" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果6_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="156" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果7_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="176" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果7_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="176" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果7_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="176" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果7_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="176" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+            <Label x:Name="LB_結果8_順位" Content="1st" HorizontalContentAlignment="Left" Canvas.Top="196" Width="30" Height="21" Foreground="DarkBlue" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2" FontSize="10"/>
+            <Label x:Name="LB_結果8_背番号" Content="999" HorizontalContentAlignment="Right" Canvas.Top="196" Width="32" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="21" FontSize="10"/>
+            <Label x:Name="LB_結果8_選手名" Content="山田・加藤" HorizontalContentAlignment="Left" Canvas.Left="49" Canvas.Top="196" Width="77" Height="21" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+            <Label x:Name="LB_結果8_得点" Content="99.999" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="196" Width="52" Height="21" Foreground="DarkBlue" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" FontSize="10"/>
+
+        </Canvas>
+
+    </Grid>
+</UserControl>
