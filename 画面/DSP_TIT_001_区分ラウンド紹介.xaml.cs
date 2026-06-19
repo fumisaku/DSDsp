@@ -21,6 +21,12 @@ namespace DSDsp.画面
         private const double SLIDE_TO_LEFT_POSITION = 57;
         private const double SLIDE_TO_RIGHT_POSITION = 50;
         private const int FADE_DELAY_MILLISECONDS = 1000;
+        
+        // フォントサイズ調整用の定数
+        private const double DEFAULT_FONT_SIZE = 20;
+        private const double MIN_FONT_SIZE = 12;
+        private const int SHORT_TEXT_LENGTH = 15;
+        private const int MEDIUM_TEXT_LENGTH = 25;
         #endregion
 
         #region フィールド
@@ -209,9 +215,12 @@ namespace DSDsp.画面
             CreateAndStartSlideAnimation(PartsTIT001.IM_2, SLIDE_FROM_LEFT, SLIDE_TO_LEFT_POSITION);
             CreateAndStartSlideAnimation(PartsTIT001.IM_1, SLIDE_FROM_RIGHT, SLIDE_TO_RIGHT_POSITION);
 
-            // タイトルテキストの設定
+            // タイトルテキストの設定とフォントサイズの自動調整
             PartsTIT001.LB_Title1.Content = 区分名;
             PartsTIT001.LB_Title2.Content = ラウンド名;
+            
+            AdjustFontSize(PartsTIT001.LB_Title1, 区分名);
+            AdjustFontSize(PartsTIT001.LB_Title2, ラウンド名);
 
             // タイトルのフェードインアニメーション
             var titleStoryboard = new Storyboard();
@@ -236,6 +245,42 @@ namespace DSDsp.画面
             Storyboard.SetTargetProperty(slideAnimation, new PropertyPath("(Canvas.Left)"));
             storyboard.Children.Add(slideAnimation);
             storyboard.Begin();
+        }
+
+        /// <summary>
+        /// 文字列の長さに応じてフォントサイズを自動調整
+        /// </summary>
+        /// <param name="label">対象のLabel</param>
+        /// <param name="text">表示するテキスト</param>
+        private void AdjustFontSize(Label label, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                label.FontSize = DEFAULT_FONT_SIZE;
+                return;
+            }
+
+            int textLength = text.Length;
+            double fontSize;
+
+            if (textLength <= SHORT_TEXT_LENGTH)
+            {
+                // 短い文字列: デフォルトサイズ (20)
+                fontSize = DEFAULT_FONT_SIZE;
+            }
+            else if (textLength <= MEDIUM_TEXT_LENGTH)
+            {
+                // 中程度の文字列: 線形に縮小 (20 → 16)
+                fontSize = DEFAULT_FONT_SIZE - ((textLength - SHORT_TEXT_LENGTH) * 0.4);
+            }
+            else
+            {
+                // 長い文字列: さらに縮小 (16 → 12)
+                fontSize = 16 - ((textLength - MEDIUM_TEXT_LENGTH) * 0.2);
+                fontSize = Math.Max(fontSize, MIN_FONT_SIZE); // 最小サイズを保証
+            }
+
+            label.FontSize = fontSize;
         }
 
         /// <summary>
