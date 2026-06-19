@@ -142,17 +142,20 @@ namespace DSDsp.画面
             {
                 _partsMain = new パーツ.COM000_PartsMain();
             }
+            // 非表示を呼び出し
+            非表示();
         }
 
-        private  void 非表示()
+        private void 非表示()
         {
             // 区分ラウンド名を非表示
-            PartsCOM001.TB_左上2.text = string.Empty;
+            PartsCOM001.TB_左上2.Text = string.Empty;
 
-            // TIT001 を非表示
-            PartsTIT001.Parts_dsp_tit001_001.Visibility = Visibility.Collapsed;
-
-
+            // TIT001 のタイトルを非表示
+            PartsTIT001.LB_Title1.Visibility = Visibility.Collapsed;
+            PartsTIT001.LB_Title2.Visibility = Visibility.Collapsed;
+            PartsTIT001.IM_1.Visibility = Visibility.Collapsed;
+            PartsTIT001.IM_2.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>
