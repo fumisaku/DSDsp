@@ -144,7 +144,22 @@ namespace DSDsp.画面
             }
         }
 
-        private void Step1(string 競技会名)
+        private  void 非表示()
+        {
+            // 区分ラウンド名を非表示
+            PartsCOM001.TB_左上2.text = string.Empty;
+
+            // TIT001 を非表示
+            PartsTIT001.Parts_dsp_tit001_001.Visibility = Visibility.Collapsed;
+
+
+        }
+
+        /// <summary>
+        /// Step1: 競技会名を表示
+        /// </summary>
+        /// <param name="競技会名">表示する競技会名</param>
+        public void Step1(string 競技会名)
         {
             // COM000_PartsMainを初期化
             EnsurePartsMainInitialized();
@@ -159,7 +174,12 @@ namespace DSDsp.画面
             PartsCOM001.TB_左上1.Text = 競技会名;
         }
 
-        private void Step2(string 区分名, string ラウンド名)
+        /// <summary>
+        /// Step2: 区分名とラウンド名をアニメーション表示
+        /// </summary>
+        /// <param name="区分名">表示する区分名</param>
+        /// <param name="ラウンド名">表示するラウンド名</param>
+        public void Step2(string 区分名, string ラウンド名)
         {
             // PartsMainの初期化確認
             EnsurePartsMainInitialized();
@@ -189,7 +209,7 @@ namespace DSDsp.画面
             titleStoryboard.Begin();
         }
 
-        private void CreateAndStartSlideAnimation(UIElement target, double fromPosition, double toPosition)
+        private  void CreateAndStartSlideAnimation(UIElement target, double fromPosition, double toPosition)
         {
             var storyboard = new Storyboard();
             var slideAnimation = new DoubleAnimation
@@ -205,7 +225,10 @@ namespace DSDsp.画面
             storyboard.Begin();
         }
 
-        private void Step3()
+        /// <summary>
+        /// Step3: タイトルと画像をフェードアウト
+        /// </summary>
+        public void Step3()
         {
             // TIT001 の LB_Title1 と LB_Title2 をクリア
             // TIT001 の IM_1 と IM_2 をフェードアウト
