@@ -189,6 +189,10 @@ namespace DSDsp.画面
             
             if (_partsMain == null) return;
 
+            // 画像の初期状態を設定（フェードイン用に透明にする）
+            PartsTIT001.IM_1.Opacity = 0;
+            PartsTIT001.IM_2.Opacity = 0;
+
             // 画像のフェードインアニメーション
             var imageStoryboard = new Storyboard();
             _partsMain.フェードイン(true, PartsTIT001.IM_1, imageStoryboard, 0);
