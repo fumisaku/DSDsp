@@ -141,9 +141,9 @@ namespace DSDsp.画面
             if (_partsMain == null)
             {
                 _partsMain = new パーツ.COM000_PartsMain();
+                // 初回のみ非表示を実行
+                非表示();
             }
-            // 非表示を呼び出し
-            非表示();
         }
 
         private void 非表示()
@@ -151,7 +151,7 @@ namespace DSDsp.画面
             // 区分ラウンド名を非表示
             PartsCOM001.TB_左上2.Text = string.Empty;
 
-            // TIT001 のタイトルを非表示
+            // TIT001 のタイトルと画像を非表示
             PartsTIT001.LB_Title1.Visibility = Visibility.Collapsed;
             PartsTIT001.LB_Title2.Visibility = Visibility.Collapsed;
             PartsTIT001.IM_1.Visibility = Visibility.Collapsed;
@@ -189,6 +189,12 @@ namespace DSDsp.画面
             
             if (_partsMain == null) return;
 
+            // 画像とタイトルを表示状態に設定
+            PartsTIT001.IM_1.Visibility = Visibility.Visible;
+            PartsTIT001.IM_2.Visibility = Visibility.Visible;
+            PartsTIT001.LB_Title1.Visibility = Visibility.Visible;
+            PartsTIT001.LB_Title2.Visibility = Visibility.Visible;
+
             // 画像の初期状態を設定（フェードイン用に透明にする）
             PartsTIT001.IM_1.Opacity = 0;
             PartsTIT001.IM_2.Opacity = 0;
@@ -216,7 +222,7 @@ namespace DSDsp.画面
             titleStoryboard.Begin();
         }
 
-        private  void CreateAndStartSlideAnimation(UIElement target, double fromPosition, double toPosition)
+        private void CreateAndStartSlideAnimation(UIElement target, double fromPosition, double toPosition)
         {
             var storyboard = new Storyboard();
             var slideAnimation = new DoubleAnimation
