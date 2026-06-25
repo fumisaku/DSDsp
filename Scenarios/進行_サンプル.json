@@ -1,0 +1,31 @@
+{
+  "ScenarioName": "進行_サンプル",
+  "ScenarioType": "Progress",
+  "Description": "進行用サンプルシナリオ",
+  "Items": [
+    {
+      "ProgressNo": 1,
+      "ProgressSubNo": 0,
+      "CategoryNo": "01",
+      "CategoryName": "ジュニア",
+      "RoundName": "予選",
+      "EventGroupName": "ソロ"
+    },
+    {
+      "ProgressNo": 2,
+      "ProgressSubNo": 0,
+      "CategoryNo": "01",
+      "CategoryName": "ジュニア",
+      "RoundName": "決勝",
+      "EventGroupName": "ソロ"
+    },
+    {
+      "ProgressNo": 3,
+      "ProgressSubNo": 0,
+      "CategoryNo": "02",
+      "CategoryName": "シニア",
+      "RoundName": "予選",
+      "EventGroupName": "デュエット"
+    }
+  ]
+}

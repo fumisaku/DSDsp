@@ -4,12 +4,34 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
     <Resource Include="イメージ\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="DSDsp.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Scenarios\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="画面\DSP_SOL_004_ソロ選手結果_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_003_ソロ選手結果_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_001_ソロ選手紹介_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
 </Project>

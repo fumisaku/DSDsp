@@ -1,0 +1,132 @@
+<UserControl x:Class="DSDsp.TestDisplayScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="1080" d:DesignWidth="1920"
+             Background="White">
+    <Grid>
+        <!-- 外枠（赤色）- 画面の端が切れていないか確認 -->
+        <Border BorderBrush="Red" BorderThickness="10">
+            <Grid Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 上部：タイトルと四隅マーカー -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左上マーカー -->
+                    <Border Grid.Column="0" Background="Blue" Width="100" Height="100" Margin="0,0,20,20">
+                        <TextBlock Text="左上" FontSize="24" FontWeight="Bold" Foreground="White" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- タイトル -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="表示テスト画面" FontSize="80" FontWeight="Bold" 
+                                   HorizontalAlignment="Center" Foreground="#1976D2"/>
+                        <TextBlock Text="Display Test Screen" FontSize="40" 
+                                   HorizontalAlignment="Center" Foreground="#666666" Margin="0,10,0,0"/>
+                    </StackPanel>
+
+                    <!-- 右上マーカー -->
+                    <Border Grid.Column="2" Background="Green" Width="100" Height="100" Margin="20,0,0,20">
+                        <TextBlock Text="右上" FontSize="24" FontWeight="Bold" Foreground="White" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+
+                <!-- 中央：テストパターン -->
+                <Grid Grid.Row="1" Margin="0,40,0,40">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- フォントサイズテスト -->
+                    <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="フォントサイズテスト" FontSize="48" FontWeight="Bold" Margin="0,0,0,20"/>
+                        <TextBlock Text="特大: 72pt - The Quick Brown Fox" FontSize="72" Margin="0,5"/>
+                        <TextBlock Text="大: 48pt - The Quick Brown Fox" FontSize="48" Margin="0,5"/>
+                        <TextBlock Text="中: 36pt - The Quick Brown Fox" FontSize="36" Margin="0,5"/>
+                        <TextBlock Text="小: 24pt - The Quick Brown Fox" FontSize="24" Margin="0,5"/>
+                        <TextBlock Text="極小: 18pt - The Quick Brown Fox" FontSize="18" Margin="0,5"/>
+                    </StackPanel>
+
+                    <!-- カラーバー -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,40">
+                        <Border Background="Red" Width="150" Height="80" Margin="5">
+                            <TextBlock Text="赤" FontSize="32" FontWeight="Bold" Foreground="White" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Background="Orange" Width="150" Height="80" Margin="5">
+                            <TextBlock Text="橙" FontSize="32" FontWeight="Bold" Foreground="White" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Background="Yellow" Width="150" Height="80" Margin="5">
+                            <TextBlock Text="黄" FontSize="32" FontWeight="Bold" Foreground="Black" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Background="Green" Width="150" Height="80" Margin="5">
+                            <TextBlock Text="緑" FontSize="32" FontWeight="Bold" Foreground="White" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Background="Blue" Width="150" Height="80" Margin="5">
+                            <TextBlock Text="青" FontSize="32" FontWeight="Bold" Foreground="White" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Background="Purple" Width="150" Height="80" Margin="5">
+                            <TextBlock Text="紫" FontSize="32" FontWeight="Bold" Foreground="White" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 解像度情報 -->
+                    <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="推奨解像度: 1920 x 1080 (16:9)" FontSize="36" HorizontalAlignment="Center"/>
+                        <TextBlock Text="画面の四隅に色付きマーカーが表示されていることを確認してください" 
+                                   FontSize="28" HorizontalAlignment="Center" Margin="0,20,0,0" Foreground="#666666"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 下部：四隅マーカー -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左下マーカー -->
+                    <Border Grid.Column="0" Background="Yellow" Width="100" Height="100" Margin="0,20,20,0">
+                        <TextBlock Text="左下" FontSize="24" FontWeight="Bold" Foreground="Black" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- 中央下部 -->
+                    <TextBlock Grid.Column="1" Text="DSDsp 競技会進行画面表示システム" 
+                               FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" 
+                               Foreground="#999999"/>
+
+                    <!-- 右下マーカー -->
+                    <Border Grid.Column="2" Background="Orange" Width="100" Height="100" Margin="20,20,0,0">
+                        <TextBlock Text="右下" FontSize="24" FontWeight="Bold" Foreground="White" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
+
+<!-- Made with Bob -->

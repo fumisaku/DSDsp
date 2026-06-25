@@ -9,8 +9,16 @@
     <Grid>
         <Canvas x:Name="SOL_選手結果" Margin="39,246,28,40" Background="Transparent">
 
-            <Image x:Name="IM_種目2" Height="29" Source="..\イメージ\CHR169_種目紹介2.png" Stretch="Fill" Width="446" Canvas.Left="10" Canvas.Top="26" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-            <Image x:Name="IM_種目1" Height="29" Source="..\イメージ\CHR169_種目紹介1.png" Stretch="Fill" Width="448" Canvas.Left="17" Canvas.Top="30" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+            <Image x:Name="IM_種目2" Height="29" Source="..\イメージ\CHR169_種目紹介2.png" Stretch="Fill" Width="446" Canvas.Left="10" Canvas.Top="26" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <Image.RenderTransform>
+                    <TranslateTransform x:Name="IM_種目2_Translate" X="0" Y="0"/>
+                </Image.RenderTransform>
+            </Image>
+            <Image x:Name="IM_種目1" Height="29" Source="..\イメージ\CHR169_種目紹介1.png" Stretch="Fill" Width="448" Canvas.Left="17" Canvas.Top="30" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <Image.RenderTransform>
+                    <TranslateTransform x:Name="IM_種目1_Translate" X="0" Y="0"/>
+                </Image.RenderTransform>
+            </Image>
             <Image x:Name="IM_ソロ選手結果1" Height="29" Source="..\イメージ\CHR169_ソロ選手結果1.png" Stretch="Fill" Width="400" Canvas.Left="44" Canvas.Top="63" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Image x:Name="IM_ソロ選手結果2" Height="58" Source="..\イメージ\CHR169_ソロ選手結果2.png" Stretch="Fill" Width="101" Canvas.Left="458" Canvas.Top="19" HorizontalAlignment="Left" VerticalAlignment="Center"/>
             <Image x:Name="IM_ソロ選手結果3" Height="19" Source="..\イメージ\CHR169_ソロ選手結果3.png" Stretch="Fill" Width="101" Canvas.Left="458" Canvas.Top="80" HorizontalAlignment="Center" VerticalAlignment="Center"/>

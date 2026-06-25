@@ -4,13 +4,350 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DSDsp"
-        xmlns:screens="clr-namespace:DSDsp.画面"
         mc:Ignorable="d"
-        Title="DSDsp - 区分ラウンド紹介" Height="387" Width="641"
-        
-        Background="Black">
+        Title="DSDsp コントロール" Height="700" Width="900"
+        MinHeight="500" MinWidth="700"
+        Background="#F5F5F5">
     <Grid>
-        <!-- DSP_TIT_001_区分ラウンド紹介画面を表示 -->
-        <screens:DSP_TIT_001_区分ラウンド紹介 x:Name="Screen_DSP_TIT_001"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- アプリケーション名と競技会情報 -->
+        <Border Grid.Row="0" Background="#1976D2" Padding="10,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0"
+                           Text="DSDsp 競技会進行画面表示システム"
+                           Foreground="White"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+                
+                <TextBlock x:Name="TxtCompetitionInfo"
+                           Grid.Row="1"
+                           Text=""
+                           Foreground="White"
+                           FontSize="12"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- 共通コントロールパネル -->
+        <Border Grid.Row="1" Background="White" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 第1行: 接続とステータス -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <Button x:Name="BtnConnect"
+                                Content="サーバー接続"
+                                Click="BtnConnect_Click"
+                                Width="120"
+                                Height="32"
+                                Margin="0,0,10,0"
+                                Background="#2196F3"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand"/>
+                        
+                        <Border Background="#F0F0F0" 
+                                CornerRadius="3" 
+                                Padding="10,5"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="StatusIndicator"
+                                         Width="10"
+                                         Height="10"
+                                         Fill="Gray"
+                                         Margin="0,0,8,0"/>
+                                <TextBlock x:Name="TxtConnectionStatus"
+                                           Text="未接続"
+                                           Foreground="#666666"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <TextBlock x:Name="TxtServerInfo"
+                                   Text=""
+                                   Foreground="#999999"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <Button x:Name="BtnSettings"
+                            Grid.Column="2"
+                            Content="⚙ 設定"
+                            Click="BtnSettings_Click"
+                            Width="80"
+                            Height="32"
+                            Background="#757575"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"/>
+                </Grid>
+
+                <!-- 第2行: スクリーン制御 -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="スクリーン:"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               Margin="0,0,8,0"/>
+                    
+                    <ComboBox x:Name="CmbScreenSelect"
+                              Grid.Column="1"
+                              Width="150"
+                              Height="30"
+                              Margin="0,0,15,0"
+                              SelectionChanged="CmbScreenSelect_SelectionChanged">
+                        <ComboBoxItem Content="スクリーン1" IsSelected="True"/>
+                        <ComboBoxItem Content="スクリーン2"/>
+                        <ComboBoxItem Content="スクリーン3"/>
+                    </ComboBox>
+                    
+                    <Button x:Name="BtnToggleDisplay"
+                            Grid.Column="2"
+                            Content="表示/非表示"
+                            Click="BtnToggleDisplay_Click"
+                            Width="110"
+                            Height="30"
+                            Margin="0,0,30,0"
+                            Background="#FF9800"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"/>
+
+                    <Button x:Name="BtnTestDisplay"
+                            Grid.Column="4"
+                            Content="🔍 テスト表示"
+                            Click="BtnTestDisplay_Click"
+                            Width="110"
+                            Height="30"
+                            Margin="0,0,10,0"
+                            Background="#9C27B0"
+                            Foreground="White"
+                            BorderThickness="0"
+                            FontWeight="Bold"
+                            Cursor="Hand"/>
+                    
+                    <Button x:Name="BtnPlay"
+                            Grid.Column="5"
+                            Content="▶ 再生"
+                            Click="BtnPlay_Click"
+                            Width="90"
+                            Height="30"
+                            Margin="0,0,10,0"
+                            Background="#4CAF50"
+                            Foreground="White"
+                            BorderThickness="0"
+                            FontWeight="Bold"
+                            Cursor="Hand"/>
+                    
+                    <Button x:Name="BtnClear"
+                            Grid.Column="6"
+                            Content="✕ クリア"
+                            Click="BtnClear_Click"
+                            Width="90"
+                            Height="30"
+                            Background="#F44336"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- タブコントロール -->
+        <TabControl x:Name="TabControl"
+                    Grid.Row="2"
+                    Margin="10"
+                    Background="White"
+                    BorderBrush="#DDDDDD">
+            
+            <!-- 進行タブ -->
+            <TabItem Header="進行" FontSize="14" Padding="15,8">
+                <Grid Margin="15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- シナリオ選択 -->
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="シナリオ" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"
+                                   Margin="0,0,0,5"/>
+                        <ComboBox x:Name="CmbProgressScenario"
+                                  Height="32"
+                                  SelectionChanged="CmbProgressScenario_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- 進行一覧 -->
+                    <Grid Grid.Row="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="5"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" 
+                                   Text="進行一覧" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"/>
+                        
+                        <ListBox x:Name="LstProgressItems"
+                                 Grid.Row="2"
+                                 SelectionChanged="LstProgressItems_SelectionChanged"
+                                 BorderBrush="#DDDDDD"
+                                 FontSize="12"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- AJSタブ -->
+            <TabItem Header="AJS" FontSize="14" Padding="15,8">
+                <Grid Margin="15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- シナリオ選択 -->
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="シナリオ" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"
+                                   Margin="0,0,0,5"/>
+                        <ComboBox x:Name="CmbAjsScenario"
+                                  Height="32"
+                                  SelectionChanged="CmbAjsScenario_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- 区分選択 -->
+                    <StackPanel Grid.Row="2">
+                        <TextBlock Text="区分選択" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"
+                                   Margin="0,0,0,5"/>
+                        <ComboBox x:Name="CmbAjsCategory"
+                                  Height="32"
+                                  SelectionChanged="CmbAjsCategory_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- 画面進行 -->
+                    <Grid Grid.Row="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="5"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" 
+                                   Text="画面進行" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"/>
+                        
+                        <ListBox x:Name="LstAjsProgress"
+                                 Grid.Row="2"
+                                 SelectionChanged="LstAjsProgress_SelectionChanged"
+                                 BorderBrush="#DDDDDD"
+                                 FontSize="12"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- 表彰式タブ -->
+            <TabItem Header="表彰式" FontSize="14" Padding="15,8">
+                <Grid Margin="15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- シナリオ選択 -->
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="シナリオ" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"
+                                   Margin="0,0,0,5"/>
+                        <ComboBox x:Name="CmbAwardScenario"
+                                  Height="32"
+                                  SelectionChanged="CmbAwardScenario_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- 区分選択 -->
+                    <StackPanel Grid.Row="2">
+                        <TextBlock Text="区分選択" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"
+                                   Margin="0,0,0,5"/>
+                        <ComboBox x:Name="CmbAwardCategory"
+                                  Height="32"
+                                  SelectionChanged="CmbAwardCategory_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- 画面進行 -->
+                    <Grid Grid.Row="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="5"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" 
+                                   Text="画面進行" 
+                                   FontWeight="Bold" 
+                                   FontSize="13"/>
+                        
+                        <ListBox x:Name="LstAwardProgress"
+                                 Grid.Row="2"
+                                 SelectionChanged="LstAwardProgress_SelectionChanged"
+                                 BorderBrush="#DDDDDD"
+                                 FontSize="12"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>
+
+<!-- Made with Bob -->

@@ -1,0 +1,28 @@
+{
+  "ScenarioName": "表彰式_サンプル",
+  "ScenarioType": "Award",
+  "Description": "表彰式用サンプルシナリオ",
+  "Items": [
+    {
+      "ScreenId": "DSP_AWD_001_表彰式タイトル",
+      "EventNo": "01",
+      "EventSymbol": "A",
+      "HeatNo": "",
+      "Description": "表彰式開始"
+    },
+    {
+      "ScreenId": "DSP_AWD_002_入賞者発表",
+      "EventNo": "01",
+      "EventSymbol": "A",
+      "HeatNo": "",
+      "Description": "入賞者発表"
+    },
+    {
+      "ScreenId": "DSP_AWD_003_表彰",
+      "EventNo": "01",
+      "EventSymbol": "A",
+      "HeatNo": "",
+      "Description": "表彰"
+    }
+  ]
+}

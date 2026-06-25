@@ -1,0 +1,67 @@
+DSP_SOL_003_ソロ選手結果_大 を完成してください。
+
+区分番号、ラウンド番号、種目順、ヒート番号 は、外から指定。
+該当区分・ラウンドの採点方式IDは、DA_Masterから取得しておく。
+
+背番号、選手名L、選手名P は、DS_Statusから該当の種目順・ヒート番号に出場する選手の背番号を取得し
+選手名はDA_Masterから取得する。
+
+Step1は、
+  PartsCOM001.IM_JDSFマーク　を表示
+　PartsCOM001.TB_左上1.Text  に DA_Masterから競技会名をセット
+　PartsCOM001.TB_左上2.Text  に DA_Masterから該当の 区分名 + " " + ラウンド名 をセット
+
+　PartsCOM002.LB_右上.Content にDS_Statusから該当の 種目順+"種目目　ソロ競技　" + 種目名 をセット
+　PartsCOM003.LB_右上.Content にDS_Statusから ヒート番号 + "組目" + 背番号 + 選手名L + "・" + 選手名P 
+
+ 上記を一気に表示
+
+Step2は、Step1が終わったらすぐに。
+　PartsSOL001.IM_種目1 を左からフェードイン
+　PartsSOL001.IM_種目2 を右からフェードイン
+　PartsSOL001.IM_ソロ選手結果1 を左からフェードイン
+　PartsSOL001.IM_ソロ選手結果2 を右からフェードイン
+　PartsSOL001.IM_ソロ選手結果2 を右からフェードイン
+
+　上記のフェードインが終わったら、
+  PartsSOL001.LB_PCS名1 に PCS1のPCS名をセット PCS名は、該当採点方式IDをKeyに、DA_MasterからPCS名を取得して表示する。
+  PartsSOL001.LB_PCS名2 に PCS2のPCS名をセット 
+  PartsSOL001.LB_PCS名3 に PCS3のPCS名をセット 
+  PartsSOL001.LB_PCS名4 に PCS4のPCS名をセット 
+  PartsSOL001.LB_Red に "Red"をセット
+  PartsSOL001.LB_Total名 に "Total"をセット
+  PartsSOL001.LB_Rank名 に "Rank"をセット
+  上記を一気に表示
+　そして、
+　PartsSOL001.LB_背番号 に 背番号をセット
+　PartsSOL001.LB_選手名L に 選手名Lをセット
+　PartsSOL001.LB_選手名P に 選手名Pをセット
+　上記をフェードイン
+
+Step3で結果を表示する。Step3は、ユーザーからの指示で開始する。
+
+　結果は、DV_Resultを受け取り、DV_Resultから抽出する。
+　DV_Resultの該当の種目結果の選手結果から、該当の背番号の選手の結果を抽出し、
+　PartsSOL001.LB_PCS1 には、PCS1の得点
+　PartsSOL001.LB_PCS2 には、PCS2の得点
+　PartsSOL001.LB_PCS3 には、PCS3の得点
+　PartsSOL001.LB_PCS4 には、PCS4の得点　をセット。
+　PartsSOL001.LB_Redには、一般減点の合計点をセットする。失格FLAGがtrueの時は、「失格」と表示する。
+
+　上記をフェードインする。
+　そのあと、1秒後に、以下をフェードイン。
+　PartsSOL001.LB_Totalには、選手の種目得点をセットする
+　さらにその１秒後に以下をフェードイン
+　PartsSOL001.LB_Rankには、選手の種目順位表記をセットする。
+
+Step4は、
+　Step2とStep3 で表示したものをフェードアウトして非表示にする。
+
+
+
+1 種目GRPは外してください。
+2  DB_KUBUNs(DB_KbnNo)、DC_ROUNDs(DC_RndNo)のDC_RndScrMtdID
+3 Step3のメソッドとして渡したいです。
+4 DJ_採点方式リスト(採点方式ID)、PCS設定(PCS番号)のPCS名
+5 背番号や選手名は、Step1のタイミングで取得しておいてください。
+6 はい、定義されています。

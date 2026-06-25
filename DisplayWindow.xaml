@@ -1,0 +1,22 @@
+<Window x:Class="DSDsp.DisplayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DSDsp"
+        mc:Ignorable="d"
+        Title="表示ウィンドウ(モニター用)" Height="450" Width="800"
+        Background="Black">
+    <Grid Background="Black">
+        <Viewbox Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center">
+            <Grid x:Name="ContentGrid" Width="641" Height="387">
+                <!-- 画面コンテンツがここに動的に配置されます -->
+                <!-- 16:9の比率を維持しながら、ウィンドウサイズに応じて拡大・縮小されます -->
+            </Grid>
+        </Viewbox>
+    </Grid>
+</Window>
+
+<!-- Made with Bob -->

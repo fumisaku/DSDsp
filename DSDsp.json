@@ -1,0 +1,18 @@
+{
+  "WebSocketSettings": {
+    "ServerIpAddress": "127.0.0.1",
+    "ServerPort": 8080,
+    "ClientId": "DSDsp_001",
+    "OrgCd": "JS",
+    "ReconnectInterval": 5000,
+    "ConnectionTimeout": 30000
+  },
+  "LogSettings": {
+    "LogLevel": 3,
+    "LogPath": "./Logs"
+  },
+  "DisplaySettings": {
+    "ScenarioPath": "./Scenarios",
+    "DefaultScreen": 0
+  }
+}
