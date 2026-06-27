@@ -107,7 +107,7 @@ namespace DSDsp.画面
             EnsurePartsMainInitialized();
 
             //一旦非表示にする
-             非表示();
+            非表示();
 
             // COM002 の　LB_右上をクリアする
             PartsCOM002.LB_右上.Content = string.Empty;
@@ -115,56 +115,11 @@ namespace DSDsp.画面
             // COM001 のロゴを表示する
             PartsCOM001.IM_JDSFマーク.Source = new BitmapImage(new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
 
-            // DA_Masterから情報を取得
-            if (DA_Master == null)
-            {
-                PartsCOM001.TB_左上1.Text = "データなし";
-                PartsCOM001.TB_左上2.Text = string.Empty;
-                return;
-            }
-
-            // 競技会名を取得
-            string 競技会名 = DA_Master["DA_CompName"]?.ToString() ?? "競技会名不明";
-            PartsCOM001.TB_左上1.Text = 競技会名;
-
-            // 区分情報を取得
-            var kubuns = DA_Master["DB_KUBUNs"]?.AsArray();
-            if (kubuns != null)
-            {
-                var kubun = kubuns.FirstOrDefault(k => k?["DB_KbnNo"]?.ToString() == 区分番号);
-                if (kubun != null)
-                {
-                    string 区分名 = kubun["DB_KbnName"]?.ToString() ?? "区分不明";
-                    
-                    // ラウンド情報を取得
-                    var rounds = kubun["DC_ROUNDs"]?.AsArray();
-                    if (rounds != null)
-                    {
-                        var round = rounds.FirstOrDefault(r => r?["DC_RndNo"]?.ToString() == ラウンド番号);
-                        if (round != null)
-                        {
-                            string ラウンド名 = round["DC_RndName_J"]?.ToString() ?? "ラウンド不明";
-                            PartsCOM001.TB_左上2.Text = 区分名 + " " + ラウンド名;
-                        }
-                        else
-                        {
-                            PartsCOM001.TB_左上2.Text = 区分名;
-                        }
-                    }
-                    else
-                    {
-                        PartsCOM001.TB_左上2.Text = 区分名;
-                    }
-                }
-                else
-                {
-                    PartsCOM001.TB_左上2.Text = "区分情報なし";
-                }
-            }
-            else
-            {
-                PartsCOM001.TB_左上2.Text = "区分情報なし";
-            }
+            // 競技会名・区分ラウンド名を設定（COM002には種目情報は表示しないため第3引数は使い捨て）
+            PartsCOM001.TB_左上1.Text = DSDspDataHelper.Get競技会名(DA_Master);
+            string 区分名H = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
+            string ラウンド名H = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            PartsCOM001.TB_左上2.Text = 区分名H + " " + ラウンド名H;
         }
 
         /// <summary>
@@ -178,46 +133,10 @@ namespace DSDsp.画面
 
             if (_partsMain == null) return;
 
-            // DA_Masterから種目情報を取得
+            // ヘルパーから種目情報を取得
             int 種目順 = 種目番号;
-            string 種目カテゴリ = "";
-            string 種目名 = "種目情報なし";
-
-            if (DA_Master != null)
-            {
-                var kubuns = DA_Master["DB_KUBUNs"]?.AsArray();
-                if (kubuns != null)
-                {
-                    var kubun = kubuns.FirstOrDefault(k => k?["DB_KbnNo"]?.ToString() == 区分番号);
-                    if (kubun != null)
-                    {
-                        var rounds = kubun["DC_ROUNDs"]?.AsArray();
-                        if (rounds != null)
-                        {
-                            var round = rounds.FirstOrDefault(r => r?["DC_RndNo"]?.ToString() == ラウンド番号);
-                            if (round != null)
-                            {
-                                var dgrps = round["DD_DGRPs"]?.AsArray();
-                                if (dgrps != null && dgrps.Count > 0)
-                                {
-                                    var dgrp = dgrps[0];
-                                    var dances = dgrp?["DE_DANCEs"]?.AsArray();
-                                    if (dances != null)
-                                    {
-                                        var dance = dances.FirstOrDefault(d => d?["DE_DncNo"]?.GetValue<int>() == 種目番号);
-                                        if (dance != null)
-                                        {
-                                            string 種目SG = dance["DE_DncSG"]?.ToString() ?? "";
-                                            種目カテゴリ = 種目SG == "Solo" ? "ソロ競技" : 種目SG == "Duel" ? "デュエル競技" : 種目SG == "Group" ? "グループ競技" : "";
-                                            種目名 = dance["DE_DncNm_J"]?.ToString() ?? "種目不明";
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            string 種目カテゴリ = DSDspDataHelper.Get種目カテゴリ(DA_Master, 区分番号, ラウンド番号, 種目番号);
+            string 種目名 = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
 
             // 画像とタイトルを表示状態に設定
             PartsTIT002.IM_種目1.Visibility = Visibility.Visible;
@@ -265,26 +184,6 @@ namespace DSDsp.画面
             _partsMain.フェードイン(true, PartsTIT002.LB_種目紹介, titleStoryboard, FADE_DELAY_MILLISECONDS);
             titleStoryboard.Begin();
         }
-
-        private void CreateAndStartSlideAnimation(UIElement target, double fromOffset)
-        {
-            // RenderTransform.TranslateTransform.X をアニメーション
-            // Canvas.Left は固定のまま、要素のみを移動することで背景等に影響しない
-            var storyboard = new Storyboard();
-            var slideAnimation = new DoubleAnimation
-            {
-                From = fromOffset,
-                To = 0,
-                Duration = TimeSpan.FromSeconds(ANIMATION_DURATION_SECONDS),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            Storyboard.SetTarget(slideAnimation, target);
-            Storyboard.SetTargetProperty(slideAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
-            storyboard.Children.Add(slideAnimation);
-            storyboard.Begin();
-        }
-
 
         /// <summary>
         /// Step3: ラベルと画像をフェードアウト

@@ -25,6 +25,13 @@
       "Description": "ソロ選手紹介_大"
     },
     {
+      "ScreenId": "DSP_SOL_002",
+      "EventNo": "",
+      "EventSymbol": "",
+      "HeatNo": "",
+      "Description": "ソロ選手紹介_小"
+    },
+    {
       "ScreenId": "DSP_SOL_003",
       "EventNo": "",
       "EventSymbol": "",
@@ -37,6 +44,27 @@
       "EventSymbol": "",
       "HeatNo": "",
       "Description": "ソロ選手結果_小"
+    },    
+    {
+      "ScreenId": "DSP_SOL_005",
+      "EventNo": "",
+      "EventSymbol": "",
+      "HeatNo": "",
+      "Description": "ソロ選手結果PD_大"
+    },
+    {
+      "ScreenId": "DSP_SOL_006",
+      "EventNo": "",
+      "EventSymbol": "",
+      "HeatNo": "",
+      "Description": "ソロ選手結果PD_小"
+    },
+    {
+      "ScreenId": "DSP_SOL_007",
+      "EventNo": "",
+      "EventSymbol": "",
+      "HeatNo": "",
+      "Description": "ソロ途中結果_大"
     }
   ]
 }

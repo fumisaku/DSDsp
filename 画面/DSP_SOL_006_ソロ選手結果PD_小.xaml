@@ -1,4 +1,4 @@
-﻿<local:DSDspScreenBase x:Class="DSDsp.画面.DSP_SOL_004_ソロ選手結果_小"
+﻿<local:DSDspScreenBase x:Class="DSDsp.画面.DSP_SOL_006_ソロ選手結果PD_小"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -7,7 +7,7 @@
              xmlns:parts="clr-namespace:DSDsp.パーツ"
              xmlns:frame="clr-namespace:DSDsp.フレーム"
              mc:Ignorable="d"
-        Height="1080" Width="1920">
+        Height="387" Width="641">
     <Grid RenderTransformOrigin="0.161,0.542">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="379*"/>
@@ -36,7 +36,7 @@
 
 
         <!-- タイトル -->
-        <parts:SOL002_ソロ選手結果GD_小 x:Name="PartsSOL002"
+        <parts:SOL004_ソロ選手結果PD_小 x:Name="PartsSOL004"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
                    Margin="0,0,0,0"/>

@@ -115,6 +115,30 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// 採点方式IDを取得（DC_RndScrMtdID）
+        /// </summary>
+        public static string Get採点方式ID(JsonNode? daMaster, string kbnNo, string rndNo)
+        {
+            var round = Getラウンド(daMaster, kbnNo, rndNo);
+            if (round == null) return string.Empty;
+            return round["DC_RndScrMtdID"]?.ToString() ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 種目の表示テキストを取得 — 例: "1種目目 ソロ競技 ワルツ"
+        /// 種目が存在しない場合は "種目情報なし" を返す
+        /// </summary>
+        public static string Get種目表示テキスト(JsonNode? daMaster, string kbnNo, string rndNo, int dncNo)
+        {
+            var dance = Get種目(daMaster, kbnNo, rndNo, dncNo);
+            if (dance == null) return "種目情報なし";
+
+            string 種目カテゴリ = Get種目カテゴリ(daMaster, kbnNo, rndNo, dncNo);
+            string 種目名 = Get種目名(daMaster, kbnNo, rndNo, dncNo);
+            return $"{dncNo}種目目 {種目カテゴリ} {種目名}";
+        }
+
+        /// <summary>
         /// 選手情報を取得（背番号から検索）
         /// </summary>
         public static JsonNode? Get選手情報(JsonNode? daMaster, string 背番号)
@@ -296,6 +320,66 @@ namespace DSDsp.画面
             
             System.Diagnostics.Debug.WriteLine($"[Get背番号FromHeat] 背番号が見つかりませんでした");
             return "???";
+        }
+        /// <summary>
+        /// DS_Statusから指定ヒートに出場する背番号リストを取得
+        /// </summary>
+        public static List<string> Get背番号リストFromHeat(JsonNode? dsStatus, string kbnNo, string rndNo, int dncNo, int heatNo)
+        {
+            var result = new List<string>();
+            if (dsStatus == null) return result;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return result;
+
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+
+                    var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
+                    if (prgDances == null) continue;
+
+                    foreach (var prgDance in prgDances)
+                    {
+                        if (prgDance?["DS_DncNo"]?.GetValue<int>() != dncNo) continue;
+
+                        var heats = prgDance?["DS_PRGHEATs"]?.AsArray();
+                        if (heats == null || heatNo < 1 || heatNo > heats.Count) continue;
+
+                        var heat = heats[heatNo - 1];
+                        var heatId = heat?["DS_HeatId"]?.ToString();
+                        if (string.IsNullOrEmpty(heatId)) continue;
+
+                        var playerAssignments = prg?["PlayerAssignments"]?.AsArray();
+                        if (playerAssignments == null) continue;
+
+                        foreach (var assignment in playerAssignments)
+                        {
+                            var assignedHeatIds = assignment?["AssignedHeatIds"]?.AsArray();
+                            if (assignedHeatIds == null) continue;
+
+                            foreach (var id in assignedHeatIds)
+                            {
+                                if (id?.ToString() == heatId)
+                                {
+                                    var no = assignment?["PlayerNo"]?.ToString();
+                                    if (!string.IsNullOrEmpty(no))
+                                        result.Add(no!);
+                                    break;
+                                }
+                            }
+                        }
+                        return result;
+                    }
+                }
+            }
+            return result;
         }
     }
 }

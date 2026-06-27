@@ -78,6 +78,13 @@ namespace DSDsp.画面
                 case 1:
                     Step2();
                     break;
+                case 2:
+                    Step3(DV_Result);
+                    break;
+                case 3:
+                    Step4();
+                    break;
+
             }
         }
         #endregion
@@ -149,98 +156,9 @@ namespace DSDsp.画面
             // COM001 のロゴを表示する
             PartsCOM001.IM_JDSFマーク.Source = new BitmapImage(new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
 
-            // DA_Masterから情報を取得
-            if (DA_Master == null)
-            {
-                PartsCOM001.TB_左上1.Text = "データなし";
-                PartsCOM001.TB_左上2.Text = string.Empty;
-                PartsCOM002.LB_右上.Content = string.Empty;
-                return;
-            }
-
-            // 競技会名を取得
-            string 競技会名 = DA_Master["DA_CompName"]?.ToString() ?? "競技会名不明";
-            PartsCOM001.TB_左上1.Text = 競技会名;
-
-            // 区分情報を取得
-            var kubuns = DA_Master["DB_KUBUNs"]?.AsArray();
-            if (kubuns != null)
-            {
-                var kubun = kubuns.FirstOrDefault(k => k?["DB_KbnNo"]?.ToString() == 区分番号);
-                if (kubun != null)
-                {
-                    string 区分名 = kubun["DB_KbnName"]?.ToString() ?? "区分不明";
-                    
-                    // ラウンド情報を取得
-                    var rounds = kubun["DC_ROUNDs"]?.AsArray();
-                    if (rounds != null)
-                    {
-                        var round = rounds.FirstOrDefault(r => r?["DC_RndNo"]?.ToString() == ラウンド番号);
-                        if (round != null)
-                        {
-                            string ラウンド名 = round["DC_RndName_J"]?.ToString() ?? "ラウンド不明";
-                            PartsCOM001.TB_左上2.Text = 区分名 + " " + ラウンド名;
-
-                            // 採点方式IDを取得
-                            _採点方式ID = round["DC_RndScrMtdID"]?.ToString() ?? "";
-
-                            // 種目情報を取得
-                            var dgrps = round["DD_DGRPs"]?.AsArray();
-                            if (dgrps != null && dgrps.Count > 0)
-                            {
-                                var dgrp = dgrps[0]; // 通常は1つ目のDGrpを使用
-                                var dances = dgrp?["DE_DANCEs"]?.AsArray();
-                                if (dances != null)
-                                {
-                                    // 種目情報を取得
-                                    var dance = DSDspDataHelper.Get種目(DA_Master, 区分番号, ラウンド番号, 種目番号);
-                                    if (dance != null)
-                                    {
-                                        int 種目順 = 種目番号;
-                                        string 種目カテゴリ = DSDspDataHelper.Get種目カテゴリ(DA_Master, 区分番号, ラウンド番号, 種目番号);
-                                        string 種目名 = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
-
-                                        PartsCOM002.LB_右上.Content = 種目順.ToString() + "種目目" + " " + 種目カテゴリ + " " + 種目名;
-                                    }
-                                    else
-                                    {
-                                        PartsCOM002.LB_右上.Content = "種目情報なし";
-                                    }
-
-                                }
-                                else
-                                {
-                                    PartsCOM002.LB_右上.Content = "種目情報なし";
-                                }
-                            }
-                            else
-                            {
-                                PartsCOM002.LB_右上.Content = "種目情報なし";
-                            }
-                        }
-                        else
-                        {
-                            PartsCOM001.TB_左上2.Text = 区分名;
-                            PartsCOM002.LB_右上.Content = "ラウンド情報なし";
-                        }
-                    }
-                    else
-                    {
-                        PartsCOM001.TB_左上2.Text = 区分名;
-                        PartsCOM002.LB_右上.Content = "ラウンド情報なし";
-                    }
-                }
-                else
-                {
-                    PartsCOM001.TB_左上2.Text = "区分情報なし";
-                    PartsCOM002.LB_右上.Content = string.Empty;
-                }
-            }
-            else
-            {
-                PartsCOM001.TB_左上2.Text = "区分情報なし";
-                PartsCOM002.LB_右上.Content = string.Empty;
-            }
+            // COM001/COM002 の標準ヘッダを設定（競技会名・区分ラウンド名・種目情報）
+            _採点方式ID = SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
+            if (DA_Master == null) return;
 
             // DS_Statusから選手情報を取得
             _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
@@ -436,7 +354,7 @@ namespace DSDsp.画面
 
             // 一般減点を取得
             double 減点合計 = 0;
-            bool 失格 = 選手結果["失格FLAG"]?.ToString() == "1" || 選手結果["失格FLAG"]?.GetValue<bool>() == true;
+            bool 失格 = 選手結果["失格FLAG"]?.ToString() == "1";
             
             if (!失格)
             {
@@ -486,7 +404,7 @@ namespace DSDsp.画面
             // PCS表示完了後、1秒後にTotal表示
             pcsStoryboard.Completed += (s, e) =>
             {
-                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.1) };
                 timer.Tick += (sender, args) =>
                 {
                     timer.Stop();
@@ -501,7 +419,7 @@ namespace DSDsp.画面
                     // Total表示完了後、さらに1秒後にRank表示
                     totalStoryboard.Completed += (s2, e2) =>
                     {
-                        var rankTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                        var rankTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.1) };
                         rankTimer.Tick += (sender2, args2) =>
                         {
                             rankTimer.Stop();
@@ -565,26 +483,6 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsSOL001.LB_Rank, fadeOutStoryboard, 0);
             
             fadeOutStoryboard.Begin();
-        }
-
-
-        private void CreateAndStartSlideAnimation(UIElement target, double fromOffset)
-        {
-            // RenderTransform.TranslateTransform.X をアニメーション
-            // Canvas.Left は固定のまま、要素のみを移動することで背景等に影響しない
-            var storyboard = new Storyboard();
-            var slideAnimation = new DoubleAnimation
-            {
-                From = fromOffset,
-                To = 0,
-                Duration = TimeSpan.FromSeconds(ANIMATION_DURATION_SECONDS),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            Storyboard.SetTarget(slideAnimation, target);
-            Storyboard.SetTargetProperty(slideAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
-            storyboard.Children.Add(slideAnimation);
-            storyboard.Begin();
         }
 
 

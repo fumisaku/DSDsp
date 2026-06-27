@@ -164,26 +164,6 @@ namespace DSDsp.画面
             titleStoryboard.Begin();
         }
 
-        private void CreateAndStartSlideAnimation(UIElement target, double fromOffset)
-        {
-            // RenderTransform.TranslateTransform.X をアニメーション
-            // Canvas.Left は固定のまま、要素のみを移動することで背景等に影響しない
-            var storyboard = new Storyboard();
-            var slideAnimation = new DoubleAnimation
-            {
-                From = fromOffset,
-                To = 0,
-                Duration = TimeSpan.FromSeconds(ANIMATION_DURATION_SECONDS),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            Storyboard.SetTarget(slideAnimation, target);
-            Storyboard.SetTargetProperty(slideAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
-            storyboard.Children.Add(slideAnimation);
-            storyboard.Begin();
-        }
-
-
         /// <summary>
         /// Step3: タイトルと画像をフェードアウト
         /// </summary>

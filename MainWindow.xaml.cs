@@ -798,13 +798,29 @@ namespace DSDsp
             {
                 screen = new 画面.DSP_SOL_001_ソロ選手紹介_大();
             }
+            else if (item.ScreenId.StartsWith("DSP_SOL_002"))
+            {
+                screen = new 画面.DSP_SOL_002_ソロ選手紹介_小();
+            }
             else if (item.ScreenId.StartsWith("DSP_SOL_003"))
             {
                 screen = new 画面.DSP_SOL_003_ソロ選手結果GD_大();
             }
             else if (item.ScreenId.StartsWith("DSP_SOL_004"))
             {
-                screen = new 画面.DSP_SOL_004_ソロ選手結果_小();
+                screen = new 画面.DSP_SOL_004_ソロ選手結果GD_小();
+            }
+            else if (item.ScreenId.StartsWith("DSP_SOL_005"))
+            {
+                screen = new 画面.DSP_SOL_005_ソロ選手結果PD_大();
+            }
+            else if (item.ScreenId.StartsWith("DSP_SOL_006"))
+            {
+                screen = new 画面.DSP_SOL_006_ソロ選手結果PD_小();
+            }
+            else if (item.ScreenId.StartsWith("DSP_SOL_007"))
+            {
+                screen = new 画面.DSP_SOL_007_ソロ途中結果_大();
             }
 
             if (screen == null)
@@ -825,6 +841,10 @@ namespace DSDsp
                 if (_client?.DataManager?.DS_Status != null)
                 {
                     screen.DS_Status = _client.DataManager.DS_Status;
+                }
+                if (_client?.DataManager?.DV_Result != null)
+                {
+                    screen.DV_Result = _client.DataManager.DV_Result;
                 }
 
                 // パラメータを設定（新仕様）
@@ -922,7 +942,10 @@ namespace DSDsp
                 画面.DSP_TIT_002_種目紹介大      => new 画面.DSP_TIT_002_種目紹介大(),
                 画面.DSP_SOL_001_ソロ選手紹介_大  => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
                 画面.DSP_SOL_003_ソロ選手結果GD_大 => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
-                画面.DSP_SOL_004_ソロ選手結果_小  => new 画面.DSP_SOL_004_ソロ選手結果_小(),
+                画面.DSP_SOL_004_ソロ選手結果GD_小  => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
+                画面.DSP_SOL_005_ソロ選手結果PD_大 => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
+                画面.DSP_SOL_006_ソロ選手結果PD_小 => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
+
                 _ => null
             };
 
@@ -930,6 +953,7 @@ namespace DSDsp
             {
                 dest.DA_Master   = source.DA_Master;
                 dest.DS_Status   = source.DS_Status;
+                dest.DV_Result   = source.DV_Result;
                 dest.区分番号    = source.区分番号;
                 dest.ラウンド番号 = source.ラウンド番号;
                 dest.種目番号    = source.種目番号;

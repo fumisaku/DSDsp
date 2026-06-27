@@ -11,7 +11,7 @@ namespace DSDsp.画面
     /// <summary>
     /// DSP_SOL_001_ソロ選手紹介_大.xaml の相互作用ロジック
     /// </summary>
-    public partial class DSP_SOL_001_ソロ選手紹介_大 : DSDspScreenBase
+    public partial class DSP_SOL_002_ソロ選手紹介_小 : DSDspScreenBase
     {
         #region 定数定義
         private const int ANIMATION_DURATION_SECONDS = 1;
@@ -34,7 +34,7 @@ namespace DSDsp.画面
         #endregion
 
         #region コンストラクタ
-        public DSP_SOL_001_ソロ選手紹介_大()
+        public DSP_SOL_002_ソロ選手紹介_小()
         {
             InitializeComponent();
         }
@@ -69,15 +69,12 @@ namespace DSDsp.画面
 
         private void 非表示()
         {
-            // TIT004 の文字と画像を非表示
-            PartsTIT004.LB_演技順.Visibility = Visibility.Collapsed;
-            PartsTIT004.LB_背番号.Visibility = Visibility.Collapsed;
-            PartsTIT004.LB_選手名L.Visibility = Visibility.Collapsed;
-            PartsTIT004.LB_選手名P.Visibility = Visibility.Collapsed;
-            PartsTIT004.LB_所属.Visibility = Visibility.Collapsed;
-
-            PartsTIT004.IM_種目1.Visibility = Visibility.Collapsed;
-            PartsTIT004.IM_種目2.Visibility = Visibility.Collapsed;
+            // TIT005 の文字と画像を非表示
+            PartsTIT005.LB_演技順.Visibility = Visibility.Collapsed;
+            PartsTIT005.LB_選手紹介.Visibility = Visibility.Collapsed;
+            PartsTIT005.LB_所属.Visibility = Visibility.Collapsed;
+            PartsTIT005.IM_種目1.Visibility = Visibility.Collapsed;
+            PartsTIT005.IM_種目2.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>
@@ -143,53 +140,41 @@ namespace DSDsp.画面
             string 所属 = DSDspDataHelper.Get所属(選手情報);
 
             // 画像とタイトルを表示状態に設定
-            PartsTIT004.LB_演技順.Visibility = Visibility.Visible;
-            PartsTIT004.LB_背番号.Visibility = Visibility.Visible;
-            PartsTIT004.LB_選手名L.Visibility = Visibility.Visible;
-            PartsTIT004.LB_選手名P.Visibility = Visibility.Visible;
-            PartsTIT004.LB_所属.Visibility = Visibility.Visible;
-
+            PartsTIT005.LB_演技順.Visibility = Visibility.Visible;
+            PartsTIT005.LB_選手紹介.Visibility = Visibility.Visible;
+            PartsTIT005.LB_所属.Visibility = Visibility.Visible;
             // 画像の初期状態を設定（フェードイン用に透明にする）
-            PartsTIT004.IM_種目1.Opacity = 0;
-            PartsTIT004.IM_種目2.Opacity = 0;
+            PartsTIT005.IM_種目1.Opacity = 0;
+            PartsTIT005.IM_種目2.Opacity = 0;
 
             // 画像のフェードインアニメーション
             var imageStoryboard = new Storyboard();
-            _partsMain.フェードイン(true, PartsTIT004.IM_種目1, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsTIT004.IM_種目2, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsTIT005.IM_種目1, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsTIT005.IM_種目2, imageStoryboard, 0);
             imageStoryboard.Begin();
 
             // 画像のスライドアニメーション
-            CreateAndStartSlideAnimation(PartsTIT004.IM_種目1, SLIDE_FROM_RIGHT);
-            CreateAndStartSlideAnimation(PartsTIT004.IM_種目2, SLIDE_FROM_LEFT);
+            CreateAndStartSlideAnimation(PartsTIT005.IM_種目1, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsTIT005.IM_種目2, SLIDE_FROM_LEFT);
  
             // タイトルテキストの設定とフォントサイズの自動調整
-            PartsTIT004.LB_演技順.Content = ヒート番号.ToString() + "組目";
-            PartsTIT004.LB_背番号.Content = 背番号;
-            PartsTIT004.LB_選手名L.Content = 選手名L;
-            PartsTIT004.LB_選手名P.Content = 選手名P;
-            PartsTIT004.LB_所属.Content = 所属;
+            PartsTIT005.LB_演技順.Content = ヒート番号.ToString() + "組目";
+            PartsTIT005.LB_選手紹介.Content = 背番号;
+            PartsTIT005.LB_所属.Content = 所属;
 
             // COM000_PartsMainの共通機能を使用してフォントサイズを自動調整
             // 全てのパラメータを明示的に指定
             _partsMain.フォントサイズ自動調整(
-                label: PartsTIT004.LB_選手名L,
+                label: PartsTIT005.LB_選手紹介,
                 text: 選手名L,
                 maxWidth: 400,
                 maxFontSize: 22,
                 minFontSize: 20,
                 fontFamilyName: FONT_FAMILY_NAME);
 
+        
             _partsMain.フォントサイズ自動調整(
-                label: PartsTIT004.LB_選手名P,
-                text: 選手名P,
-                maxWidth: 400,
-                maxFontSize: 22,
-                minFontSize: 20,
-                fontFamilyName: FONT_FAMILY_NAME);
-
-            _partsMain.フォントサイズ自動調整(
-                label: PartsTIT004.LB_所属,
+                label: PartsTIT005.LB_所属,
                 text: 所属,
                 maxWidth: 400,
                 maxFontSize: 20,
@@ -198,16 +183,12 @@ namespace DSDsp.画面
 
             // タイトルのフェードインアニメーション
             var titleStoryboard = new Storyboard();
-            PartsTIT004.LB_演技順.Opacity = 0;
-            PartsTIT004.LB_背番号.Opacity = 0;
-            PartsTIT004.LB_選手名L.Opacity = 0;
-            PartsTIT004.LB_選手名P.Opacity = 0;
-            PartsTIT004.LB_所属.Opacity = 0;
-            _partsMain.フェードイン(true, PartsTIT004.LB_演技順, titleStoryboard, FADE_DELAY_MILLISECONDS);
-            _partsMain.フェードイン(true, PartsTIT004.LB_背番号, titleStoryboard, FADE_DELAY_MILLISECONDS);
-            _partsMain.フェードイン(true, PartsTIT004.LB_選手名L, titleStoryboard, FADE_DELAY_MILLISECONDS);
-            _partsMain.フェードイン(true, PartsTIT004.LB_選手名P, titleStoryboard, FADE_DELAY_MILLISECONDS);
-            _partsMain.フェードイン(true, PartsTIT004.LB_所属, titleStoryboard, FADE_DELAY_MILLISECONDS);
+            PartsTIT005.LB_演技順.Opacity = 0;
+            PartsTIT005.LB_選手紹介.Opacity = 0;
+            PartsTIT005.LB_所属.Opacity = 0;
+            _partsMain.フェードイン(true, PartsTIT005.LB_演技順, titleStoryboard, FADE_DELAY_MILLISECONDS);
+            _partsMain.フェードイン(true, PartsTIT005.LB_選手紹介, titleStoryboard, FADE_DELAY_MILLISECONDS);
+            _partsMain.フェードイン(true, PartsTIT005.LB_所属, titleStoryboard, FADE_DELAY_MILLISECONDS);
             titleStoryboard.Begin();
         }
 
@@ -224,14 +205,11 @@ namespace DSDsp.画面
             if (_partsMain == null) return;
 
             var fadeOutStoryboard = new Storyboard();
-            _partsMain.フェードアウト(true, PartsTIT004.LB_演技順, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT004.LB_背番号, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT004.LB_選手名L, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT004.LB_選手名P, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT004.LB_所属, fadeOutStoryboard, 0);
-
-            _partsMain.フェードアウト(true, PartsTIT004.IM_種目1, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT004.IM_種目2, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT005.LB_演技順, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT005.LB_選手紹介, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT005.LB_所属, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT005.IM_種目1, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT005.IM_種目2, fadeOutStoryboard, 0);
             fadeOutStoryboard.Begin();
         }
         #endregion

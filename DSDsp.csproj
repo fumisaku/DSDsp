@@ -23,10 +23,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="画面\DSP_SOL_004_ソロ選手結果_小.xaml.cs">
+    <Compile Update="画面\DSP_SOL_002_ソロ選手紹介_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="画面\DSP_SOL_003_ソロ選手結果_大.xaml.cs">
+    <Compile Update="画面\DSP_SOL_007_ソロ途中結果_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_006_ソロ選手結果PD_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_005_ソロ選手結果PD_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_004_ソロ選手結果GD_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_003_ソロ選手結果GD_大.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="画面\DSP_SOL_001_ソロ選手紹介_大.xaml.cs">

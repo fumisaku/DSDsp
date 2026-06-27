@@ -2,6 +2,8 @@ using System;
 using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace DSDsp.画面
@@ -21,6 +23,7 @@ namespace DSDsp.画面
         // データソース
         private JsonNode? _daMaster;
         private JsonNode? _dsStatus;
+        private JsonNode? _dvResult;
         private string _kbnNo = string.Empty;
         private string _rndNo = string.Empty;
         private int _dncNo = 0;
@@ -44,6 +47,15 @@ namespace DSDsp.画面
         {
             get => _dsStatus;
             set => _dsStatus = value;
+        }
+
+        /// <summary>
+        /// DV_Result（採点結果）
+        /// </summary>
+        public JsonNode? DV_Result
+        {
+            get => _dvResult;
+            set => _dvResult = value;
         }
 
         /// <summary>
@@ -214,6 +226,62 @@ namespace DSDsp.画面
             {
                 _partsMain = new パーツ.COM000_PartsMain();
             }
+        }
+        #endregion
+
+        #region 共通UIヘルパー
+        /// <summary>
+        /// COM001/COM002 の標準ヘッダ（競技会名・区分ラウンド名・種目情報）を設定する。
+        /// PartsCOM001/PartsCOM002 という名前のパーツを持つ派生クラスで呼び出すこと。
+        /// 採点方式IDが必要な場合は戻り値（string）として受け取れる。
+        /// </summary>
+        /// <returns>採点方式ID。データが不足している場合は空文字</returns>
+        protected string SetCommonHeader(
+            System.Windows.Controls.TextBlock tb左上1,
+            System.Windows.Controls.TextBlock tb左上2,
+            System.Windows.Controls.Label lb右上)
+        {
+            if (DA_Master == null)
+            {
+                tb左上1.Text = "データなし";
+                tb左上2.Text = string.Empty;
+                lb右上.Content = string.Empty;
+                return string.Empty;
+            }
+
+            tb左上1.Text = DSDspDataHelper.Get競技会名(DA_Master);
+
+            string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
+            string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            tb左上2.Text = 区分名 + " " + ラウンド名;
+
+            lb右上.Content = DSDspDataHelper.Get種目表示テキスト(DA_Master, 区分番号, ラウンド番号, 種目番号);
+
+            return DSDspDataHelper.Get採点方式ID(DA_Master, 区分番号, ラウンド番号);
+        }
+
+        /// <summary>
+        /// UIElementをX軸方向にスライドインさせるアニメーションを開始する。
+        /// 全画面共通のスライド演出（左右から飛び込み）に使用。
+        /// </summary>
+        /// <param name="target">アニメーション対象のUI要素</param>
+        /// <param name="fromOffset">開始オフセット（負=左から、正=右から）</param>
+        /// <param name="durationSeconds">アニメーション時間（秒）。デフォルト1秒</param>
+        protected void CreateAndStartSlideAnimation(UIElement target, double fromOffset, double durationSeconds = 1.0)
+        {
+            var storyboard = new Storyboard();
+            var slideAnimation = new DoubleAnimation
+            {
+                From = fromOffset,
+                To = 0,
+                Duration = TimeSpan.FromSeconds(durationSeconds),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            Storyboard.SetTarget(slideAnimation, target);
+            Storyboard.SetTargetProperty(slideAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
+            storyboard.Children.Add(slideAnimation);
+            storyboard.Begin();
         }
         #endregion
 
