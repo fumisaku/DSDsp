@@ -148,6 +148,19 @@
                             BorderThickness="0"
                             Cursor="Hand"/>
 
+                    <Button x:Name="BtnLoadTestData"
+                            Grid.Column="3"
+                            Content="📂 テストデータ"
+                            Click="BtnLoadTestData_Click"
+                            Width="130"
+                            Height="30"
+                            Margin="0,0,10,0"
+                            Background="#607D8B"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            ToolTip="DV_Result / DA_Master / DS_Status の JSON ファイルを読み込みます"/>
+
                     <Button x:Name="BtnTestDisplay"
                             Grid.Column="4"
                             Content="🔍 テスト表示"
@@ -259,16 +272,37 @@
                                   SelectionChanged="CmbAjsScenario_SelectionChanged"/>
                     </StackPanel>
 
-                    <!-- 区分選択 -->
-                    <StackPanel Grid.Row="2">
-                        <TextBlock Text="区分選択" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"
-                                   Margin="0,0,0,5"/>
-                        <ComboBox x:Name="CmbAjsCategory"
-                                  Height="32"
-                                  SelectionChanged="CmbAjsCategory_SelectionChanged"/>
-                    </StackPanel>
+                    <!-- 区分選択 / ヒート番号 -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="区分選択"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Margin="0,0,0,5"/>
+                            <ComboBox x:Name="CmbAjsCategory"
+                                      Height="32"
+                                      SelectionChanged="CmbAjsCategory_SelectionChanged"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                            <TextBlock Text="ヒート番号"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Margin="0,0,0,5"/>
+                            <TextBox x:Name="TxtHeatNo"
+                                     Width="80"
+                                     Height="32"
+                                     Text="9"
+                                     FontSize="14"
+                                     TextAlignment="Center"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="画面に渡すヒート番号（例: 9, 16）"/>
+                        </StackPanel>
+                    </Grid>
 
                     <!-- 画面進行 -->
                     <Grid Grid.Row="4">

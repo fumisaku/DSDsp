@@ -1,5 +1,8 @@
-﻿using DSDsp.Scenario;
+using DSDsp.Data;
+using DSDsp.Scenario;
 using DSDsp.画面;
+using Microsoft.Win32;
+using System.IO;
 
 namespace DSDsp
 {
@@ -29,6 +32,9 @@ namespace DSDsp
         
         // AJS区分情報（キー: 表示テキスト, 値: "区分No-ラウンドNo"）
         private Dictionary<string, string> _ajsCategoryKeys = new Dictionary<string, string>();
+
+        // テスト用データマネージャー（サーバー未接続時にJSONファイルから直接投入）
+        private DataManager? _testDataManager;
 
         public MainWindow()
         {
@@ -435,8 +441,10 @@ namespace DSDsp
                 CreateDisplayWindow();
             }
 
-            ExecuteCurrentStep();
-            _currentStep++;
+            // ExecuteCurrentStep 内でステップがリセットされた場合は++ しない
+            bool stepped = ExecuteCurrentStep();
+            if (stepped)
+                _currentStep++;
         }
 
         /// <summary>
@@ -685,24 +693,27 @@ namespace DSDsp
         #region ステップ実行
 
         /// <summary>
-        /// 現在のステップを実行
+        /// 現在のステップを実行する。
+        /// 戻り値: true=呼び出し元で _currentStep++ すべき / false=内部でリセット済みなので不要
         /// </summary>
-        private void ExecuteCurrentStep()
+        private bool ExecuteCurrentStep()
         {
             _log?.LogAdd($"ステップ実行: Step{_currentStep}", _log.INFO);
             
             // 現在選択されているタブを判定
             if (TabControl.SelectedIndex == 1) // AJSタブ
             {
-                ExecuteAjsStep();
+                return ExecuteAjsStep();
             }
             else if (TabControl.SelectedIndex == 2) // 表彰式タブ
             {
                 ExecuteAwardStep();
+                return true;
             }
             else // 進行タブ
             {
                 ExecuteProgressStep();
+                return true;
             }
         }
 
@@ -726,9 +737,11 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// AJSタブのステップを実行
+        /// AJSタブのステップを実行する。
+        /// 戻り値: true=通常実行（呼び出し元で _currentStep++ すべき）
+        ///         false=最終ステップ完了によりリセット済み（++ 不要）
         /// </summary>
-        private void ExecuteAjsStep()
+        private bool ExecuteAjsStep()
         {
             // ウィンドウが閉じられているか非表示の場合は再表示
             if (_displayWindow == null || !_displayWindow.IsVisible)
@@ -739,36 +752,36 @@ namespace DSDsp
             if (_currentAjsScenario == null || LstAjsProgress.ItemsSource == null)
             {
                 _log?.LogAdd("AJSシナリオが選択されていません", _log.WARNING);
-                return;
+                return false;
             }
 
             var displayItems = LstAjsProgress.ItemsSource as List<string>;
             if (displayItems == null || _currentAjsIndex < 0 || _currentAjsIndex >= displayItems.Count)
             {
                 _log?.LogAdd("AJS項目が選択されていません", _log.WARNING);
-                return;
+                return false;
             }
 
             // 選択された区分情報を取得
             if (CmbAjsCategory.SelectedItem == null)
             {
                 _log?.LogAdd("区分が選択されていません", _log.WARNING);
-                return;
+                return false;
             }
 
             var displayText = CmbAjsCategory.SelectedItem.ToString();
-            if (string.IsNullOrEmpty(displayText)) return;
+            if (string.IsNullOrEmpty(displayText)) return false;
 
             // Dictionaryからキーを取得
             if (!_ajsCategoryKeys.TryGetValue(displayText, out var key))
             {
                 _log?.LogAdd($"Dictionaryにキーが見つかりません: {displayText}", _log.WARNING);
-                return;
+                return false;
             }
 
             // キー形式: "区分No-ラウンドNo"
             var keyParts = key.Split('-');
-            if (keyParts.Length != 2) return;
+            if (keyParts.Length != 2) return false;
 
             var kbnNo = keyParts[0];
             var roundNo = keyParts[1];
@@ -777,7 +790,7 @@ namespace DSDsp
             if (_currentAjsIndex >= _currentAjsScenario.Items.Count)
             {
                 _log?.LogAdd($"インデックスが範囲外です: {_currentAjsIndex}", _log.ERR);
-                return;
+                return false;
             }
 
             var item = _currentAjsScenario.Items[_currentAjsIndex];
@@ -827,31 +840,24 @@ namespace DSDsp
             {
                 _log?.LogAdd($"未対応の画面ID: {item.ScreenId}", _log.WARNING);
                 MessageBox.Show($"未対応の画面ID: {item.ScreenId}", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
 
             // 初回表示時（Step0）は画面を表示してデータを設定
             if (_currentStep == 0)
             {
-                // 画面にデータを設定
-                if (_client?.DataManager?.DA_Master != null)
-                {
-                    screen.DA_Master = _client.DataManager.DA_Master;
-                }
-                if (_client?.DataManager?.DS_Status != null)
-                {
-                    screen.DS_Status = _client.DataManager.DS_Status;
-                }
-                if (_client?.DataManager?.DV_Result != null)
-                {
-                    screen.DV_Result = _client.DataManager.DV_Result;
-                }
+                // 画面にデータを設定（テストデータ優先、なければサーバーデータ）
+                var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+                if (dm?.DA_Master != null)   screen.DA_Master = dm.DA_Master;
+                if (dm?.DS_Status != null)   screen.DS_Status = dm.DS_Status;
+                if (dm?.DV_Result != null)   screen.DV_Result = dm.DV_Result;
 
-                // パラメータを設定（新仕様）
-                screen.区分番号 = kbnNo;
+                // パラメータを設定
+                screen.区分番号  = kbnNo;
                 screen.ラウンド番号 = roundNo;
-                screen.種目番号 = 1;  // 固定値
-                screen.ヒート番号 = 1; // 固定値
+                screen.種目番号  = 1;  // 固定値
+                // ヒート番号: UIのテキストボックスから取得（未入力/不正時は1）
+                screen.ヒート番号 = int.TryParse(TxtHeatNo.Text, out int heatNo) ? heatNo : 1;
 
                 _displayWindow?.ShowScreen(screen);
                 _log?.LogAdd($"画面表示: {item.ScreenId}", _log.INFO);
@@ -870,7 +876,7 @@ namespace DSDsp
             if (currentScreen == null)
             {
                 _log?.LogAdd("表示中の画面がありません", _log.WARNING);
-                return;
+                return false;
             }
 
             // ステップを実行（モニター用と全画面用の両方）
@@ -878,19 +884,18 @@ namespace DSDsp
             (_fullScreenWindow?.CurrentScreen as DSDspScreenBase)?.ExecuteStep(_currentStep);
             _log?.LogAdd($"{item.ScreenId} Step{_currentStep}実行完了", _log.INFO);
 
-            // 次のステップへ進むか、次の画面へ移動
+            // 最終ステップに到達したら次の画面へ移動し、_currentStep をリセット
             if (_currentStep >= currentScreen.GetTotalSteps() - 1)
             {
-                // 現在の画面のステップが完了したら次の画面へ
                 _currentAjsIndex++;
                 _currentStep = 0;
-                
+
                 if (_currentAjsIndex < _currentAjsScenario.Items.Count)
                 {
                     LstAjsProgress.SelectedIndex = _currentAjsIndex;
                     _log?.LogAdd($"次の画面へ移動: Index={_currentAjsIndex}", _log.INFO);
-                    
-                    // 次の画面を自動的に表示（Step0を実行）
+
+                    // 次の画面の Step0 を実行（_currentStep=0 のまま）
                     ExecuteAjsStep();
                 }
                 else
@@ -898,7 +903,12 @@ namespace DSDsp
                     _log?.LogAdd("すべての画面が完了しました", _log.INFO);
                     MessageBox.Show("すべての画面が完了しました", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
+
+                // 内部でリセット済みなので呼び出し元の ++ は不要
+                return false;
             }
+
+            return true;
         }
 
         /// <summary>
@@ -1066,6 +1076,145 @@ namespace DSDsp
                 MessageBox.Show($"サーバーエラー: {e.ErrorMessage}", "エラー", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
             });
+        }
+
+        #endregion
+
+        #region テストデータ読み込み
+
+        /// <summary>
+        /// テストデータ読み込みボタン：DV_Result / DA_Master / DS_Status の JSON ファイルを
+        /// ファイルダイアログで選択し、テスト用DataManagerに投入する。
+        /// </summary>
+        private void BtnLoadTestData_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "テストデータ JSON を選択（DV_Result / DA_Master / DS_Status）",
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                Multiselect = true,
+                InitialDirectory = System.IO.Path.GetFullPath("./Scenarios/TestData")
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            // 初回はDataManagerを生成
+            if (_testDataManager == null)
+                _testDataManager = new DataManager(_log ?? new LOG_C());
+
+            int loaded = 0;
+            foreach (var path in dialog.FileNames)
+            {
+                try
+                {
+                    var json = File.ReadAllText(path, System.Text.Encoding.UTF8);
+                    var fileName = System.IO.Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
+
+                    if (fileName.StartsWith("dv_result") || fileName.Contains("dv_result"))
+                    {
+                        _testDataManager.SetDV_Result(json);
+                        _log?.LogAdd($"テストデータ DV_Result 読み込み完了: {path}", _log.INFO);
+                        loaded++;
+                    }
+                    else if (fileName.StartsWith("da_master") || fileName.Contains("da_master"))
+                    {
+                        _testDataManager.SetDA_Master(json);
+                        _log?.LogAdd($"テストデータ DA_Master 読み込み完了: {path}", _log.INFO);
+                        loaded++;
+                    }
+                    else if (fileName.StartsWith("ds_status") || fileName.Contains("ds_status"))
+                    {
+                        _testDataManager.SetDS_Status(json);
+                        _log?.LogAdd($"テストデータ DS_Status 読み込み完了: {path}", _log.INFO);
+                        loaded++;
+                    }
+                    else
+                    {
+                        // ファイル名で判別できない場合はユーザーに選ばせる
+                        var result = MessageBox.Show(
+                            $"「{System.IO.Path.GetFileName(path)}」の種別を選択してください。\n\n[はい]=DV_Result　[いいえ]=DA_Master　[キャンセル]=DS_Status",
+                            "データ種別選択",
+                            MessageBoxButton.YesNoCancel,
+                            MessageBoxImage.Question);
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            _testDataManager.SetDV_Result(json);
+                            _log?.LogAdd($"テストデータ DV_Result 読み込み完了: {path}", _log.INFO);
+                        }
+                        else if (result == MessageBoxResult.No)
+                        {
+                            _testDataManager.SetDA_Master(json);
+                            _log?.LogAdd($"テストデータ DA_Master 読み込み完了: {path}", _log.INFO);
+                        }
+                        else
+                        {
+                            _testDataManager.SetDS_Status(json);
+                            _log?.LogAdd($"テストデータ DS_Status 読み込み完了: {path}", _log.INFO);
+                        }
+                        loaded++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log?.LogAdd($"テストデータ読み込みエラー: {path}: {ex.Message}", _log.ERR);
+                    MessageBox.Show($"読み込みエラー:\n{path}\n\n{ex.Message}", "エラー",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+
+            if (loaded > 0)
+            {
+                // テストデータ読み込み後、AJS実行に必要な状態を自動セットアップ
+                SetupAjsForTest();
+
+                MessageBox.Show($"{loaded} 件のテストデータを読み込みました。\n\nAJSタブ→DSP_SOL_007 を選択して「▶ 再生」してください。",
+                    "テストデータ読み込み完了", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        /// <summary>
+        /// テストデータ読み込み後に AJS 実行に必要な状態を自動セットアップする。
+        /// ・AJS_サンプル.json をシナリオとしてロード
+        /// ・テスト用ダミー区分キー（01-010）を区分コンボに設定
+        /// ・DSP_SOL_007 の行を選択状態にする
+        /// ・_currentStep をリセット
+        /// </summary>
+        private void SetupAjsForTest()
+        {
+            if (_scenarioManager == null) return;
+
+            // AJS_サンプル.json を強制ロード
+            _currentAjsScenario = _scenarioManager.LoadScreenScenario("AJS_サンプル.json");
+            if (_currentAjsScenario == null) return;
+
+            // テスト用ダミー区分キーをセット（テストデータJSONの区分番号/ラウンド番号に合わせる）
+            const string testKey  = "01-010";
+            const string testText = "[テスト] 一般 決勝";
+            _ajsCategoryKeys.Clear();
+            _ajsCategoryKeys[testText] = testKey;
+
+            // コンボボックスにテスト区分を表示・選択
+            CmbAjsCategory.ItemsSource = new List<string> { testText };
+            CmbAjsCategory.SelectedIndex = 0;
+
+            // 画面進行リストを構築（DSP_SOL_007 の行だけ選択できれば良い）
+            var displayItems = _currentAjsScenario.Items
+                .Select(item => $"{item.ScreenId} : {item.Description}")
+                .ToList();
+            LstAjsProgress.ItemsSource = displayItems;
+
+            // DSP_SOL_007 の行を自動選択
+            int sol007Index = _currentAjsScenario.Items
+                .FindIndex(i => i.ScreenId.StartsWith("DSP_SOL_007"));
+            _currentAjsIndex = sol007Index >= 0 ? sol007Index : 0;
+            LstAjsProgress.SelectedIndex = _currentAjsIndex;
+
+            _currentStep = 0;
+
+            // AJSタブに切り替え
+            TabControl.SelectedIndex = 1;
+
+            _log?.LogAdd($"テスト用AJSセットアップ完了: index={_currentAjsIndex}", _log.INFO);
         }
 
         #endregion

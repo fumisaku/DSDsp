@@ -1,0 +1,169 @@
+{
+  "DA_CompName": "テスト競技会 2026",
+  "DA_OrgCD": "JS",
+  "DA_CompNo": "TEST001",
+  "DB_KUBUNs": [
+    {
+      "DB_KbnNo": "01",
+      "DB_KbnName": "一般",
+      "DC_ROUNDs": [
+        {
+          "DC_RndNo": "010",
+          "DC_RndName_J": "決勝",
+          "DC_RndScrMtd": "AJS3.1J for GD",
+          "DC_RndScrMtdID": "AJS31_GD_26",
+          "DD_DGRPs": [
+            {
+              "DD_DGrpNo": "1",
+              "DD_DGrpName": "ワルツ",
+              "DE_DANCEs": [
+                {
+                  "DE_DncNo": 1,
+                  "DE_DncCode": "W",
+                  "DE_DncName": "ワルツ"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "DM_MEMBERs": [
+    {
+      "DM_UkeNo": 1,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 1,
+          "DM_No": "101",
+          "DM_LName": "山田 太郎",
+          "DM_LDispName": "山田 太郎",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "東京ダンスクラブ",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 2,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 2,
+          "DM_No": "102",
+          "DM_LName": "鈴木 一郎",
+          "DM_LDispName": "鈴木 一郎",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "大阪スポーツダンス",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 3,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 3,
+          "DM_No": "103",
+          "DM_LName": "佐藤 健",
+          "DM_LDispName": "佐藤 健",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "名古屋ダンスアカデミー",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 4,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 4,
+          "DM_No": "104",
+          "DM_LName": "田中 誠",
+          "DM_LDispName": "田中 誠",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "横浜ボールルーム",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 5,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 5,
+          "DM_No": "105",
+          "DM_LName": "伊藤 亮",
+          "DM_LDispName": "伊藤 亮",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "福岡ダンスクラブ",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 6,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 6,
+          "DM_No": "106",
+          "DM_LName": "渡辺 翔",
+          "DM_LDispName": "渡辺 翔",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "仙台スポーツダンス",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 7,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 7,
+          "DM_No": "107",
+          "DM_LName": "中村 光",
+          "DM_LDispName": "中村 光",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "広島ダンスアカデミー",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 8,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 8,
+          "DM_No": "108",
+          "DM_LName": "小林 直樹",
+          "DM_LDispName": "小林 直樹",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "札幌ボールルーム",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    },
+    {
+      "DM_UkeNo": 9,
+      "DM_MASTERs": [
+        {
+          "DM_MasNo": 9,
+          "DM_No": "109",
+          "DM_LName": "加藤 雄一",
+          "DM_LDispName": "加藤 雄一",
+          "DM_PName": "",
+          "DM_PDispName": "",
+          "DM_Ctry": "京都ダンスクラブ",
+          "DM_ENTRYs": [{ "DM_KbnNo": "01", "DM_Ent": "1", "DM_Class": "A" }]
+        }
+      ]
+    }
+  ]
+}
