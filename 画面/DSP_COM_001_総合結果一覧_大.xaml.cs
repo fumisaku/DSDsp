@@ -19,9 +19,9 @@ using System.Windows.Threading;
 namespace DSDsp.画面
 {
     /// <summary>
-    /// DSP_TIT_002_種目紹介.xaml の相互作用ロジック
+    /// DSP_COM_001_総合結果一覧_大.xaml の相互作用ロジック
     /// </summary>
-    public partial class DSP_SOL_007_ソロ途中結果_大 : DSDspScreenBase
+    public partial class DSP_COM_001_総合結果一覧_大 : DSDspScreenBase
     {
         #region 定数定義
         private const int ANIMATION_DURATION_SECONDS = 1;
@@ -63,15 +63,15 @@ namespace DSDsp.画面
         #endregion
 
         #region コンストラクタ
-        public DSP_SOL_007_ソロ途中結果_大()
+        public DSP_COM_001_総合結果一覧_大()
         {
             InitializeComponent();
-            this.Loaded += DSP_SOL_007_ソロ途中結果_大_Loaded;
+            this.Loaded += DSP_COM_001_総合結果一覧_大_Loaded;
         }
         #endregion
 
         #region イベントハンドラ
-        private void DSP_SOL_007_ソロ途中結果_大_Loaded(object sender, RoutedEventArgs e)
+        private void DSP_COM_001_総合結果一覧_大_Loaded(object sender, RoutedEventArgs e)
         {
             // 画面読み込み時は自動実行しない（外部から制御）
             // 初期化のみ実行
@@ -260,7 +260,7 @@ namespace DSDsp.画面
                 PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
                 PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
 
-                PartsLST001.LB_タイトル3.Content = "途中経過";
+                PartsLST001.LB_タイトル3.Content = "総合結果";
 
 
 
@@ -390,10 +390,8 @@ namespace DSDsp.画面
                     : 選手名L + "・" + 選手名P;
                 string 所属 = DSDspDataHelper.Get所属(選手情報);
 
-                // 当該ヒート出場選手なら濃いオレンジ、それ以外はDarkBlue
-                var 前景色 = 当該ヒート選手.Contains(背番号)
-                    ? new SolidColorBrush(Colors.DarkOrange)
-                    : new SolidColorBrush(Colors.DarkBlue);
+                // 文字色はDarkBlue
+                var 前景色 = new SolidColorBrush(Colors.DarkBlue);
 
                 // 順位ラベル（LB_結果1_xxx が 1位）
                 _順位LB[i].Content = 失格 ? "失格" : 順位表記;

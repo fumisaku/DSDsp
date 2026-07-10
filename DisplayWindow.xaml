@@ -16,6 +16,22 @@
                 <!-- 16:9の比率を維持しながら、ウィンドウサイズに応じて拡大・縮小されます -->
             </Grid>
         </Viewbox>
+        <!-- 全画面ウィンドウ用ミラー表示レイヤー。SetMirrorSource() でソースをセットする。 -->
+        <Rectangle x:Name="MirrorRect"
+                   Visibility="Collapsed"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch">
+            <Rectangle.Fill>
+                <!-- Viewbox を ContentGrid の固定サイズ(641×387)に固定する。
+                     TranslateTransform で範囲外に出た要素が bounding box を広げて
+                     VisualBrush 全体が縮小・ズームアウトして見える現象を防ぐ。 -->
+                <VisualBrush x:Name="MirrorBrush"
+                             Stretch="Uniform"
+                             AutoLayoutContent="False"
+                             ViewboxUnits="Absolute"
+                             Viewbox="0,0,641,387"/>
+            </Rectangle.Fill>
+        </Rectangle>
     </Grid>
 </Window>
 

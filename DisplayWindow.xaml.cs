@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace DSDsp
 {
@@ -15,6 +16,27 @@ namespace DSDsp
         /// 現在表示中の画面
         /// </summary>
         public UserControl? CurrentScreen => _currentScreen;
+
+        /// <summary>
+        /// VisualBrush ミラーモードを有効にする。
+        /// MirrorBrush.Visual に source を直接セットしてミラー表示を開始する。
+        /// </summary>
+        public void SetMirrorSource(Visual source)
+        {
+            MirrorBrush.Visual = source;
+            MirrorRect.Visibility = Visibility.Visible;
+            ContentGrid.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// ミラーモードを解除して通常の ShowScreen モードに戻す。
+        /// </summary>
+        public void ClearMirror()
+        {
+            MirrorRect.Visibility = Visibility.Collapsed;
+            MirrorBrush.Visual = null;
+            ContentGrid.Visibility = Visibility.Visible;
+        }
 
         public DisplayWindow()
         {

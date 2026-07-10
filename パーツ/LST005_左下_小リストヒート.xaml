@@ -17,9 +17,9 @@
                 </TransformGroup>
             </Canvas.RenderTransform>
             <Image x:Name="IM_タイトル1" Height="21" Source="..\イメージ\CHR169_結果緑_タイトル2.png" Stretch="Fill" Width="184" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Top="235" RenderTransformOrigin="0.5,0.5"/>
-            <Label x:Name="LB_タイトル1" Content="現在  W 2H" HorizontalContentAlignment="Left" Canvas.Left="4" Canvas.Top="234" Width="175" Height="21" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <Label x:Name="LB_タイトル1" Content="現在  W 2H" HorizontalContentAlignment="Left" Canvas.Left="4" Canvas.Top="233" Width="175" Height="22" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="11"/>
             <Image x:Name="IM_明細1" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="176" Canvas.Left="4" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Top="255"/>
-            <Label x:Name="LB_明細1" Content="15  24  36  48  59  78" HorizontalContentAlignment="Left" Canvas.Top="255" Width="172" Height="21" Foreground="DarkBlue" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="HGPSoeiKakugothicUB" FontWeight="Normal" Canvas.Left="2"/>
+            <Label x:Name="LB_明細1" Content="15  24  36  48  59  78" HorizontalContentAlignment="Left" Canvas.Top="254" Width="172" Height="24" Foreground="DarkBlue" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" Canvas.Left="2" FontSize="11"/>
 
         </Canvas>
 

@@ -11,23 +11,28 @@ namespace DSDsp
     /// </summary>
     public partial class MainWindow : Window
     {
-        private DisplayWindow? _displayWindow;  // モニター用表示ウィンドウ
-        private DisplayWindow? _fullScreenWindow;  // 全画面表示用ウィンドウ
+        private DisplayWindow? _offScreenWindow;   // 実コンテンツ保持（画面外・常時非表示）
+        private DisplayWindow? _displayWindow;     // モニター用ミラーウィンドウ
+        private DisplayWindow? _fullScreenWindow;  // スクリーン用ミラーウィンドウ
         private DSDspClient? _client;
         private ScenarioManager? _scenarioManager;
         private LOG_C? _log;
 
         // 現在のシナリオ
         private ProgressScenario? _currentProgressScenario;
-        private ScreenScenario? _currentAjsScenario;
+        private AjsScenarioDefinition? _currentAjsScenario;   // AJS: 新モデル
         private ScreenScenario? _currentAwardScenario;
+
+        // AJS画面進行一覧（BuildProgressList で動的生成）
+        private List<AjsProgressItem>? _currentAjsProgressItems;
 
         // 現在の選択
         private int _currentProgressIndex = -1;
         private int _currentAjsIndex = -1;
         private int _currentAwardIndex = -1;
         private int _currentStep = 0;
-        private int _selectedScreenIndex = -1;  // 選択されているスクリーン番号
+        private int _selectedScreenIndex = -1;   // コンボボックスで選択されているスクリーン番号
+        private int _activeScreenIndex = -1;     // 現在全画面表示中のスクリーン番号（-1=非表示）
         private bool _isTestDisplayActive = false;  // テスト表示が有効かどうか
         
         // AJS区分情報（キー: 表示テキスト, 値: "区分No-ラウンドNo"）
@@ -76,47 +81,69 @@ namespace DSDsp
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             _log?.LogAdd("DSDsp終了", _log.INFO);
-            
-            // クライアントを破棄
             _client?.Dispose();
-            
-            // 全画面ウィンドウを閉じる
             _fullScreenWindow?.Close();
-            
-            // 表示用ウィンドウを閉じる
             _displayWindow?.Close();
+            _offScreenWindow?.Close();
         }
 
         /// <summary>
-        /// モニター用表示ウィンドウを作成
+        /// オフスクリーンウィンドウを初回のみ作成する。
+        /// 実コンテンツはここに表示される。画面外に置き Hidden のまま維持する。
+        /// モニターとスクリーンは両方ともこの ContentGrid を VisualBrush でミラーする。
+        /// </summary>
+        private void EnsureOffScreenWindowCreated()
+        {
+            if (_offScreenWindow != null) return;
+
+            _offScreenWindow = new DisplayWindow();
+            _offScreenWindow.Title = "オフスクリーン（内部用）";
+            _offScreenWindow.WindowStyle = WindowStyle.None;
+            _offScreenWindow.ResizeMode  = ResizeMode.NoResize;
+            _offScreenWindow.ShowInTaskbar = false;
+            // 画面外の座標に配置したまま Visible で Show() し続ける。
+            // Hidden にすると WPF のレンダリングが停止して VisualBrush が古い状態を映すため。
+            _offScreenWindow.Left = -10000;
+            _offScreenWindow.Top  = -10000;
+            _offScreenWindow.Width  = 641;
+            _offScreenWindow.Height = 387;
+
+            _offScreenWindow.Show();   // Visible のまま維持
+
+            // 既存のミラーウィンドウにソースを設定
+            _displayWindow?.SetMirrorSource(_offScreenWindow.ContentGrid);
+            _fullScreenWindow?.SetMirrorSource(_offScreenWindow.ContentGrid);
+
+            _log?.LogAdd("オフスクリーンウィンドウを作成（画面外 Visible）", _log.INFO);
+        }
+
+        /// <summary>
+        /// モニター用ミラーウィンドウを作成する。
         /// </summary>
         private void CreateDisplayWindow()
         {
             if (_displayWindow != null)
             {
-                // 既存のウィンドウがある場合は表示状態にする
                 if (!_displayWindow.IsVisible)
-                {
                     _displayWindow.Show();
-                }
                 return;
             }
 
             _displayWindow = new DisplayWindow();
-            
-            // 表示ウィンドウをコントロール画面の右側に配置（重ならないように）
             _displayWindow.Left = this.Left + this.Width + 10;
-            _displayWindow.Top = this.Top;
-            
-            // ウィンドウが閉じられた時のイベントハンドラを設定
+            _displayWindow.Top  = this.Top;
             _displayWindow.Closed += DisplayWindow_Closed;
-            
             _displayWindow.Show();
-            _log?.LogAdd("モニター用表示ウィンドウを作成", _log.INFO);
+
+            // オフスクリーンウィンドウが既にあればミラーソースを設定
+            if (_offScreenWindow != null)
+                _displayWindow.SetMirrorSource(_offScreenWindow.ContentGrid);
+
+            _log?.LogAdd("モニター用ミラーウィンドウを作成", _log.INFO);
         }
 
         /// <summary>
-        /// モニター用表示ウィンドウが閉じられた時の処理
+        /// モニター用ウィンドウが閉じられた時の処理
         /// </summary>
         private void DisplayWindow_Closed(object? sender, EventArgs e)
         {
@@ -124,7 +151,22 @@ namespace DSDsp
             {
                 _displayWindow.Closed -= DisplayWindow_Closed;
                 _displayWindow = null;
-                _log?.LogAdd("モニター用表示ウィンドウが閉じられました", _log.INFO);
+                _log?.LogAdd("モニター用ウィンドウが閉じられました", _log.INFO);
+            }
+        }
+
+        /// <summary>
+        /// 全画面ウィンドウが外部から閉じられた時の処理
+        /// </summary>
+        private void FullScreenWindow_Closed(object? sender, EventArgs e)
+        {
+            if (_fullScreenWindow != null)
+            {
+                _fullScreenWindow.Closed -= FullScreenWindow_Closed;
+                _fullScreenWindow = null;
+                _activeScreenIndex = -1;
+                UpdateToggleDisplayButton(false);
+                _log?.LogAdd("全画面ウィンドウが閉じられました", _log.INFO);
             }
         }
 
@@ -281,79 +323,86 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// 表示ウィンドウを指定されたスクリーンに配置
+        /// 全画面ミラーウィンドウを初回のみ作成する（常時保持・Hidden で待機）。
+        /// </summary>
+        private void EnsureFullScreenWindowCreated()
+        {
+            if (_fullScreenWindow != null) return;
+
+            _fullScreenWindow = new DisplayWindow();
+            _fullScreenWindow.Title = "表示ウィンドウ（スクリーン）";
+            _fullScreenWindow.Closed += FullScreenWindow_Closed;
+            _fullScreenWindow.WindowStyle = WindowStyle.None;
+            _fullScreenWindow.ResizeMode  = ResizeMode.NoResize;
+            _fullScreenWindow.WindowState = WindowState.Normal;
+            _fullScreenWindow.Topmost = true;
+            _fullScreenWindow.Show();
+            // Visibility.Hidden ではなく Opacity=0 + Visibility=Visible で「非表示」を表現する。
+            // Hidden にするとDWMのウィンドウ再表示アニメーション（フェードイン）が発生するため。
+            _fullScreenWindow.Opacity = 0;
+
+            // オフスクリーンウィンドウが既にあればミラーソースを設定
+            if (_offScreenWindow != null)
+                _fullScreenWindow.SetMirrorSource(_offScreenWindow.ContentGrid);
+
+            _log?.LogAdd("全画面ミラーウィンドウを作成", _log.INFO);
+        }
+
+        /// <summary>
+        /// 全画面ウィンドウを指定されたスクリーンに配置して表示する。
         /// </summary>
         private void PositionDisplayWindow(int screenIndex)
         {
-            if (_displayWindow == null) return;
-
             var screens = WinForms.Screen.AllScreens;
             _log?.LogAdd($"利用可能なスクリーン数: {screens.Length}", _log.INFO);
-            
-            if (screenIndex < screens.Length)
-            {
-                var screen = screens[screenIndex];
-                
-                // スクリーン情報をログ出力（物理ピクセル）
-                _log?.LogAdd($"スクリーン{screenIndex + 1}（物理ピクセル）: Left={screen.Bounds.Left}, Top={screen.Bounds.Top}, Width={screen.Bounds.Width}, Height={screen.Bounds.Height}", _log.INFO);
-                
-                // 既存の全画面ウィンドウがあれば閉じる
-                if (_fullScreenWindow != null)
-                {
-                    _fullScreenWindow.Close();
-                    _fullScreenWindow = null;
-                }
-                
-                // 新しい全画面表示用ウィンドウを作成
-                _fullScreenWindow = new DisplayWindow();
-                _fullScreenWindow.Title = $"表示ウィンドウ（スクリーン{screenIndex + 1}）";
-                
-                // 全画面設定（先に設定）
-                _fullScreenWindow.WindowStyle = WindowStyle.None;
-                _fullScreenWindow.ResizeMode = ResizeMode.NoResize;
-                _fullScreenWindow.WindowState = WindowState.Normal;
-                
-                // DPIスケールを取得
-                var source = PresentationSource.FromVisual(this);
-                double dpiScaleX = 1.0;
-                double dpiScaleY = 1.0;
-                
-                if (source != null)
-                {
-                    dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
-                    dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
-                }
-                
-                _log?.LogAdd($"DPIスケール: X={dpiScaleX}, Y={dpiScaleY}", _log.INFO);
-                
-                // 物理ピクセルからWPFの論理ピクセルに変換
-                double left = screen.Bounds.Left / dpiScaleX;
-                double top = screen.Bounds.Top / dpiScaleY;
-                double width = screen.Bounds.Width / dpiScaleX;
-                double height = screen.Bounds.Height / dpiScaleY;
-                
-                _log?.LogAdd($"スクリーン{screenIndex + 1}（論理ピクセル）: Left={left}, Top={top}, Width={width}, Height={height}", _log.INFO);
-                
-                // スクリーンの境界に正確に配置
-                _fullScreenWindow.Left = left;
-                _fullScreenWindow.Top = top;
-                _fullScreenWindow.Width = width;
-                _fullScreenWindow.Height = height;
-                
-                // モニター用と同じ画面を表示中の場合は、全画面ウィンドウにも同じ内容を表示
-                var monitorScreen = _displayWindow?.CurrentScreen as 画面.DSDspScreenBase;
-                if (monitorScreen != null)
-                {
-                    var mirrorScreen = CreateScreenInstance(monitorScreen);
-                    if (mirrorScreen != null)
-                        _fullScreenWindow.ShowScreen(mirrorScreen);
-                }
 
-                // 最前面に表示
-                _fullScreenWindow.Topmost = true;
-                _fullScreenWindow.Show();
-                
-                _log?.LogAdd($"スクリーン{screenIndex + 1}に全画面表示完了: Left={_fullScreenWindow.Left}, Top={_fullScreenWindow.Top}, Width={_fullScreenWindow.Width}, Height={_fullScreenWindow.Height}", _log.INFO);
+            if (screenIndex >= screens.Length) return;
+
+            // オフスクリーンを先に確保（全画面のミラーソース設定に必要）
+            EnsureOffScreenWindowCreated();
+            // 全画面ミラーウィンドウを確保
+            EnsureFullScreenWindowCreated();
+            if (_fullScreenWindow == null) return;
+
+            var screen = screens[screenIndex];
+            _log?.LogAdd($"スクリーン{screenIndex + 1}（物理ピクセル）: Left={screen.Bounds.Left}, Top={screen.Bounds.Top}, Width={screen.Bounds.Width}, Height={screen.Bounds.Height}", _log.INFO);
+
+            // DPIスケールを取得
+            var presSource = PresentationSource.FromVisual(this);
+            double dpiScaleX = presSource?.CompositionTarget.TransformToDevice.M11 ?? 1.0;
+            double dpiScaleY = presSource?.CompositionTarget.TransformToDevice.M22 ?? 1.0;
+            _log?.LogAdd($"DPIスケール: X={dpiScaleX}, Y={dpiScaleY}", _log.INFO);
+
+            // 物理ピクセル → WPF論理ピクセルに変換してスクリーンに配置
+            _fullScreenWindow.Left   = screen.Bounds.Left   / dpiScaleX;
+            _fullScreenWindow.Top    = screen.Bounds.Top    / dpiScaleY;
+            _fullScreenWindow.Width  = screen.Bounds.Width  / dpiScaleX;
+            _fullScreenWindow.Height = screen.Bounds.Height / dpiScaleY;
+
+            _fullScreenWindow.Opacity = 1;
+            _fullScreenWindow.Visibility = Visibility.Visible;
+            _activeScreenIndex = screenIndex;
+            UpdateToggleDisplayButton(true);
+
+            _log?.LogAdd($"スクリーン{screenIndex + 1}に全画面表示: Left={_fullScreenWindow.Left}, Top={_fullScreenWindow.Top}", _log.INFO);
+        }
+
+        /// <summary>
+        /// 表示/非表示ボタンの見た目を更新
+        /// </summary>
+        private void UpdateToggleDisplayButton(bool isVisible)
+        {
+            if (isVisible)
+            {
+                BtnToggleDisplay.Content = "👁 表示中";
+                BtnToggleDisplay.Background = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Colors.Green);
+            }
+            else
+            {
+                BtnToggleDisplay.Content = "🚫 非表示";
+                BtnToggleDisplay.Background = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF9800"));
             }
         }
 
@@ -362,33 +411,35 @@ namespace DSDsp
         /// </summary>
         private void BtnToggleDisplay_Click(object sender, RoutedEventArgs e)
         {
-            // 全画面ウィンドウがある場合は、それを非表示/表示
-            if (_fullScreenWindow != null)
+            if (_fullScreenWindow != null && _fullScreenWindow.Opacity > 0)
             {
-                if (_fullScreenWindow.Visibility == Visibility.Visible)
-                {
-                    // 表示中の場合は非表示にする
-                    _fullScreenWindow.Visibility = Visibility.Hidden;
-                    _log?.LogAdd($"全画面表示を非表示", _log.INFO);
-                }
-                else
-                {
-                    // 非表示の場合は表示する
-                    _fullScreenWindow.Visibility = Visibility.Visible;
-                    _log?.LogAdd($"全画面表示を表示", _log.INFO);
-                }
+                // 表示中 → 非表示（Opacity=0 で隠す。Visibility.Hidden はDWMアニメーションを誘発するため使わない）
+                _fullScreenWindow.Opacity = 0;
+                _activeScreenIndex = -1;
+                UpdateToggleDisplayButton(false);
+                _log?.LogAdd("全画面表示を非表示", _log.INFO);
             }
             else
             {
-                // 全画面ウィンドウがない場合は、選択されたスクリーンに新規作成
-                if (_selectedScreenIndex >= 0)
+                // 非表示 or 未作成 → 選択されたスクリーンに表示
+                if (_selectedScreenIndex < 0)
+                {
+                    _log?.LogAdd("スクリーンが選択されていません", _log.WARNING);
+                    MessageBox.Show("スクリーンを選択してください", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // スクリーンが変わっている or ウィンドウ未作成 → 配置（初回のみ作成）
+                if (_fullScreenWindow == null || _activeScreenIndex != _selectedScreenIndex)
                 {
                     PositionDisplayWindow(_selectedScreenIndex);
                 }
                 else
                 {
-                    _log?.LogAdd("スクリーンが選択されていません", _log.WARNING);
-                    MessageBox.Show("スクリーンを選択してください", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // 同じスクリーン・ウィンドウ既存 → Opacity を戻すだけ（DWMアニメーションなし）
+                    _fullScreenWindow.Opacity = 1;
+                    UpdateToggleDisplayButton(true);
+                    _log?.LogAdd($"スクリーン{_selectedScreenIndex + 1}に全画面表示を再表示", _log.INFO);
                 }
             }
         }
@@ -398,35 +449,28 @@ namespace DSDsp
         /// </summary>
         private void BtnTestDisplay_Click(object sender, RoutedEventArgs e)
         {
-            // ウィンドウが閉じられているか非表示の場合は再表示
-            if (_displayWindow == null || !_displayWindow.IsVisible)
-            {
-                CreateDisplayWindow();
-            }
+            EnsureOffScreenWindowCreated();
 
-            if (_displayWindow != null)
+            if (_isTestDisplayActive)
             {
-                if (_isTestDisplayActive)
-                {
-                    // テスト表示中の場合は、画面をクリア
-                    _displayWindow.ClearScreen();
-                    _isTestDisplayActive = false;
-                    BtnTestDisplay.Content = "🔍 テスト表示";
-                    BtnTestDisplay.Background = new System.Windows.Media.SolidColorBrush(
-                        (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#9C27B0"));
-                    _log?.LogAdd("テスト表示を終了", _log.INFO);
-                }
-                else
-                {
-                    // テスト表示していない場合は、テスト画面を表示
-                    var testScreen = new TestDisplayScreen();
-                    _displayWindow.ShowScreen(testScreen);
-                    _isTestDisplayActive = true;
-                    BtnTestDisplay.Content = "✕ テスト終了";
-                    BtnTestDisplay.Background = new System.Windows.Media.SolidColorBrush(
-                        (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F44336"));
-                    _log?.LogAdd("テスト表示画面を表示", _log.INFO);
-                }
+                // テスト表示中の場合は、画面をクリア
+                _offScreenWindow?.ClearScreen();
+                _isTestDisplayActive = false;
+                BtnTestDisplay.Content = "🔍 テスト表示";
+                BtnTestDisplay.Background = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#9C27B0"));
+                _log?.LogAdd("テスト表示を終了", _log.INFO);
+            }
+            else
+            {
+                // テスト表示していない場合は、テスト画面を表示
+                var testScreen = new TestDisplayScreen();
+                _offScreenWindow?.ShowScreen(testScreen);
+                _isTestDisplayActive = true;
+                BtnTestDisplay.Content = "✕ テスト終了";
+                BtnTestDisplay.Background = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F44336"));
+                _log?.LogAdd("テスト表示画面を表示", _log.INFO);
             }
         }
 
@@ -435,11 +479,7 @@ namespace DSDsp
         /// </summary>
         private void BtnPlay_Click(object sender, RoutedEventArgs e)
         {
-            // ウィンドウが閉じられているか非表示の場合は再表示
-            if (_displayWindow == null || !_displayWindow.IsVisible)
-            {
-                CreateDisplayWindow();
-            }
+            EnsureOffScreenWindowCreated();
 
             // ExecuteCurrentStep 内でステップがリセットされた場合は++ しない
             bool stepped = ExecuteCurrentStep();
@@ -452,15 +492,9 @@ namespace DSDsp
         /// </summary>
         private void BtnClear_Click(object sender, RoutedEventArgs e)
         {
-            // ウィンドウが閉じられているか非表示の場合は再表示
-            if (_displayWindow == null || !_displayWindow.IsVisible)
-            {
-                CreateDisplayWindow();
-            }
-
             _currentStep = 0;
-            _displayWindow?.ClearScreen();
-            _fullScreenWindow?.ClearScreen();
+            // オフスクリーン側をクリアすればモニター・全画面ミラーも自動反映
+            _offScreenWindow?.ClearScreen();
             _log?.LogAdd("画面クリア", _log.INFO);
         }
 
@@ -511,78 +545,58 @@ namespace DSDsp
             var fileName = CmbAjsScenario.SelectedItem.ToString();
             if (string.IsNullOrEmpty(fileName)) return;
 
-            _currentAjsScenario = _scenarioManager.LoadScreenScenario(fileName);
-            
-            if (_currentAjsScenario != null)
+            // 新モデルで読み込み（バリデーション含む）
+            _currentAjsScenario = _scenarioManager.LoadAjsScenario(fileName);
+            _currentAjsProgressItems = null;
+            LstAjsProgress.ItemsSource = null;
+
+            if (_currentAjsScenario == null)
             {
-                // DA_Masterから区分一覧を取得
-                if (_client?.DataManager?.DA_Master != null)
+                MessageBox.Show($"AJSシナリオの読み込みに失敗しました。\nログを確認してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // DA_Masterから区分一覧を取得
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+            if (dm?.DA_Master != null)
+            {
+                var categories = _scenarioManager.GetAjsCategoriesFromDaMaster(dm.DA_Master);
+
+                _ajsCategoryKeys.Clear();
+                var displayTexts = new List<string>();
+
+                foreach (var category in categories)
                 {
-                    var categories = _scenarioManager.GetAjsCategoriesFromDaMaster(_client.DataManager.DA_Master);
-                    
-                    // Dictionaryをクリアして再構築
-                    _ajsCategoryKeys.Clear();
-                    var displayTexts = new List<string>();
-                    
-                    foreach (var category in categories)
+                    var parts = category.Split('|');
+                    if (parts.Length == 2)
                     {
-                        // 形式: "区分No-ラウンドNo|区分番号 区分名 ラウンド名"
-                        var parts = category.Split('|');
-                        if (parts.Length == 2)
-                        {
-                            var key = parts[0];           // "区分No-ラウンドNo"
-                            var displayText = parts[1];   // "区分番号 区分名 ラウンド名"
-                            _ajsCategoryKeys[displayText] = key;
-                            displayTexts.Add(displayText);
-                        }
+                        _ajsCategoryKeys[parts[1]] = parts[0];
+                        displayTexts.Add(parts[1]);
                     }
-                    
-                    CmbAjsCategory.ItemsSource = displayTexts;
-                    if (displayTexts.Count > 0)
-                        CmbAjsCategory.SelectedIndex = 0;
-                    
-                    _log?.LogAdd($"AJS区分一覧をDA_Masterから取得: {displayTexts.Count}件", _log.INFO);
                 }
-                else
-                {
-                    _log?.LogAdd("DA_Masterが未取得のため、区分一覧を表示できません", _log.WARNING);
-                    // MessageBox.Show("サーバーに接続してDA_Masterを取得してください", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
+
+                CmbAjsCategory.ItemsSource = displayTexts;
+                if (displayTexts.Count > 0)
+                    CmbAjsCategory.SelectedIndex = 0;
+
+                _log?.LogAdd($"AJS区分一覧をDA_Masterから取得: {displayTexts.Count}件", _log.INFO);
+            }
+            else
+            {
+                _log?.LogAdd("DA_Masterが未取得のため、区分一覧を表示できません", _log.WARNING);
             }
         }
 
         private async void CmbAjsCategory_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            _log?.LogAdd($"CmbAjsCategory_SelectionChanged開始", _log.DEBUG);
-            
-            if (CmbAjsCategory.SelectedItem == null)
-            {
-                _log?.LogAdd("CmbAjsCategory.SelectedItemがnull", _log.DEBUG);
+            _log?.LogAdd("CmbAjsCategory_SelectionChanged開始", _log.DEBUG);
+
+            if (CmbAjsCategory.SelectedItem == null || _currentAjsScenario == null || _scenarioManager == null)
                 return;
-            }
-            
-            if (_currentAjsScenario == null)
-            {
-                _log?.LogAdd("_currentAjsScenarioがnull", _log.DEBUG);
-                return;
-            }
-            
-            if (_scenarioManager == null)
-            {
-                _log?.LogAdd("_scenarioManagerがnull", _log.DEBUG);
-                return;
-            }
 
             var displayText = CmbAjsCategory.SelectedItem.ToString();
-            _log?.LogAdd($"選択された区分: {displayText}", _log.DEBUG);
-            
-            if (string.IsNullOrEmpty(displayText))
-            {
-                _log?.LogAdd("displayTextが空", _log.DEBUG);
-                return;
-            }
+            if (string.IsNullOrEmpty(displayText)) return;
 
-            // Dictionaryからキーを取得
             if (!_ajsCategoryKeys.TryGetValue(displayText, out var key))
             {
                 _log?.LogAdd($"Dictionaryにキーが見つかりません: {displayText}", _log.WARNING);
@@ -591,34 +605,40 @@ namespace DSDsp
 
             // キー形式: "区分No-ラウンドNo"
             var keyParts = key.Split('-');
-            _log?.LogAdd($"キー: {key}, keyParts.Length={keyParts.Length}", _log.DEBUG);
-            
-            if (keyParts.Length != 2)
-            {
-                _log?.LogAdd($"keyParts.Lengthが2ではない: {keyParts.Length}", _log.WARNING);
-                return;
-            }
+            if (keyParts.Length != 2) return;
 
-            var kbnNo = keyParts[0];
+            var kbnNo   = keyParts[0];
             var roundNo = keyParts[1];
 
-            // シナリオから画面IDリストを取得し、表示形式に変換
-            var displayItems = new List<string>();
-            _log?.LogAdd($"シナリオアイテム数: {_currentAjsScenario.Items.Count}", _log.DEBUG);
-            
-            foreach (var item in _currentAjsScenario.Items)
-            {
-                // 表示形式: "画面ID : 種目1 W : ヒート 1"
-                var displayItem = $"{item.ScreenId} : 種目1 W : ヒート 1";
-                displayItems.Add(displayItem);
-                _log?.LogAdd($"追加: {displayItem}", _log.DEBUG);
-            }
+            // DS_Status と DA_Master から画面進行一覧を動的生成
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
 
-            LstAjsProgress.ItemsSource = displayItems;
+            _currentAjsProgressItems = null;
+            LstAjsProgress.ItemsSource = null;
             _currentAjsIndex = -1;
             _currentStep = 0;
-            
-            _log?.LogAdd($"AJS画面進行リスト表示: {displayItems.Count}件 (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
+
+            if (dm?.DS_Status != null && dm?.DA_Master != null)
+            {
+                _currentAjsProgressItems = _scenarioManager.BuildProgressList(
+                    _currentAjsScenario, dm.DS_Status, dm.DA_Master, kbnNo, roundNo);
+
+                if (_currentAjsProgressItems != null)
+                {
+                    LstAjsProgress.ItemsSource = _currentAjsProgressItems;
+                    _log?.LogAdd($"AJS画面進行一覧生成: {_currentAjsProgressItems.Count}件 (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
+                }
+                else
+                {
+                    _log?.LogAdd("AJS画面進行一覧の生成に失敗しました", _log.ERR);
+                    MessageBox.Show("画面進行一覧の生成に失敗しました。\nDS_StatusにこのラウンドのDE_DncSGが設定されているか確認してください。\nログを参照してください。",
+                        "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                _log?.LogAdd("DS_StatusまたはDA_Masterが未取得のため、画面進行一覧を生成できません", _log.WARNING);
+            }
 
             // サーバーに DP_ASK_DV_RESULT 電文を送信
             if (_client != null && _client.IsConnected)
@@ -627,10 +647,6 @@ namespace DSDsp
                 bool ok = await _client.RequestDV_ResultAsync(kbnNo, roundNo);
                 if (!ok)
                     _log?.LogAdd("DP_ASK_DV_RESULT送信失敗", _log.WARNING);
-            }
-            else
-            {
-                _log?.LogAdd("未接続のためDP_ASK_DV_RESULT送信スキップ", _log.DEBUG);
             }
         }
 
@@ -743,98 +759,55 @@ namespace DSDsp
         /// </summary>
         private bool ExecuteAjsStep()
         {
-            // ウィンドウが閉じられているか非表示の場合は再表示
-            if (_displayWindow == null || !_displayWindow.IsVisible)
-            {
-                CreateDisplayWindow();
-            }
+            EnsureOffScreenWindowCreated();
 
-            if (_currentAjsScenario == null || LstAjsProgress.ItemsSource == null)
+            if (_currentAjsProgressItems == null)
             {
-                _log?.LogAdd("AJSシナリオが選択されていません", _log.WARNING);
+                _log?.LogAdd("AJS画面進行一覧が生成されていません", _log.WARNING);
                 return false;
             }
 
-            var displayItems = LstAjsProgress.ItemsSource as List<string>;
-            if (displayItems == null || _currentAjsIndex < 0 || _currentAjsIndex >= displayItems.Count)
+            if (_currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count)
             {
                 _log?.LogAdd("AJS項目が選択されていません", _log.WARNING);
                 return false;
             }
 
             // 選択された区分情報を取得
-            if (CmbAjsCategory.SelectedItem == null)
-            {
-                _log?.LogAdd("区分が選択されていません", _log.WARNING);
-                return false;
-            }
-
+            if (CmbAjsCategory.SelectedItem == null) return false;
             var displayText = CmbAjsCategory.SelectedItem.ToString();
             if (string.IsNullOrEmpty(displayText)) return false;
 
-            // Dictionaryからキーを取得
-            if (!_ajsCategoryKeys.TryGetValue(displayText, out var key))
-            {
-                _log?.LogAdd($"Dictionaryにキーが見つかりません: {displayText}", _log.WARNING);
-                return false;
-            }
-
-            // キー形式: "区分No-ラウンドNo"
+            if (!_ajsCategoryKeys.TryGetValue(displayText, out var key)) return false;
             var keyParts = key.Split('-');
             if (keyParts.Length != 2) return false;
 
-            var kbnNo = keyParts[0];
+            var kbnNo   = keyParts[0];
             var roundNo = keyParts[1];
 
-            // シナリオから実際の画面IDを取得
-            if (_currentAjsIndex >= _currentAjsScenario.Items.Count)
-            {
-                _log?.LogAdd($"インデックスが範囲外です: {_currentAjsIndex}", _log.ERR);
-                return false;
-            }
+            var item = _currentAjsProgressItems[_currentAjsIndex];
+            _log?.LogAdd($"AJSステップ実行: {item.ScreenId} Step{_currentStep} 種目{item.DanceNo} ヒート{item.HeatNo}", _log.INFO);
 
-            var item = _currentAjsScenario.Items[_currentAjsIndex];
-            _log?.LogAdd($"AJSステップ実行: {item.ScreenId} Step{_currentStep} (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
-
-            // 画面IDに基づいて適切な画面を表示（部分一致で判定）
-            DSDspScreenBase? screen = null;
-            
-            if (item.ScreenId.StartsWith("DSP_TIT_001"))
+            // 画面IDに基づいて画面インスタンスを生成
+            DSDspScreenBase? screen = item.ScreenId switch
             {
-                screen = new 画面.DSP_TIT_001_区分ラウンド紹介();
-            }
-            else if (item.ScreenId.StartsWith("DSP_TIT_002"))
-            {
-                screen = new 画面.DSP_TIT_002_種目紹介大();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_001"))
-            {
-                screen = new 画面.DSP_SOL_001_ソロ選手紹介_大();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_002"))
-            {
-                screen = new 画面.DSP_SOL_002_ソロ選手紹介_小();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_003"))
-            {
-                screen = new 画面.DSP_SOL_003_ソロ選手結果GD_大();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_004"))
-            {
-                screen = new 画面.DSP_SOL_004_ソロ選手結果GD_小();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_005"))
-            {
-                screen = new 画面.DSP_SOL_005_ソロ選手結果PD_大();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_006"))
-            {
-                screen = new 画面.DSP_SOL_006_ソロ選手結果PD_小();
-            }
-            else if (item.ScreenId.StartsWith("DSP_SOL_007"))
-            {
-                screen = new 画面.DSP_SOL_007_ソロ途中結果_大();
-            }
+                "DSP_TIT_001" => new 画面.DSP_TIT_001_区分ラウンド紹介(),
+                "DSP_TIT_002" => new 画面.DSP_TIT_002_種目紹介大(),
+                "DSP_SOL_001" => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
+                "DSP_SOL_002" => new 画面.DSP_SOL_002_ソロ選手紹介_小(),
+                "DSP_SOL_003" => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
+                "DSP_SOL_004" => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
+                "DSP_SOL_005" => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
+                "DSP_SOL_006" => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
+                "DSP_SOL_007" => new 画面.DSP_SOL_007_ソロ途中結果_大(),
+                "DSP_SOL_008" => new 画面.DSP_SOL_008_ソロ途中結果_小(),
+                "DSP_GRP_001" => new 画面.DSP_GRP_001_出場選手一覧_大(),
+                "DSP_GRP_002" => new 画面.DSP_GRP_002_出場選手一覧_小(),
+                "DSP_GRP_003" => new 画面.DSP_GRP_003_結果一覧_大(),
+                "DSP_GRP_004" => new 画面.DSP_GRP_004_結果一覧_小(),
+                "DSP_COM_001" => new 画面.DSP_COM_001_総合結果一覧_大(),
+                _ => null
+            };
 
             if (screen == null)
             {
@@ -846,56 +819,41 @@ namespace DSDsp
             // 初回表示時（Step0）は画面を表示してデータを設定
             if (_currentStep == 0)
             {
-                // 画面にデータを設定（テストデータ優先、なければサーバーデータ）
                 var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
-                if (dm?.DA_Master != null)   screen.DA_Master = dm.DA_Master;
-                if (dm?.DS_Status != null)   screen.DS_Status = dm.DS_Status;
-                if (dm?.DV_Result != null)   screen.DV_Result = dm.DV_Result;
+                if (dm?.DA_Master != null) screen.DA_Master = dm.DA_Master;
+                if (dm?.DS_Status != null) screen.DS_Status = dm.DS_Status;
+                if (dm?.DV_Result != null) screen.DV_Result = dm.DV_Result;
 
-                // パラメータを設定
-                screen.区分番号  = kbnNo;
+                screen.区分番号    = kbnNo;
                 screen.ラウンド番号 = roundNo;
-                screen.種目番号  = 1;  // 固定値
-                // ヒート番号: UIのテキストボックスから取得（未入力/不正時は1）
-                screen.ヒート番号 = int.TryParse(TxtHeatNo.Text, out int heatNo) ? heatNo : 1;
+                screen.種目番号    = item.DanceNo;
+                screen.ヒート番号  = item.HeatNo;
 
-                _displayWindow?.ShowScreen(screen);
+                // オフスクリーンに画面を表示（モニター・全画面ミラーに自動反映）
+                _offScreenWindow?.ShowScreen(screen);
                 _log?.LogAdd($"画面表示: {item.ScreenId}", _log.INFO);
-
-                // スクリーン（全画面）にも同じ画面の別インスタンスを表示
-                if (_fullScreenWindow != null)
-                {
-                    var fullScreen = CreateScreenInstance(screen);
-                    if (fullScreen != null)
-                        _fullScreenWindow.ShowScreen(fullScreen);
-                }
             }
 
-            // 現在表示中の画面を取得
-            var currentScreen = _displayWindow?.CurrentScreen as DSDspScreenBase;
+            var currentScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
             if (currentScreen == null)
             {
                 _log?.LogAdd("表示中の画面がありません", _log.WARNING);
                 return false;
             }
 
-            // ステップを実行（モニター用と全画面用の両方）
             currentScreen.ExecuteStep(_currentStep);
-            (_fullScreenWindow?.CurrentScreen as DSDspScreenBase)?.ExecuteStep(_currentStep);
             _log?.LogAdd($"{item.ScreenId} Step{_currentStep}実行完了", _log.INFO);
 
-            // 最終ステップに到達したら次の画面へ移動し、_currentStep をリセット
+            // 最終ステップに到達したら次の画面へ移動
             if (_currentStep >= currentScreen.GetTotalSteps() - 1)
             {
                 _currentAjsIndex++;
                 _currentStep = 0;
 
-                if (_currentAjsIndex < _currentAjsScenario.Items.Count)
+                if (_currentAjsIndex < _currentAjsProgressItems.Count)
                 {
                     LstAjsProgress.SelectedIndex = _currentAjsIndex;
                     _log?.LogAdd($"次の画面へ移動: Index={_currentAjsIndex}", _log.INFO);
-
-                    // 次の画面の Step0 を実行（_currentStep=0 のまま）
                     ExecuteAjsStep();
                 }
                 else
@@ -904,7 +862,6 @@ namespace DSDsp
                     MessageBox.Show("すべての画面が完了しました", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
 
-                // 内部でリセット済みなので呼び出し元の ++ は不要
                 return false;
             }
 
@@ -948,14 +905,26 @@ namespace DSDsp
         {
             画面.DSDspScreenBase? dest = source switch
             {
-                画面.DSP_TIT_001_区分ラウンド紹介 => new 画面.DSP_TIT_001_区分ラウンド紹介(),
-                画面.DSP_TIT_002_種目紹介大      => new 画面.DSP_TIT_002_種目紹介大(),
-                画面.DSP_SOL_001_ソロ選手紹介_大  => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
-                画面.DSP_SOL_003_ソロ選手結果GD_大 => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
-                画面.DSP_SOL_004_ソロ選手結果GD_小  => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
-                画面.DSP_SOL_005_ソロ選手結果PD_大 => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
-                画面.DSP_SOL_006_ソロ選手結果PD_小 => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
-
+                画面.DSP_TIT_001_区分ラウンド紹介    => new 画面.DSP_TIT_001_区分ラウンド紹介(),
+                画面.DSP_TIT_002_種目紹介大          => new 画面.DSP_TIT_002_種目紹介大(),
+                画面.DSP_SOL_001_ソロ選手紹介_大     => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
+                画面.DSP_SOL_002_ソロ選手紹介_小     => new 画面.DSP_SOL_002_ソロ選手紹介_小(),
+                画面.DSP_SOL_003_ソロ選手結果GD_大   => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
+                画面.DSP_SOL_004_ソロ選手結果GD_小   => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
+                画面.DSP_SOL_005_ソロ選手結果PD_大   => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
+                画面.DSP_SOL_006_ソロ選手結果PD_小   => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
+                画面.DSP_SOL_007_ソロ途中結果_大     => new 画面.DSP_SOL_007_ソロ途中結果_大(),
+                画面.DSP_SOL_008_ソロ途中結果_小     => new 画面.DSP_SOL_008_ソロ途中結果_小(),
+                画面.DSP_GRP_001_出場選手一覧_大     => new 画面.DSP_GRP_001_出場選手一覧_大(),
+                画面.DSP_GRP_002_出場選手一覧_小     => new 画面.DSP_GRP_002_出場選手一覧_小(),
+                画面.DSP_GRP_003_結果一覧_大         => new 画面.DSP_GRP_003_結果一覧_大(),
+                画面.DSP_GRP_004_結果一覧_小         => new 画面.DSP_GRP_004_結果一覧_小(),
+                画面.DSP_COM_001_総合結果一覧_大     => new 画面.DSP_COM_001_総合結果一覧_大(),
+                画面.DSP_COM_002_総合結果一覧_小     => new 画面.DSP_COM_002_総合結果一覧_小(),
+                画面.DSP_DUE_001_DUE選手紹介_大      => new 画面.DSP_DUE_001_DUE選手紹介_大(),
+                画面.DSP_DUE_002_DUE選手紹介_小      => new 画面.DSP_DUE_002_DUE選手紹介_小(),
+                画面.DSP_DUE_003_DUE選手結果_大      => new 画面.DSP_DUE_003_DUE選手結果_大(),
+                画面.DSP_DUE_004_DUE選手結果_小      => new 画面.DSP_DUE_004_DUE選手結果_小(),
                 _ => null
             };
 
@@ -1183,8 +1152,8 @@ namespace DSDsp
         {
             if (_scenarioManager == null) return;
 
-            // AJS_サンプル.json を強制ロード
-            _currentAjsScenario = _scenarioManager.LoadScreenScenario("AJS_サンプル.json");
+            // AJS_サンプル.json を強制ロード（新モデル）
+            _currentAjsScenario = _scenarioManager.LoadAjsScenario("AJS_サンプル.json");
             if (_currentAjsScenario == null) return;
 
             // テスト用ダミー区分キーをセット（テストデータJSONの区分番号/ラウンド番号に合わせる）
@@ -1197,17 +1166,27 @@ namespace DSDsp
             CmbAjsCategory.ItemsSource = new List<string> { testText };
             CmbAjsCategory.SelectedIndex = 0;
 
-            // 画面進行リストを構築（DSP_SOL_007 の行だけ選択できれば良い）
-            var displayItems = _currentAjsScenario.Items
-                .Select(item => $"{item.ScreenId} : {item.Description}")
-                .ToList();
-            LstAjsProgress.ItemsSource = displayItems;
+            // DS_Status / DA_Master が揃っていれば画面進行一覧を動的生成
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+            _currentAjsProgressItems = null;
+            LstAjsProgress.ItemsSource = null;
 
-            // DSP_SOL_007 の行を自動選択
-            int sol007Index = _currentAjsScenario.Items
-                .FindIndex(i => i.ScreenId.StartsWith("DSP_SOL_007"));
-            _currentAjsIndex = sol007Index >= 0 ? sol007Index : 0;
-            LstAjsProgress.SelectedIndex = _currentAjsIndex;
+            if (dm?.DS_Status != null && dm?.DA_Master != null)
+            {
+                _currentAjsProgressItems = _scenarioManager.BuildProgressList(
+                    _currentAjsScenario, dm.DS_Status, dm.DA_Master, "01", "010");
+
+                if (_currentAjsProgressItems != null)
+                {
+                    LstAjsProgress.ItemsSource = _currentAjsProgressItems;
+
+                    // DSP_SOL_007 の行を自動選択
+                    int sol007Index = _currentAjsProgressItems
+                        .FindIndex(i => i.ScreenId == "DSP_SOL_007");
+                    _currentAjsIndex = sol007Index >= 0 ? sol007Index : 0;
+                    LstAjsProgress.SelectedIndex = _currentAjsIndex;
+                }
+            }
 
             _currentStep = 0;
 

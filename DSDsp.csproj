@@ -23,7 +23,40 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="画面\DSP_GRP_002_出場選手一覧_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_COM_001_総合結果一覧_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_COM_002_総合結果一覧_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_DUE_001_DUE選手紹介_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_DUE_002_DUE選手紹介_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_DUE_003_DUE選手結果_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_DUE_004_DUE選手結果_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="画面\DSP_SOL_002_ソロ選手紹介_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_GRP_001_出場選手一覧_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_GRP_003_結果一覧_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_GRP_004_結果一覧_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_SOL_008_ソロ途中結果_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="画面\DSP_SOL_007_ソロ途中結果_大.xaml.cs">

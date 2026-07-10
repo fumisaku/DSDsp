@@ -19,9 +19,9 @@ using System.Windows.Threading;
 namespace DSDsp.画面
 {
     /// <summary>
-    /// DSP_TIT_002_種目紹介.xaml の相互作用ロジック
+    /// DSP_GRP_002_出場選手一覧_小.xaml の相互作用ロジック
     /// </summary>
-    public partial class DSP_SOL_007_ソロ途中結果_大 : DSDspScreenBase
+    public partial class DSP_GRP_002_出場選手一覧_小 : DSDspScreenBase
     {
         #region 定数定義
         private const int ANIMATION_DURATION_SECONDS = 1;
@@ -63,15 +63,15 @@ namespace DSDsp.画面
         #endregion
 
         #region コンストラクタ
-        public DSP_SOL_007_ソロ途中結果_大()
+        public DSP_GRP_002_出場選手一覧_小()
         {
             InitializeComponent();
-            this.Loaded += DSP_SOL_007_ソロ途中結果_大_Loaded;
+            this.Loaded += DSP_GRP_002_出場選手一覧_小_Loaded;
         }
         #endregion
 
         #region イベントハンドラ
-        private void DSP_SOL_007_ソロ途中結果_大_Loaded(object sender, RoutedEventArgs e)
+        private void DSP_GRP_002_出場選手一覧_小_Loaded(object sender, RoutedEventArgs e)
         {
             // 画面読み込み時は自動実行しない（外部から制御）
             // 初期化のみ実行
@@ -130,17 +130,17 @@ namespace DSDsp.画面
         private void 非表示()
         {
          
-            // LST001 の文字と画像を非表示
-            PartsLST001.IM_タイトル1.Visibility = Visibility.Collapsed;
-            PartsLST001.IM_タイトル2.Visibility = Visibility.Collapsed;
-            PartsLST001.IM_タイトル3.Visibility = Visibility.Collapsed;
+            // LST004 の文字と画像を非表示
+            PartsLST004.IM_タイトル1.Visibility = Visibility.Collapsed;
+            PartsLST004.IM_タイトル2.Visibility = Visibility.Collapsed;
+            PartsLST004.IM_タイトル3.Visibility = Visibility.Collapsed;
 
-            PartsLST001.LB_タイトル1.Visibility = Visibility.Collapsed;
-            PartsLST001.LB_タイトル2.Visibility = Visibility.Collapsed;
-            PartsLST001.LB_タイトル3.Visibility = Visibility.Collapsed;
+            PartsLST004.LB_タイトル1.Visibility = Visibility.Collapsed;
+            PartsLST004.LB_タイトル2.Visibility = Visibility.Collapsed;
+            PartsLST004.LB_タイトル3.Visibility = Visibility.Collapsed;
 
-            PartsLST001.LB_タイトル_減点.Visibility = Visibility.Collapsed;
-            PartsLST001.LB_タイトル_Total.Visibility = Visibility.Collapsed;
+            //PartsLST004.LB_タイトル_減点.Visibility = Visibility.Collapsed;
+            //PartsLST004.LB_タイトル_Total.Visibility = Visibility.Collapsed;
 
             for (int i = 0; i <8 ; i++)
             {
@@ -169,38 +169,28 @@ namespace DSDsp.画面
             // ---- 表示対象行の Image / Label を配列化（1始まり→0始まりインデックス）----
             _明細IM = new[]
             {
-                PartsLST001.IM_明細1, PartsLST001.IM_明細2, PartsLST001.IM_明細3, PartsLST001.IM_明細4,
-                PartsLST001.IM_明細5, PartsLST001.IM_明細6, PartsLST001.IM_明細7, PartsLST001.IM_明細8
+                PartsLST004.IM_明細1, PartsLST004.IM_明細2, PartsLST004.IM_明細3, PartsLST004.IM_明細4,
+                PartsLST004.IM_明細5, PartsLST004.IM_明細6, PartsLST004.IM_明細7, PartsLST004.IM_明細8
             };
             _順位LB = new[]
             {
-                PartsLST001.LB_結果1_順位, PartsLST001.LB_結果2_順位, PartsLST001.LB_結果3_順位, PartsLST001.LB_結果4_順位,
-                PartsLST001.LB_結果5_順位, PartsLST001.LB_結果6_順位, PartsLST001.LB_結果7_順位, PartsLST001.LB_結果8_順位
+                PartsLST004.LB_結果1_順位, PartsLST004.LB_結果2_順位, PartsLST004.LB_結果3_順位, PartsLST004.LB_結果4_順位,
+                PartsLST004.LB_結果5_順位, PartsLST004.LB_結果6_順位, PartsLST004.LB_結果7_順位, PartsLST004.LB_結果8_順位
             };
             _背番号LB = new[]
             {
-                PartsLST001.LB_結果1_背番号, PartsLST001.LB_結果2_背番号, PartsLST001.LB_結果3_背番号, PartsLST001.LB_結果4_背番号,
-                PartsLST001.LB_結果5_背番号, PartsLST001.LB_結果6_背番号, PartsLST001.LB_結果7_背番号, PartsLST001.LB_結果8_背番号
+                PartsLST004.LB_結果1_背番号, PartsLST004.LB_結果2_背番号, PartsLST004.LB_結果3_背番号, PartsLST004.LB_結果4_背番号,
+                PartsLST004.LB_結果5_背番号, PartsLST004.LB_結果6_背番号, PartsLST004.LB_結果7_背番号, PartsLST004.LB_結果8_背番号
             };
             _選手名LB = new[]
             {
-                PartsLST001.LB_結果1_選手名, PartsLST001.LB_結果2_選手名, PartsLST001.LB_結果3_選手名, PartsLST001.LB_結果4_選手名,
-                PartsLST001.LB_結果5_選手名, PartsLST001.LB_結果6_選手名, PartsLST001.LB_結果7_選手名, PartsLST001.LB_結果8_選手名
+                PartsLST004.LB_結果1_選手名, PartsLST004.LB_結果2_選手名, PartsLST004.LB_結果3_選手名, PartsLST004.LB_結果4_選手名,
+                PartsLST004.LB_結果5_選手名, PartsLST004.LB_結果6_選手名, PartsLST004.LB_結果7_選手名, PartsLST004.LB_結果8_選手名
             };
             _所属LB = new[]
             {
-                PartsLST001.LB_結果1_所属, PartsLST001.LB_結果2_所属, PartsLST001.LB_結果3_所属, PartsLST001.LB_結果4_所属,
-                PartsLST001.LB_結果5_所属, PartsLST001.LB_結果6_所属, PartsLST001.LB_結果7_所属, PartsLST001.LB_結果8_所属
-            };
-            _減点LB = new[]
-            {
-                PartsLST001.LB_結果1_減点, PartsLST001.LB_結果2_減点, PartsLST001.LB_結果3_減点, PartsLST001.LB_結果4_減点,
-                PartsLST001.LB_結果5_減点, PartsLST001.LB_結果6_減点, PartsLST001.LB_結果7_減点, PartsLST001.LB_結果8_減点
-            };
-            _得点LB = new[]
-            {
-                PartsLST001.LB_結果1_得点, PartsLST001.LB_結果2_得点, PartsLST001.LB_結果3_得点, PartsLST001.LB_結果4_得点,
-                PartsLST001.LB_結果5_得点, PartsLST001.LB_結果6_得点, PartsLST001.LB_結果7_得点, PartsLST001.LB_結果8_得点
+                PartsLST004.LB_結果1_得点, PartsLST004.LB_結果2_得点, PartsLST004.LB_結果3_得点, PartsLST004.LB_結果4_得点,
+                PartsLST004.LB_結果5_得点, PartsLST004.LB_結果6_得点, PartsLST004.LB_結果7_得点, PartsLST004.LB_結果8_得点
             };
 
             // 一旦非表示にする
@@ -227,7 +217,7 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// Step2: 画像とPCS名、選手情報をアニメーション表示
+        /// Step2: ヘッダー部分を表示する
         /// </summary>
         public void Step2()
         {
@@ -238,17 +228,17 @@ namespace DSDsp.画面
 
 
             // 画像の初期状態を設定（フェードイン用に透明にする）
-            PartsLST001.IM_タイトル1.Opacity = 0;
-            PartsLST001.IM_タイトル2.Opacity = 0;
-            PartsLST001.IM_タイトル3.Opacity = 0;
+            PartsLST004.IM_タイトル1.Opacity = 0;
+            PartsLST004.IM_タイトル2.Opacity = 0;
+            PartsLST004.IM_タイトル3.Opacity = 0;
 
             // 画像のフェードインアニメーション
             // ① まず IM_種目1・IM_種目2 をフェードイン（beginTime=0: 即開始、800ms で完了）
             // ② その後（1000ms後）に IM_ソロ選手結果1～4 をフェードイン
             var imageStoryboard = new Storyboard();
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル1, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル2, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル3, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsLST004.IM_タイトル1, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsLST004.IM_タイトル2, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsLST004.IM_タイトル3, imageStoryboard, 0);
 
 
             // 画像フェードイン完了後に表示
@@ -257,27 +247,27 @@ namespace DSDsp.画面
                 // 区分ラウンド名・種目名をヘルパーから取得して設定
                 string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
                 string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-                PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
-                PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+                PartsLST004.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
+                PartsLST004.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
 
-                PartsLST001.LB_タイトル3.Content = "途中経過";
+                PartsLST004.LB_タイトル3.Content = "出場選手一覧";
 
 
 
                 // 一気に表示
-                PartsLST001.LB_タイトル1.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル2.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル3.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_減点.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
+                PartsLST004.LB_タイトル1.Visibility = Visibility.Visible;
+                PartsLST004.LB_タイトル2.Visibility = Visibility.Visible;
+                PartsLST004.LB_タイトル3.Visibility = Visibility.Visible;
+                //PartsLST004.LB_タイトル_減点.Visibility = Visibility.Visible;
+                //PartsLST004.LB_タイトル_Total.Visibility = Visibility.Visible;
 
 
 
               
                 // フォントサイズ自動調整  区分ラウンド名
                 _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル1,
-                    text: PartsLST001.LB_タイトル1.Content.ToString(),
+                    label: PartsLST004.LB_タイトル1,
+                    text: PartsLST004.LB_タイトル1.Content.ToString(),
                     maxWidth: 300,
                     maxFontSize: 14,
                     minFontSize: 8,
@@ -285,8 +275,8 @@ namespace DSDsp.画面
 
                 // フォントサイズ自動調整  種目名
                 _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル2,
-                    text: PartsLST001.LB_タイトル2.Content.ToString(),
+                    label: PartsLST004.LB_タイトル2,
+                    text: PartsLST004.LB_タイトル2.Content.ToString(),
                     maxWidth: 450,
                     maxFontSize: 16,
                     minFontSize: 8,
@@ -296,112 +286,78 @@ namespace DSDsp.画面
 
                 // フェードイン
                 var playerStoryboard = new Storyboard();
-                PartsLST001.LB_タイトル1.Opacity = 0;
-                PartsLST001.LB_タイトル2.Opacity = 0;
-                PartsLST001.LB_タイトル3.Opacity = 0;
-                PartsLST001.LB_タイトル_減点.Opacity = 0;
-                PartsLST001.LB_タイトル_Total.Opacity = 0;
+                PartsLST004.LB_タイトル1.Opacity = 0;
+                PartsLST004.LB_タイトル2.Opacity = 0;
+                PartsLST004.LB_タイトル3.Opacity = 0;
+                //PartsLST004.LB_タイトル_減点.Opacity = 0;
+                //PartsLST004.LB_タイトル_Total.Opacity = 0;
 
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル1, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル2, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル3, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_減点, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_Total, playerStoryboard, 100);
+                _partsMain?.フェードイン(true, PartsLST004.LB_タイトル1, playerStoryboard, 100);
+                _partsMain?.フェードイン(true, PartsLST004.LB_タイトル2, playerStoryboard, 100);
+                _partsMain?.フェードイン(true, PartsLST004.LB_タイトル3, playerStoryboard, 100);
+               // _partsMain?.フェードイン(true, PartsLST004.LB_タイトル_減点, playerStoryboard, 100);
+               // _partsMain?.フェードイン(true, PartsLST004.LB_タイトル_Total, playerStoryboard, 100);
                 playerStoryboard.Begin();
             };
 
             imageStoryboard.Begin();
 
             // 画像のスライドアニメーション
-            CreateAndStartSlideAnimation(PartsLST001.IM_タイトル1, SLIDE_FROM_RIGHT);
-            CreateAndStartSlideAnimation(PartsLST001.IM_タイトル2, SLIDE_FROM_LEFT);
-            CreateAndStartSlideAnimation(PartsLST001.IM_タイトル3, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsLST004.IM_タイトル1, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsLST004.IM_タイトル2, SLIDE_FROM_LEFT);
+            CreateAndStartSlideAnimation(PartsLST004.IM_タイトル3, SLIDE_FROM_RIGHT);
 
         }
 
 
 
         /// <summary>
-        /// Step3: 途中結果一覧の表示
-        /// DV_Resultから当該種目の結果を取得し、開始インデックスから最大8件を表示。
+        /// Step3: 選手一覧の表示（番号・背番号・選手名・所属）
+        /// DS_Statusから区分番号・ラウンド番号・種目番号・ヒート番号をキーに出場選手背番号リストを取得し、
+        /// DA_Masterから選手情報を取得して開始インデックスから最大8件を表示。
         /// IM_明細1～N を順にフェードイン後、結果ラベルを一斉フェードイン。
-        /// 指定ヒート番号の出場選手は文字色を濃いオレンジにする。
         /// </summary>
-        /// <param name="dvResult">DV_Result（種目結果データ）</param>
+        /// <param name="dvResult">DV_Result（未使用。シグネチャ統一のため保持）</param>
         /// <param name="開始インデックス">何件目（0始まり）から表示するか。ページング用。</param>
         public void Step3(JsonNode? dvResult, int 開始インデックス = 0)
         {
             EnsurePartsMainInitialized();
-            if (_partsMain == null || dvResult == null) return;
+            if (_partsMain == null) return;
 
-            // ---- 種目結果を取得 ----
-            var 種目結果リスト = dvResult["種目結果"]?.AsArray();
-            if (種目結果リスト == null) return;
-
-            var 種目結果 = 種目結果リスト.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
-            if (種目結果 == null) return;
-
-            var 選手結果リスト = 種目結果["選手結果"]?.AsArray();
-            if (選手結果リスト == null) return;
-
-            // 順位昇順で並べ、開始インデックスから最大8件を取得
-            var 全順位リスト = 選手結果リスト
-                .Where(p => p != null)
-                .OrderBy(p => p!["種目順位番号"]?.GetValue<int>() ?? int.MaxValue)
-                .ToList();
-            var 表示対象 = 全順位リスト
-                .Skip(開始インデックス)
-                .Take(8)
-                .ToList();
-            int 表示件数 = 表示対象.Count;
-            if (表示件数 == 0) return;
-
-            // ---- 指定ヒートの出場選手（背番号リスト）を取得 ----
-            var 当該ヒート選手 = DSDspDataHelper.Get背番号リストFromHeat(
+            // ---- DS_Statusから出場選手背番号リストを取得 ----
+            var 全背番号リスト = DSDspDataHelper.Get背番号リストFromHeat(
                 DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
 
-       
+            // 開始インデックスから最大8件を取得
+            var 表示対象 = 全背番号リスト.Skip(開始インデックス).Take(8).ToList();
+            int 表示件数 = 表示対象.Count;
+            if (表示件数 == 0) return;
 
             // ---- ラベルにデータをセット（非表示のまま）----
             for (int i = 0; i < 表示件数; i++)
             {
-                var p = 表示対象[i];
-                string 背番号 = p?["背番号"]?.ToString() ?? "";
-                string 順位表記 = p?["種目順位表記"]?.ToString() ?? "";
-                double 得点 = p?["種目得点"]?.GetValue<double>() ?? 0;
-                bool 失格 = p?["失格FLAG"]?.ToString() == "1";
+                string 背番号 = 表示対象[i];
+                int 番号 = 開始インデックス + i + 1;   // 1始まりの通し番号
 
-                // 一般減点合計
-                double 減点合計 = 0;
-                if (!失格)
-                {
-                    var 一般減点Array = p?["一般減点"]?.AsArray();
-                    if (一般減点Array != null)
-                        foreach (var r in 一般減点Array)
-                            減点合計 += r?["減点値"]?.GetValue<double>() ?? 0;
-                }
-
-                // 選手情報
+                // DA_Masterから選手情報を取得
                 var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
                 string 選手名L = DSDspDataHelper.Get選手名L(選手情報);
                 string 選手名P = DSDspDataHelper.Get選手名P(選手情報);
+                // パートナー名がブランクの場合はリーダー名のみ
                 string 選手名表示 = string.IsNullOrEmpty(選手名P)
                     ? 選手名L
                     : 選手名L + "・" + 選手名P;
                 string 所属 = DSDspDataHelper.Get所属(選手情報);
 
-                // 当該ヒート出場選手なら濃いオレンジ、それ以外はDarkBlue
-                var 前景色 = 当該ヒート選手.Contains(背番号)
-                    ? new SolidColorBrush(Colors.DarkOrange)
-                    : new SolidColorBrush(Colors.DarkBlue);
+                var 前景色 = new SolidColorBrush(Colors.DarkBlue);
 
-                // 順位ラベル（LB_結果1_xxx が 1位）
-                _順位LB[i].Content = 失格 ? "失格" : 順位表記;
+                // 順位列 → 通し番号
+                _順位LB[i].Content = 番号.ToString();
                 _背番号LB[i].Content = 背番号;
                 _選手名LB[i].Content = 選手名表示;
-                _所属LB[i].Content = 所属;
-                _減点LB[i].Content = 失格 ? "" : (減点合計 == 0 ? "" : 減点合計.ToString("F1"));
-                _得点LB[i].Content = 失格 ? "失格" : 得点.ToString("F3");
+                _所属LB[i].Content = string.Empty;
+                _減点LB[i].Content = string.Empty;
+                _得点LB[i].Content = 所属;
 
                 _順位LB[i].Foreground = 前景色;
                 _背番号LB[i].Foreground = 前景色;
@@ -426,6 +382,18 @@ namespace DSDsp.画面
                     label: _選手名LB[i],
                     text: _選手名LB[i].Content?.ToString() ?? "",
                     maxWidth: 148,
+                    maxFontSize: 16,
+                    minFontSize: 8,
+                    fontFamilyName: FONT_FAMILY_NAME);
+            }
+
+            // ---- フォントサイズ自動調整（所属）----
+            for (int i = 0; i < 表示件数; i++)
+            {
+                _partsMain.フォントサイズ自動調整(
+                    label: _所属LB[i],
+                    text: _所属LB[i].Content?.ToString() ?? "",
+                    maxWidth: 140,
                     maxFontSize: 16,
                     minFontSize: 8,
                     fontFamilyName: FONT_FAMILY_NAME);
@@ -498,16 +466,16 @@ namespace DSDsp.画面
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
             var fadeOutStoryboard = new Storyboard();
-            // PartsLST001のタイトル画像・ラベルをフェードアウト
-            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル1, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル2, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル3, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル1, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル2, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, fadeOutStoryboard, 0);
+            // PartsLST004のタイトル画像・ラベルをフェードアウト
+            _partsMain.フェードアウト(true, PartsLST004.IM_タイトル1, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.IM_タイトル2, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.IM_タイトル3, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.LB_タイトル1, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.LB_タイトル2, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, fadeOutStoryboard, 0);
 
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
+            //_partsMain.フェードアウト(true, PartsLST004.LB_タイトル_減点, fadeOutStoryboard, 0);
+            //_partsMain.フェードアウト(true, PartsLST004.LB_タイトル_Total, fadeOutStoryboard, 0);
             fadeOutStoryboard.Begin();
         }
 

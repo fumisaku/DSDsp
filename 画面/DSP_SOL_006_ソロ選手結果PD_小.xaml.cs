@@ -29,7 +29,7 @@ namespace DSDsp.画面
         private const double SLIDE_FROM_RIGHT = 1000;
 
         // フォントサイズ調整用の定数
-        private const string FONT_FAMILY_NAME = "HGPSoeiKakugothicUB";
+        private const string FONT_FAMILY_NAME = "Segoe UI Semibold";
         #endregion
 
         #region フィールド

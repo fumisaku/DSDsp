@@ -95,14 +95,14 @@ namespace DSDsp.パーツ
         /// <param name="maxWidth">最大テキスト幅（デフォルト: 500px）</param>
         /// <param name="maxFontSize">最大フォントサイズ（デフォルト: 20）</param>
         /// <param name="minFontSize">最小フォントサイズ（デフォルト: 6）</param>
-        /// <param name="fontFamilyName">フォントファミリー名（デフォルト: HGPSoeiKakugothicUB）</param>
+        /// <param name="fontFamilyName">フォントファミリー名（デフォルト: Segoe UI Semibold）</param>
         public void フォントサイズ自動調整(
             Label label,
             string text,
             double maxWidth = 500,
             double maxFontSize = 20,
             double minFontSize = 6,
-            string fontFamilyName = "HGPSoeiKakugothicUB")
+            string fontFamilyName = "Segoe UI Semibold")
         {
             if (label == null)
             {

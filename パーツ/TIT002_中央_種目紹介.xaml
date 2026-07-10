@@ -18,9 +18,9 @@
                     <TranslateTransform x:Name="IM_種目1_Translate" X="0" Y="0"/>
                 </Image.RenderTransform>
             </Image>
-            <Label x:Name="LB_種目紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="44" Canvas.Top="97" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="40" Foreground="White" FontSize="24" FontFamily="HGPSoeiKakugothicUB" RenderTransformOrigin="0.492,2.971"/>
+            <Label x:Name="LB_種目紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="44" Canvas.Top="97" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="40" Foreground="White" FontSize="24" FontFamily="Segoe UI Semibold" RenderTransformOrigin="0.492,2.971"/>
             <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="60" Canvas.Top="40" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="30" Foreground="Gold" FontWeight="Bold" FontSize="16"/>
-            <Label x:Name="LB_種目カテゴリ" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="130" Canvas.Top="67" Width="242" Height="40" Foreground="White" FontSize="18" FontFamily="HGPSoeiKakugothicUB" RenderTransformOrigin="0.492,2.971" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <Label x:Name="LB_種目カテゴリ" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="130" Canvas.Top="67" Width="242" Height="40" Foreground="White" FontSize="18" FontFamily="Segoe UI Semibold" RenderTransformOrigin="0.492,2.971" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         </Canvas>
     </Grid>
 </UserControl>

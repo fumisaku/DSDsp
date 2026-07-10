@@ -234,7 +234,14 @@ namespace DSDsp.Handlers
             {
                 var error = JsonSerializer.Deserialize<ErrorResponse>(msg.MsgDetail);
                 var errorMsg = error?.Error ?? msg.MsgDetail;
-                
+
+                // DV_Result未生成は採点前の通常状態のため警告のみ（ダイアログなし）
+                if (msg.Command == "DP_ASK_DV_RESULT_NG")
+                {
+                    _log.LogAdd($"DV_Result未生成 [{msg.Command}]: {errorMsg}", _log.WARNING);
+                    return;
+                }
+
                 _log.LogAdd($"サーバーエラー [{msg.Command}]: {errorMsg}", _log.ERR);
                 ErrorReceived?.Invoke(this, new ErrorReceivedEventArgs(msg.Command, errorMsg));
             }

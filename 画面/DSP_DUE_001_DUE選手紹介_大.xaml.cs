@@ -1,0 +1,248 @@
+using System;
+using System.Linq;
+using System.Text.Json.Nodes;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+
+namespace DSDsp.画面
+{
+    /// <summary>
+    /// DSP_DUE_001_DUE選手紹介_大.xaml の相互作用ロジック
+    /// デュエル競技の1ヒートに対戦する2選手を並べて表示する。
+    /// ステップ構成: Step1(ヘッダ設定) → Step2(2選手フェードイン) → Step3(フェードアウト)
+    /// </summary>
+    public partial class DSP_DUE_001_DUE選手紹介_大 : DSDspScreenBase
+    {
+        #region 定数定義
+        private const double SLIDE_FROM_LEFT  = -1000;
+        private const double SLIDE_FROM_RIGHT =  1000;
+        private const int    FADE_DELAY_MS    =  1000;
+        private const string FONT_FAMILY_NAME = "Segoe UI Semibold";
+        #endregion
+
+        #region オーバーライド
+        /// <summary>
+        /// ステップ数: Step1(0), Step2(1), Step3(2) の 3 ステップ
+        /// </summary>
+        protected override int TotalSteps => 3;
+        #endregion
+
+        #region コンストラクタ
+        public DSP_DUE_001_DUE選手紹介_大()
+        {
+            InitializeComponent();
+        }
+        #endregion
+
+        #region オーバーライドメソッド
+        protected override void ExecuteCurrentStep()
+        {
+            switch (_currentStep)
+            {
+                case 0: Step1(); break;
+                case 1: Step2(); break;
+                case 2: Step3(); break;
+            }
+        }
+
+        protected override void EnsurePartsMainInitialized()
+        {
+            base.EnsurePartsMainInitialized();
+            if (_partsMain != null)
+            {
+                非表示();
+            }
+        }
+        #endregion
+
+        #region プライベートメソッド
+
+        /// <summary>TIT006 上の全ラベル・画像を非表示にする</summary>
+        private void 非表示()
+        {
+            // 画像
+            PartsTIT006.IM_種目1_1.Visibility = Visibility.Collapsed;
+            PartsTIT006.IM_種目1_2.Visibility = Visibility.Collapsed;
+            PartsTIT006.IM_種目2_1.Visibility = Visibility.Collapsed;
+            PartsTIT006.IM_種目2_2.Visibility = Visibility.Collapsed;
+
+            // テキスト共通（演技順 = ヒート表示）
+            PartsTIT006.LB_演技順.Visibility   = Visibility.Collapsed;
+
+            // 1選手目
+            PartsTIT006.LB_背番号_1.Visibility = Visibility.Collapsed;
+            PartsTIT006.LB_選手名L_1.Visibility = Visibility.Collapsed;
+            PartsTIT006.LB_選手名P_1.Visibility = Visibility.Collapsed;
+            PartsTIT006.LB_所属_1.Visibility   = Visibility.Collapsed;
+
+            // 2選手目
+            PartsTIT006.LB_背番号_2.Visibility = Visibility.Collapsed;
+            PartsTIT006.LB_選手名L_2.Visibility = Visibility.Collapsed;
+            PartsTIT006.LB_選手名P_2.Visibility = Visibility.Collapsed;
+            PartsTIT006.LB_所属_2.Visibility   = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Step1: 競技会名・区分名・ラウンド名・種目情報をヘッダに設定し、
+        ///        TIT006 パーツを非表示状態にリセットする。
+        /// </summary>
+        public void Step1()
+        {
+            EnsurePartsMainInitialized();
+
+            非表示();
+
+            // COM003 の右上をクリア
+            PartsCOM003.LB_右上.Content = string.Empty;
+
+            // JDSFロゴを設定
+            PartsCOM001.IM_JDSFマーク.Source = new BitmapImage(
+                new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
+
+            // 競技会名・区分ラウンド名・種目情報を共通ヘルパーで設定
+            SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
+        }
+
+        /// <summary>
+        /// Step2: デュエル対戦の2選手をアニメーション付きで表示する。
+        ///        DS_Status の該当ヒートから選手を最大2名取得して左右に並べる。
+        /// </summary>
+        public void Step2()
+        {
+            EnsurePartsMainInitialized();
+            if (_partsMain == null) return;
+
+            // ---- 2選手の背番号を取得 ----
+            var 背番号リスト = DSDspDataHelper.Get背番号リストFromHeat(
+                DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+
+            string 背番号1 = 背番号リスト.Count > 0 ? 背番号リスト[0] : "???";
+            string 背番号2 = 背番号リスト.Count > 1 ? 背番号リスト[1] : "???";
+
+            // ---- DA_Masterから選手情報を取得 ----
+            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, 背番号1);
+            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, 背番号2);
+
+            string 選手名L1 = DSDspDataHelper.Get選手名L(選手1);
+            string 選手名P1 = DSDspDataHelper.Get選手名P(選手1);
+            string 所属1   = DSDspDataHelper.Get所属(選手1);
+
+            string 選手名L2 = DSDspDataHelper.Get選手名L(選手2);
+            string 選手名P2 = DSDspDataHelper.Get選手名P(選手2);
+            string 所属2   = DSDspDataHelper.Get所属(選手2);
+
+            // ---- 全ラベル・画像を Visible に戻し、Opacity=0 からフェードイン ----
+            // 画像（左右）
+            PartsTIT006.IM_種目1_1.Visibility = Visibility.Visible;
+            PartsTIT006.IM_種目1_2.Visibility = Visibility.Visible;
+            PartsTIT006.IM_種目2_1.Visibility = Visibility.Visible;
+            PartsTIT006.IM_種目2_2.Visibility = Visibility.Visible;
+            PartsTIT006.IM_種目1_1.Opacity = 0;
+            PartsTIT006.IM_種目1_2.Opacity = 0;
+            PartsTIT006.IM_種目2_1.Opacity = 0;
+            PartsTIT006.IM_種目2_2.Opacity = 0;
+
+            // テキスト
+            PartsTIT006.LB_演技順.Visibility   = Visibility.Visible;
+            PartsTIT006.LB_背番号_1.Visibility = Visibility.Visible;
+            PartsTIT006.LB_選手名L_1.Visibility = Visibility.Visible;
+            PartsTIT006.LB_選手名P_1.Visibility = Visibility.Visible;
+            PartsTIT006.LB_所属_1.Visibility   = Visibility.Visible;
+            PartsTIT006.LB_背番号_2.Visibility = Visibility.Visible;
+            PartsTIT006.LB_選手名L_2.Visibility = Visibility.Visible;
+            PartsTIT006.LB_選手名P_2.Visibility = Visibility.Visible;
+            PartsTIT006.LB_所属_2.Visibility   = Visibility.Visible;
+
+            // ---- テキスト内容を設定 ----
+            PartsTIT006.LB_演技順.Content   = ヒート番号.ToString() + "組目";
+            PartsTIT006.LB_背番号_1.Content = 背番号1;
+            PartsTIT006.LB_選手名L_1.Content = 選手名L1;
+            PartsTIT006.LB_選手名P_1.Content = 選手名P1;
+            PartsTIT006.LB_所属_1.Content   = 所属1;
+            PartsTIT006.LB_背番号_2.Content = 背番号2;
+            PartsTIT006.LB_選手名L_2.Content = 選手名L2;
+            PartsTIT006.LB_選手名P_2.Content = 選手名P2;
+            PartsTIT006.LB_所属_2.Content   = 所属2;
+
+            // ---- フォントサイズ自動調整 ----
+            foreach (var (lb, txt) in new[]
+            {
+                (PartsTIT006.LB_選手名L_1, 選手名L1),
+                (PartsTIT006.LB_選手名P_1, 選手名P1),
+                (PartsTIT006.LB_所属_1,   所属1),
+                (PartsTIT006.LB_選手名L_2, 選手名L2),
+                (PartsTIT006.LB_選手名P_2, 選手名P2),
+                (PartsTIT006.LB_所属_2,   所属2),
+            })
+            {
+                _partsMain.フォントサイズ自動調整(
+                    label: lb, text: txt,
+                    maxWidth: 280, maxFontSize: 22, minFontSize: 10,
+                    fontFamilyName: FONT_FAMILY_NAME);
+            }
+
+            // ---- 画像フェードイン + スライドアニメーション ----
+            var imgSb = new Storyboard();
+            _partsMain.フェードイン(true, PartsTIT006.IM_種目1_1, imgSb, 0);
+            _partsMain.フェードイン(true, PartsTIT006.IM_種目1_2, imgSb, 0);
+            _partsMain.フェードイン(true, PartsTIT006.IM_種目2_1, imgSb, 0);
+            _partsMain.フェードイン(true, PartsTIT006.IM_種目2_2, imgSb, 0);
+
+            CreateAndStartSlideAnimation(PartsTIT006.IM_種目1_1, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsTIT006.IM_種目1_2, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsTIT006.IM_種目2_1, SLIDE_FROM_LEFT);
+            CreateAndStartSlideAnimation(PartsTIT006.IM_種目2_2, SLIDE_FROM_LEFT);
+            imgSb.Begin();
+
+            // ---- テキストフェードイン（画像より遅延） ----
+            var txtSb = new Storyboard();
+            foreach (var lb in new System.Windows.Controls.Label[]
+            {
+                PartsTIT006.LB_演技順,
+                PartsTIT006.LB_背番号_1, PartsTIT006.LB_選手名L_1,
+                PartsTIT006.LB_選手名P_1, PartsTIT006.LB_所属_1,
+                PartsTIT006.LB_背番号_2, PartsTIT006.LB_選手名L_2,
+                PartsTIT006.LB_選手名P_2, PartsTIT006.LB_所属_2,
+            })
+            {
+                lb.Opacity = 0;
+                _partsMain.フェードイン(true, lb, txtSb, FADE_DELAY_MS);
+            }
+            txtSb.Begin();
+        }
+
+        /// <summary>
+        /// Step3: TIT006 上の全要素をフェードアウトする。
+        /// </summary>
+        public void Step3()
+        {
+            EnsurePartsMainInitialized();
+            if (_partsMain == null) return;
+
+            var sb = new Storyboard();
+
+            _partsMain.フェードアウト(true, PartsTIT006.IM_種目1_1, sb, 0);
+            _partsMain.フェードアウト(true, PartsTIT006.IM_種目1_2, sb, 0);
+            _partsMain.フェードアウト(true, PartsTIT006.IM_種目2_1, sb, 0);
+            _partsMain.フェードアウト(true, PartsTIT006.IM_種目2_2, sb, 0);
+
+            foreach (var lb in new System.Windows.Controls.Label[]
+            {
+                PartsTIT006.LB_演技順,
+                PartsTIT006.LB_背番号_1, PartsTIT006.LB_選手名L_1,
+                PartsTIT006.LB_選手名P_1, PartsTIT006.LB_所属_1,
+                PartsTIT006.LB_背番号_2, PartsTIT006.LB_選手名L_2,
+                PartsTIT006.LB_選手名P_2, PartsTIT006.LB_所属_2,
+            })
+            {
+                _partsMain.フェードアウト(true, lb, sb, 0);
+            }
+
+            sb.Begin();
+        }
+
+        #endregion
+    }
+}

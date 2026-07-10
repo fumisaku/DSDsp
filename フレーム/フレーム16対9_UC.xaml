@@ -7,47 +7,36 @@
              mc:Ignorable="d"
              Height="387" Width="641">
     <Grid>
-        <Frame x:Name="Frame_背景" Width="641" Background="Green">
-        </Frame>
-        <Frame x:Name="Frame_左上" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_右上" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_右上2" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_下中央" Width="641" >
-        </Frame>
+        <!-- Frame コントロールは Loaded 時にナビゲーション遷移フェードインを実行するため
+             VisualBrush でミラー表示するとスクリーン側で背景がフェードインしてしまう。
+             ナビゲーション機能が不要なため Frame を Border に置き換えて問題を解消する。 -->
+        <Border x:Name="Frame_背景"  Width="641" Background="Green"/>
+        <Border x:Name="Frame_左上"  Width="641"/>
+        <Border x:Name="Frame_右上"  Width="641"/>
+        <Border x:Name="Frame_右上2" Width="641"/>
+        <Border x:Name="Frame_下中央" Width="641"/>
 
-        <Frame x:Name="Frame_1" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_2" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_3" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_4" Width="641" >
-        </Frame>
-        <Frame x:Name="Frame_5" Width="641" >
-        </Frame>
+        <Border x:Name="Frame_1" Width="641"/>
+        <Border x:Name="Frame_2" Width="641"/>
+        <Border x:Name="Frame_3" Width="641"/>
+        <Border x:Name="Frame_4" Width="641"/>
+        <Border x:Name="Frame_5" Width="641"/>
 
-
-
-        <Rectangle x:Name="Layer_1" Stroke="Black" Width="641" >
+        <Rectangle x:Name="Layer_1" Stroke="Black" Width="641">
             <Rectangle.Fill>
-                <VisualBrush Stretch="Fill" Visual="{Binding}" />
+                <VisualBrush Stretch="Fill" Visual="{Binding}"/>
             </Rectangle.Fill>
         </Rectangle>
         <Rectangle x:Name="Layer_2" Stroke="Black" Width="641">
             <Rectangle.Fill>
-                <VisualBrush Stretch="Fill" Visual="{Binding}" />
+                <VisualBrush Stretch="Fill" Visual="{Binding}"/>
             </Rectangle.Fill>
         </Rectangle>
-        <Rectangle x:Name="Layer_3" Stroke="Black" Width="641" >
+        <Rectangle x:Name="Layer_3" Stroke="Black" Width="641">
             <Rectangle.Fill>
-                <VisualBrush Stretch="Fill" Visual="{Binding}" />
+                <VisualBrush Stretch="Fill" Visual="{Binding}"/>
             </Rectangle.Fill>
         </Rectangle>
-
-
 
     </Grid>
 </UserControl>

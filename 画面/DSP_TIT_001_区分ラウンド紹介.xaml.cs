@@ -21,7 +21,7 @@ namespace DSDsp.画面
         private const double MAX_FONT_SIZE = 24;
         private const double MIN_FONT_SIZE = 6;
         private const double MAX_TEXT_WIDTH = 500;
-        private const string FONT_FAMILY_NAME = "HGPSoeiKakugothicUB";
+        private const string FONT_FAMILY_NAME = "Segoe UI Semibold";
         #endregion
 
         #region オーバーライド

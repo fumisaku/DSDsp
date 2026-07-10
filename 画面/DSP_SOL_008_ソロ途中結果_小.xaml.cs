@@ -19,9 +19,9 @@ using System.Windows.Threading;
 namespace DSDsp.画面
 {
     /// <summary>
-    /// DSP_TIT_002_種目紹介.xaml の相互作用ロジック
+    /// DSP_SOL_008_ソロ途中結果_小.xaml の相互作用ロジック
     /// </summary>
-    public partial class DSP_SOL_007_ソロ途中結果_大 : DSDspScreenBase
+    public partial class DSP_SOL_008_ソロ途中結果_小 : DSDspScreenBase
     {
         #region 定数定義
         private const int ANIMATION_DURATION_SECONDS = 1;
@@ -63,15 +63,15 @@ namespace DSDsp.画面
         #endregion
 
         #region コンストラクタ
-        public DSP_SOL_007_ソロ途中結果_大()
+        public DSP_SOL_008_ソロ途中結果_小()
         {
             InitializeComponent();
-            this.Loaded += DSP_SOL_007_ソロ途中結果_大_Loaded;
+            this.Loaded += DSP_SOL_008_ソロ途中結果_小_Loaded;
         }
         #endregion
 
         #region イベントハンドラ
-        private void DSP_SOL_007_ソロ途中結果_大_Loaded(object sender, RoutedEventArgs e)
+        private void DSP_SOL_008_ソロ途中結果_小_Loaded(object sender, RoutedEventArgs e)
         {
             // 画面読み込み時は自動実行しない（外部から制御）
             // 初期化のみ実行
@@ -130,17 +130,15 @@ namespace DSDsp.画面
         private void 非表示()
         {
          
-            // LST001 の文字と画像を非表示
-            PartsLST001.IM_タイトル1.Visibility = Visibility.Collapsed;
-            PartsLST001.IM_タイトル2.Visibility = Visibility.Collapsed;
-            PartsLST001.IM_タイトル3.Visibility = Visibility.Collapsed;
+            // LST004 の文字と画像を非表示
+            PartsLST004.IM_タイトル1.Visibility = Visibility.Collapsed;
+            PartsLST004.IM_タイトル2.Visibility = Visibility.Collapsed;
+            PartsLST004.IM_タイトル3.Visibility = Visibility.Collapsed;
 
-            PartsLST001.LB_タイトル1.Visibility = Visibility.Collapsed;
-            PartsLST001.LB_タイトル2.Visibility = Visibility.Collapsed;
-            PartsLST001.LB_タイトル3.Visibility = Visibility.Collapsed;
+            PartsLST004.LB_タイトル1.Visibility = Visibility.Collapsed;
+            PartsLST004.LB_タイトル2.Visibility = Visibility.Collapsed;
+            PartsLST004.LB_タイトル3.Visibility = Visibility.Collapsed;
 
-            PartsLST001.LB_タイトル_減点.Visibility = Visibility.Collapsed;
-            PartsLST001.LB_タイトル_Total.Visibility = Visibility.Collapsed;
 
             for (int i = 0; i <8 ; i++)
             {
@@ -169,38 +167,28 @@ namespace DSDsp.画面
             // ---- 表示対象行の Image / Label を配列化（1始まり→0始まりインデックス）----
             _明細IM = new[]
             {
-                PartsLST001.IM_明細1, PartsLST001.IM_明細2, PartsLST001.IM_明細3, PartsLST001.IM_明細4,
-                PartsLST001.IM_明細5, PartsLST001.IM_明細6, PartsLST001.IM_明細7, PartsLST001.IM_明細8
+                PartsLST004.IM_明細1, PartsLST004.IM_明細2, PartsLST004.IM_明細3, PartsLST004.IM_明細4,
+                PartsLST004.IM_明細5, PartsLST004.IM_明細6, PartsLST004.IM_明細7, PartsLST004.IM_明細8
             };
             _順位LB = new[]
             {
-                PartsLST001.LB_結果1_順位, PartsLST001.LB_結果2_順位, PartsLST001.LB_結果3_順位, PartsLST001.LB_結果4_順位,
-                PartsLST001.LB_結果5_順位, PartsLST001.LB_結果6_順位, PartsLST001.LB_結果7_順位, PartsLST001.LB_結果8_順位
+                PartsLST004.LB_結果1_順位, PartsLST004.LB_結果2_順位, PartsLST004.LB_結果3_順位, PartsLST004.LB_結果4_順位,
+                PartsLST004.LB_結果5_順位, PartsLST004.LB_結果6_順位, PartsLST004.LB_結果7_順位, PartsLST004.LB_結果8_順位
             };
             _背番号LB = new[]
             {
-                PartsLST001.LB_結果1_背番号, PartsLST001.LB_結果2_背番号, PartsLST001.LB_結果3_背番号, PartsLST001.LB_結果4_背番号,
-                PartsLST001.LB_結果5_背番号, PartsLST001.LB_結果6_背番号, PartsLST001.LB_結果7_背番号, PartsLST001.LB_結果8_背番号
+                PartsLST004.LB_結果1_背番号, PartsLST004.LB_結果2_背番号, PartsLST004.LB_結果3_背番号, PartsLST004.LB_結果4_背番号,
+                PartsLST004.LB_結果5_背番号, PartsLST004.LB_結果6_背番号, PartsLST004.LB_結果7_背番号, PartsLST004.LB_結果8_背番号
             };
             _選手名LB = new[]
             {
-                PartsLST001.LB_結果1_選手名, PartsLST001.LB_結果2_選手名, PartsLST001.LB_結果3_選手名, PartsLST001.LB_結果4_選手名,
-                PartsLST001.LB_結果5_選手名, PartsLST001.LB_結果6_選手名, PartsLST001.LB_結果7_選手名, PartsLST001.LB_結果8_選手名
-            };
-            _所属LB = new[]
-            {
-                PartsLST001.LB_結果1_所属, PartsLST001.LB_結果2_所属, PartsLST001.LB_結果3_所属, PartsLST001.LB_結果4_所属,
-                PartsLST001.LB_結果5_所属, PartsLST001.LB_結果6_所属, PartsLST001.LB_結果7_所属, PartsLST001.LB_結果8_所属
-            };
-            _減点LB = new[]
-            {
-                PartsLST001.LB_結果1_減点, PartsLST001.LB_結果2_減点, PartsLST001.LB_結果3_減点, PartsLST001.LB_結果4_減点,
-                PartsLST001.LB_結果5_減点, PartsLST001.LB_結果6_減点, PartsLST001.LB_結果7_減点, PartsLST001.LB_結果8_減点
+                PartsLST004.LB_結果1_選手名, PartsLST004.LB_結果2_選手名, PartsLST004.LB_結果3_選手名, PartsLST004.LB_結果4_選手名,
+                PartsLST004.LB_結果5_選手名, PartsLST004.LB_結果6_選手名, PartsLST004.LB_結果7_選手名, PartsLST004.LB_結果8_選手名
             };
             _得点LB = new[]
             {
-                PartsLST001.LB_結果1_得点, PartsLST001.LB_結果2_得点, PartsLST001.LB_結果3_得点, PartsLST001.LB_結果4_得点,
-                PartsLST001.LB_結果5_得点, PartsLST001.LB_結果6_得点, PartsLST001.LB_結果7_得点, PartsLST001.LB_結果8_得点
+                PartsLST004.LB_結果1_得点, PartsLST004.LB_結果2_得点, PartsLST004.LB_結果3_得点, PartsLST004.LB_結果4_得点,
+                PartsLST004.LB_結果5_得点, PartsLST004.LB_結果6_得点, PartsLST004.LB_結果7_得点, PartsLST004.LB_結果8_得点
             };
 
             // 一旦非表示にする
@@ -238,17 +226,17 @@ namespace DSDsp.画面
 
 
             // 画像の初期状態を設定（フェードイン用に透明にする）
-            PartsLST001.IM_タイトル1.Opacity = 0;
-            PartsLST001.IM_タイトル2.Opacity = 0;
-            PartsLST001.IM_タイトル3.Opacity = 0;
+            PartsLST004.IM_タイトル1.Opacity = 0;
+            PartsLST004.IM_タイトル2.Opacity = 0;
+            PartsLST004.IM_タイトル3.Opacity = 0;
 
             // 画像のフェードインアニメーション
             // ① まず IM_種目1・IM_種目2 をフェードイン（beginTime=0: 即開始、800ms で完了）
             // ② その後（1000ms後）に IM_ソロ選手結果1～4 をフェードイン
             var imageStoryboard = new Storyboard();
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル1, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル2, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル3, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsLST004.IM_タイトル1, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsLST004.IM_タイトル2, imageStoryboard, 0);
+            _partsMain.フェードイン(true, PartsLST004.IM_タイトル3, imageStoryboard, 0);
 
 
             // 画像フェードイン完了後に表示
@@ -257,27 +245,25 @@ namespace DSDsp.画面
                 // 区分ラウンド名・種目名をヘルパーから取得して設定
                 string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
                 string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-                PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
-                PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+                PartsLST004.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
+                PartsLST004.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
 
-                PartsLST001.LB_タイトル3.Content = "途中経過";
+                PartsLST004.LB_タイトル3.Content = "途中経過";
 
 
 
                 // 一気に表示
-                PartsLST001.LB_タイトル1.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル2.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル3.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_減点.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
+                PartsLST004.LB_タイトル1.Visibility = Visibility.Visible;
+                PartsLST004.LB_タイトル2.Visibility = Visibility.Visible;
+                PartsLST004.LB_タイトル3.Visibility = Visibility.Visible;
 
 
 
               
                 // フォントサイズ自動調整  区分ラウンド名
                 _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル1,
-                    text: PartsLST001.LB_タイトル1.Content.ToString(),
+                    label: PartsLST004.LB_タイトル1,
+                    text: PartsLST004.LB_タイトル1.Content.ToString(),
                     maxWidth: 300,
                     maxFontSize: 14,
                     minFontSize: 8,
@@ -285,8 +271,8 @@ namespace DSDsp.画面
 
                 // フォントサイズ自動調整  種目名
                 _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル2,
-                    text: PartsLST001.LB_タイトル2.Content.ToString(),
+                    label: PartsLST004.LB_タイトル2,
+                    text: PartsLST004.LB_タイトル2.Content.ToString(),
                     maxWidth: 450,
                     maxFontSize: 16,
                     minFontSize: 8,
@@ -296,26 +282,22 @@ namespace DSDsp.画面
 
                 // フェードイン
                 var playerStoryboard = new Storyboard();
-                PartsLST001.LB_タイトル1.Opacity = 0;
-                PartsLST001.LB_タイトル2.Opacity = 0;
-                PartsLST001.LB_タイトル3.Opacity = 0;
-                PartsLST001.LB_タイトル_減点.Opacity = 0;
-                PartsLST001.LB_タイトル_Total.Opacity = 0;
+                PartsLST004.LB_タイトル1.Opacity = 0;
+                PartsLST004.LB_タイトル2.Opacity = 0;
+                PartsLST004.LB_タイトル3.Opacity = 0;
 
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル1, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル2, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル3, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_減点, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_Total, playerStoryboard, 100);
+                _partsMain?.フェードイン(true, PartsLST004.LB_タイトル1, playerStoryboard, 100);
+                _partsMain?.フェードイン(true, PartsLST004.LB_タイトル2, playerStoryboard, 100);
+                _partsMain?.フェードイン(true, PartsLST004.LB_タイトル3, playerStoryboard, 100);
                 playerStoryboard.Begin();
             };
 
             imageStoryboard.Begin();
 
             // 画像のスライドアニメーション
-            CreateAndStartSlideAnimation(PartsLST001.IM_タイトル1, SLIDE_FROM_RIGHT);
-            CreateAndStartSlideAnimation(PartsLST001.IM_タイトル2, SLIDE_FROM_LEFT);
-            CreateAndStartSlideAnimation(PartsLST001.IM_タイトル3, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsLST004.IM_タイトル1, SLIDE_FROM_RIGHT);
+            CreateAndStartSlideAnimation(PartsLST004.IM_タイトル2, SLIDE_FROM_LEFT);
+            CreateAndStartSlideAnimation(PartsLST004.IM_タイトル3, SLIDE_FROM_RIGHT);
 
         }
 
@@ -498,16 +480,14 @@ namespace DSDsp.画面
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
             var fadeOutStoryboard = new Storyboard();
-            // PartsLST001のタイトル画像・ラベルをフェードアウト
-            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル1, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル2, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル3, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル1, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル2, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, fadeOutStoryboard, 0);
+            // PartsLST004のタイトル画像・ラベルをフェードアウト
+            _partsMain.フェードアウト(true, PartsLST004.IM_タイトル1, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.IM_タイトル2, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.IM_タイトル3, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.LB_タイトル1, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.LB_タイトル2, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, fadeOutStoryboard, 0);
 
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
             fadeOutStoryboard.Begin();
         }
 

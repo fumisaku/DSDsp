@@ -138,7 +138,7 @@
                     
                     <Button x:Name="BtnToggleDisplay"
                             Grid.Column="2"
-                            Content="表示/非表示"
+                            Content="🚫 非表示"
                             Click="BtnToggleDisplay_Click"
                             Width="110"
                             Height="30"

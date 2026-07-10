@@ -42,8 +42,114 @@ namespace DSDsp.Scenario
         }
     }
 
+    // -------------------------------------------------------------------------
+    // AJSシナリオ定義モデル（画面進行一覧を動的生成するための定義ファイル用）
+    // -------------------------------------------------------------------------
+
     /// <summary>
-    /// AJS/表彰式シナリオアイテム
+    /// AJSシナリオ定義ファイルの画面エントリ（1画面分の設定）
+    /// </summary>
+    public class AjsScreenEntry
+    {
+        [JsonPropertyName("ScreenId")]
+        public string ScreenId { get; set; } = string.Empty;
+
+        [JsonPropertyName("Description")]
+        public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// ソロ結果画面のみ使用。"GD" または "PD"。空文字の場合は採点方式によらず適用。
+        /// </summary>
+        [JsonPropertyName("ScrMtdType")]
+        public string ScrMtdType { get; set; } = string.Empty;
+
+        [JsonPropertyName("Enabled")]
+        public bool Enabled { get; set; }
+    }
+
+    /// <summary>
+    /// AJSシナリオ定義ファイルの競技種別毎の画面グループ
+    /// キーは画面ID（例: "DSP_TIT_002"）
+    /// </summary>
+    public class AjsScreenGroup : Dictionary<string, AjsScreenEntry>
+    {
+        [JsonPropertyName("Description")]
+        public string Description { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// AJSシナリオ定義ファイルの Screens セクション
+    /// </summary>
+    public class AjsScreens
+    {
+        [JsonPropertyName("Common")]
+        public Dictionary<string, AjsScreenEntry> Common { get; set; } = new();
+
+        [JsonPropertyName("Solo")]
+        public Dictionary<string, AjsScreenEntry> Solo { get; set; } = new();
+
+        [JsonPropertyName("Group")]
+        public Dictionary<string, AjsScreenEntry> Group { get; set; } = new();
+
+        [JsonPropertyName("Duel")]
+        public Dictionary<string, AjsScreenEntry> Duel { get; set; } = new();
+    }
+
+    /// <summary>
+    /// AJSシナリオ定義ファイル
+    /// </summary>
+    public class AjsScenarioDefinition
+    {
+        [JsonPropertyName("ScenarioName")]
+        public string ScenarioName { get; set; } = string.Empty;
+
+        [JsonPropertyName("ScenarioType")]
+        public string ScenarioType { get; set; } = "AJS";
+
+        [JsonPropertyName("Description")]
+        public string Description { get; set; } = string.Empty;
+
+        [JsonPropertyName("Screens")]
+        public AjsScreens Screens { get; set; } = new();
+    }
+
+    // -------------------------------------------------------------------------
+    // 画面進行一覧アイテム（動的生成の結果）
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// 画面進行一覧の1アイテム（AJSシナリオから動的生成される）
+    /// </summary>
+    public class AjsProgressItem
+    {
+        /// <summary>表示する画面ID</summary>
+        public string ScreenId { get; set; } = string.Empty;
+
+        /// <summary>種目番号（DS_DncNo）</summary>
+        public int DanceNo { get; set; }
+
+        /// <summary>ヒート番号（DS_HeatNo）</summary>
+        public int HeatNo { get; set; }
+
+        /// <summary>説明（表示用）</summary>
+        public string Description { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            if (DanceNo == 0 && HeatNo == 0)
+                return $"{ScreenId}  {Description}";
+            if (HeatNo == 0)
+                return $"{ScreenId}  種目{DanceNo}  {Description}";
+            return $"{ScreenId}  種目{DanceNo}  ヒート{HeatNo}  {Description}";
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 旧モデル（表彰式・後方互換用に残す）
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// AJS/表彰式シナリオアイテム（旧形式・表彰式で使用）
     /// </summary>
     public class ScreenScenarioItem
     {
@@ -87,7 +193,7 @@ namespace DSDsp.Scenario
     }
 
     /// <summary>
-    /// AJS/表彰式シナリオ
+    /// 表彰式シナリオ（旧形式）
     /// </summary>
     public class ScreenScenario
     {

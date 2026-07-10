@@ -1,0 +1,237 @@
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>DSDsp フォント使用状況レポート</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; background: #ffffff; color: #1f2328; padding: 24px; }
+  .container { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: #57606a; font-size: 13px; margin-bottom: 28px; }
+  h2 { font-size: 15px; font-weight: 600; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb; }
+  h3 { font-size: 13px; font-weight: 600; margin: 16px 0 8px; color: #57606a; text-transform: uppercase; letter-spacing: 0.04em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  th { background: #f7f8fa; text-align: left; padding: 8px 10px; border: 1px solid #e5e7eb; font-weight: 600; }
+  td { padding: 7px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafafa; }
+  code { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 3px; padding: 1px 5px; font-size: 12px; font-family: "Consolas", monospace; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .tag-warn { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+  .tag-ok { background: #d1e7dd; color: #0a5c36; border: 1px solid #a3cfbb; }
+  .tag-issue { background: #f8d7da; color: #842029; border: 1px solid #f1aeb5; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .summary-card { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px 16px; }
+  .summary-card .num { font-size: 28px; font-weight: 700; color: #3b82d4; }
+  .summary-card .label { font-size: 12px; color: #57606a; margin-top: 2px; }
+  .note { background: #fff8e7; border-left: 3px solid #f59e0b; padding: 10px 14px; font-size: 13px; margin: 12px 0; border-radius: 0 4px 4px 0; }
+  .issue-box { background: #fff5f5; border-left: 3px solid #ef4444; padding: 10px 14px; font-size: 13px; margin: 8px 0; border-radius: 0 4px 4px 0; }
+  ul { padding-left: 20px; margin: 6px 0; }
+  li { margin: 3px 0; }
+  footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>DSDsp フォント使用状況レポート</h1>
+<p class="subtitle">調査対象: DScore/DSDsp — パーツ・画面・フレーム・共通 の全 XAML ファイル</p>
+
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="num">17</div>
+    <div class="label">FontFamily 指定があるファイル数</div>
+  </div>
+  <div class="summary-card">
+    <div class="num">2</div>
+    <div class="label">使用されている FontFamily</div>
+  </div>
+  <div class="summary-card">
+    <div class="num">1</div>
+    <div class="label">不整合が存在するファイル</div>
+  </div>
+</div>
+
+
+<h2>使用中の FontFamily</h2>
+<table>
+  <tr>
+    <th>FontFamily</th>
+    <th>用途</th>
+    <th>使用ファイル数</th>
+    <th>状態</th>
+  </tr>
+  <tr>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>全パーツの Label（ラベル・得点・選手名など）標準フォント</td>
+    <td>17 ファイル</td>
+    <td><span class="tag tag-ok">統一</span></td>
+  </tr>
+  <tr>
+    <td><code>Segoe UI Black</code></td>
+    <td>LST001 のタイトル部のみ（LB_タイトル1〜3、LB_タイトル_減点/Total）</td>
+    <td>1 ファイル</td>
+    <td><span class="tag tag-issue">不整合</span></td>
+  </tr>
+</table>
+
+<div class="note">
+  <strong>FontFamily なし（システムデフォルト）:</strong> 画面・フレーム・COM001〜COM003 などは FontFamily を明示指定していないため、
+  WPF のシステムデフォルトフォント（Segoe UI Regular）が適用されています。
+</div>
+
+
+<h2>ファイル別フォント指定一覧</h2>
+
+<h3>パーツ — TITシリーズ（タイトル・紹介系）</h3>
+<table>
+  <tr><th>ファイル</th><th>FontFamily</th><th>FontSize</th><th>FontWeight（特記）</th></tr>
+  <tr>
+    <td>TIT001_中央タイトル大</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>20</td>
+    <td><span class="tag tag-warn">FontWeight="Bold" も併記</span></td>
+  </tr>
+  <tr>
+    <td>TIT002_中央_種目紹介</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>16, 18, 24</td>
+    <td>LB_種目順のみ FontWeight="Bold"（FontFamily なし）</td>
+  </tr>
+  <tr>
+    <td>TIT003_下_種目紹介</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>16</td>
+    <td>LB_種目順のみ FontWeight="Bold"（FontFamily なし）</td>
+  </tr>
+  <tr>
+    <td>TIT004_中央_選手紹介</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>16, 18, 20, 22</td>
+    <td>LB_演技順のみ FontWeight="Bold"（FontFamily なし）</td>
+  </tr>
+  <tr>
+    <td>TIT005_下_選手紹介</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>16</td>
+    <td>LB_演技順のみ FontWeight="Bold"（FontFamily なし）</td>
+  </tr>
+  <tr>
+    <td>TIT006_中央_選手紹介_デュエル</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>18, 22</td>
+    <td>LB_演技順のみ FontWeight="Bold"（FontFamily なし）</td>
+  </tr>
+  <tr>
+    <td>TIT007_下_選手紹介_デュエル</td>
+    <td><code>Segoe UI Semibold</code></td>
+    <td>10, 14</td>
+    <td>LB_演技順のみ FontWeight="Bold"（FontFamily なし）</td>
+  </tr>
+</table>
+
+<h3>パーツ — SOLシリーズ（ソロ選手結果系）</h3>
+<table>
+  <tr><th>ファイル</th><th>FontFamily</th><th>FontSize 範囲</th><th>備考</th></tr>
+  <tr><td>SOL001_ソロ選手結果GD</td><td><code>Segoe UI Semibold</code></td><td>14, 16, 18, 20, 22</td><td></td></tr>
+  <tr><td>SOL002_ソロ選手結果GD_小</td><td><code>Segoe UI Semibold</code></td><td>14, 16, 18, 22</td><td></td></tr>
+  <tr><td>SOL003_ソロ選手結果PD</td><td><code>Segoe UI Semibold</code></td><td>10, 14, 16, 18, 22</td><td></td></tr>
+  <tr><td>SOL004_ソロ選手結果PD_小</td><td><code>Segoe UI Semibold</code></td><td>10, 14, 16, 18, 22</td><td></td></tr>
+</table>
+
+<h3>パーツ — DUEシリーズ（デュエル選手結果系）</h3>
+<table>
+  <tr><th>ファイル</th><th>FontFamily</th><th>FontSize 範囲</th><th>備考</th></tr>
+  <tr><td>DUE001_デュエル選手結果_大</td><td><code>Segoe UI Semibold</code></td><td>14, 16, 20</td><td></td></tr>
+  <tr><td>DUE002_デュエル選手結果_小</td><td><code>Segoe UI Semibold</code></td><td>14, 16, 20</td><td></td></tr>
+</table>
+
+<h3>パーツ — LSTシリーズ（リスト系）</h3>
+<table>
+  <tr><th>ファイル</th><th>FontFamily</th><th>FontSize 範囲</th><th>備考</th></tr>
+  <tr>
+    <td>LST001_大リスト8</td>
+    <td><span class="tag tag-issue">Segoe UI Black</span>（タイトル部） /<br /><code>Segoe UI Semibold</code>（明細部）</td>
+    <td>10, 14, 16, 18</td>
+    <td><span class="tag tag-issue">混在</span> タイトル5件のみ Black</td>
+  </tr>
+  <tr><td>LST004_右_小リスト8</td><td><code>Segoe UI Semibold</code></td><td>9, 10</td><td></td></tr>
+  <tr><td>LST005_左下_小リストヒート</td><td><code>Segoe UI Semibold</code></td><td>11</td><td></td></tr>
+  <tr><td>LST006_右下_小リストヒート</td><td><code>Segoe UI Semibold</code></td><td>11</td><td></td></tr>
+</table>
+
+<h3>画面・フレーム・共通パーツ</h3>
+<table>
+  <tr><th>ファイル</th><th>FontFamily</th><th>FontWeight</th><th>備考</th></tr>
+  <tr><td>COM001_左上</td><td>未指定（デフォルト）</td><td>Bold</td><td>TextBlock、FontFamily なし</td></tr>
+  <tr><td>COM002_右上01</td><td>未指定（デフォルト）</td><td>Bold</td><td>Label、FontFamily なし</td></tr>
+  <tr><td>COM003_右上02</td><td>未指定（デフォルト）</td><td>Bold</td><td>Label、FontFamily なし</td></tr>
+  <tr><td>画面・フレーム 全ファイル</td><td>未指定（デフォルト）</td><td>—</td><td>FontFamily 指定なし</td></tr>
+</table>
+
+
+<h2>検出された問題点</h2>
+
+<div class="issue-box">
+  <strong>【問題 1】LST001_大リスト8 でフォントが混在</strong><br />
+  タイトル部（LB_タイトル1〜3、LB_タイトル_減点、LB_タイトル_Total）は <code>Segoe UI Black</code>、
+  明細部（LB_結果1〜8 の各列）は <code>Segoe UI Semibold</code> が使われており、1ファイル内でフォントが異なります。
+  他の LST004/LST005/LST006 はすべて <code>Segoe UI Semibold</code> で統一されています。
+</div>
+
+<div class="issue-box">
+  <strong>【問題 2】TIT001 で FontFamily と FontWeight の二重指定</strong><br />
+  <code>Segoe UI Semibold</code> は既にセミボールドのフォントフェイスであるにもかかわらず、
+  LB_Title1・LB_Title2 に <code>FontWeight="Bold"</code> が追加されています。
+  WPF は存在しない Bold ウェイトを合成（Synthetic Bold）で補完するため、見た目が過剰になる可能性があります。
+</div>
+
+<div class="issue-box">
+  <strong>【問題 3】LB_演技順 / LB_種目順 系ラベルの FontFamily 未指定</strong><br />
+  TIT002〜TIT007 内の <code>LB_演技順</code>・<code>LB_種目順</code> は <code>FontWeight="Bold"</code> のみが指定され、
+  FontFamily が設定されていません。周囲のラベルが <code>Segoe UI Semibold</code> を明示指定している中で
+  これらだけシステムデフォルト（Segoe UI Regular）が適用されています。
+</div>
+
+<div class="issue-box">
+  <strong>【問題 4】COM001〜003 の FontFamily 未指定</strong><br />
+  共通パーツ（左上・右上）は FontFamily が指定されておらず、システムデフォルトが適用されています。
+  他のパーツと視覚的な一貫性を持たせるには明示指定が望ましい状態です。
+</div>
+
+
+<h2>推奨対応</h2>
+<table>
+  <tr><th>優先度</th><th>対応内容</th><th>対象ファイル</th></tr>
+  <tr>
+    <td><span class="tag tag-issue">高</span></td>
+    <td>タイトル部の <code>Segoe UI Black</code> を <code>Segoe UI Semibold</code> に統一する（または意図的な使い分けであれば LST004 等にも適用する）</td>
+    <td>LST001_大リスト8</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-warn">中</span></td>
+    <td><code>Segoe UI Semibold</code> + <code>FontWeight="Bold"</code> の二重指定を解消する（FontWeight を削除）</td>
+    <td>TIT001_中央タイトル大</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-warn">中</span></td>
+    <td>LB_演技順・LB_種目順 に <code>FontFamily="Segoe UI Semibold"</code> を追加し、FontWeight="Bold" を削除する</td>
+    <td>TIT002〜TIT007（6ファイル）</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-ok">低</span></td>
+    <td>COM001〜003 に <code>FontFamily="Segoe UI Semibold"</code> を追加して統一する</td>
+    <td>COM001, COM002, COM003</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-ok">参考</span></td>
+    <td>App.xaml の <code>Application.Resources</code> に <code>Style TargetType="Label"</code> でデフォルト FontFamily を定義すれば個別指定が不要になり保守性が向上する</td>
+    <td>App.xaml</td>
+  </tr>
+</table>
+
+<footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>

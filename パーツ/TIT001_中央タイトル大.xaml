@@ -19,8 +19,8 @@
                     <TranslateTransform x:Name="IM_2_Translate" X="0" Y="0"/>
                 </Image.RenderTransform>
             </Image>
-            <Label x:Name="LB_Title2" Content="PDグランプリテスト大会" Panel.ZIndex ="4" HorizontalContentAlignment="Center" FontSize="20" FontWeight="Bold" Foreground="#FFF3D4D4" Width="570" Height="35" Canvas.Left="40" Canvas.Top="58" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="100" FontFamily="HGPSoeiKakugothicUB" />
-            <Label x:Name="LB_Title1" Content="PDグランプリテスト大会" Panel.ZIndex ="4" HorizontalAlignment="Center" HorizontalContentAlignment="Center" VerticalAlignment="Top" FontSize="20" FontWeight="Bold" Foreground="#FFF3D4D4" Width="570" Height="35" Canvas.Left="40" Canvas.Top="30" Opacity="100" FontFamily="HGPSoeiKakugothicUB" />
+            <Label x:Name="LB_Title2" Content="PDグランプリテスト大会" Panel.ZIndex ="4" HorizontalContentAlignment="Center" FontSize="20" FontWeight="Bold" Foreground="#FFF3D4D4" Width="570" Height="41" Canvas.Left="40" Canvas.Top="55" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="100" FontFamily="Segoe UI Semibold" />
+            <Label x:Name="LB_Title1" Content="PDグランプリテスト大会" Panel.ZIndex ="4" HorizontalAlignment="Center" HorizontalContentAlignment="Center" VerticalAlignment="Top" FontSize="20" FontWeight="Bold" Foreground="#FFF3D4D4" Width="570" Height="46" Canvas.Left="40" Canvas.Top="27" Opacity="100" FontFamily="Segoe UI Semibold" />
         </Canvas>
     </Grid>
 </UserControl>
