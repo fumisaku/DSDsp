@@ -191,84 +191,73 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// Step2: 画像とPCS名、選手情報をアニメーション表示
+        /// Step2: アニメーション表示
+        /// 順番: IM_種目 → LB_選手紹介 → IM_ソロ選手結果1〜4 → PCS名・TES名・各ラベル
         /// </summary>
         public void Step2()
         {
-            // PartsMainの初期化確認
             EnsurePartsMainInitialized();
-
             if (_partsMain == null) return;
 
-            // 画像とタイトルを表示状態に設定
-            PartsSOL003.LB_選手紹介.Content = "";
-
+            // --- 選手名テキストを事前にセット（フォントサイズ調整も先に完了させる）---
+            PartsSOL003.LB_選手紹介.Content = _背番号 + " " + _選手名L + "・" + _選手名P;
+            _partsMain.フォントサイズ自動調整(
+                label: PartsSOL003.LB_選手紹介,
+                text: _選手名L,
+                maxWidth: 400,
+                maxFontSize: 22,
+                minFontSize: 20,
+                fontFamilyName: FONT_FAMILY_NAME);
             PartsSOL003.LB_選手紹介.Visibility = Visibility.Visible;
 
-            // 画像の初期状態を設定（フェードイン用に透明にする）
-            PartsSOL003.IM_種目1.Opacity = 0;
-            PartsSOL003.IM_種目2.Opacity = 0;
+            // --- 全要素を透明にしてから開始 ---
+            PartsSOL003.IM_種目1.Opacity         = 0;
+            PartsSOL003.IM_種目2.Opacity         = 0;
+            PartsSOL003.LB_選手紹介.Opacity      = 0;
             PartsSOL003.IM_ソロ選手結果1.Opacity = 0;
             PartsSOL003.IM_ソロ選手結果2.Opacity = 0;
             PartsSOL003.IM_ソロ選手結果3.Opacity = 0;
             PartsSOL003.IM_ソロ選手結果4.Opacity = 0;
-            // 画像のフェードインアニメーション
-            // ① まず IM_種目1・IM_種目2 をフェードイン（beginTime=0: 即開始、800ms で完了）
-            // ② その後（1000ms後）に IM_ソロ選手結果1～4 をフェードイン
-            var imageStoryboard = new Storyboard();
-            _partsMain.フェードイン(true, PartsSOL003.IM_種目1, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsSOL003.IM_種目2, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果1, imageStoryboard, 1000);
-            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果2, imageStoryboard, 1000);
-            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果3, imageStoryboard, 1000);
-            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果4, imageStoryboard, 1000);
-            // 画像フェードイン完了後にPCS名を表示
-            imageStoryboard.Completed += (s, e) =>
+
+            // --- タイミング定数（ms）---
+            // IM_種目:          0ms 開始、800ms で完了
+            // LB_選手紹介:   1000ms 開始（IM_種目完了直後）
+            // IM_ソロ選手結果: 2000ms 開始（選手名フェードイン完了後）
+            const int T_IMG   = 0;
+            const int T_NAME  = 800;
+            const int T_RESULT = 2000;
+
+            var sb = new Storyboard();
+            _partsMain.フェードイン(true, PartsSOL003.IM_種目1,         sb, T_IMG);
+            _partsMain.フェードイン(true, PartsSOL003.IM_種目2,         sb, T_IMG);
+            _partsMain.フェードイン(true, PartsSOL003.LB_選手紹介,      sb, T_NAME);
+            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果1, sb, T_RESULT);
+            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果2, sb, T_RESULT);
+            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果3, sb, T_RESULT);
+            _partsMain.フェードイン(true, PartsSOL003.IM_ソロ選手結果4, sb, T_RESULT);
+
+            // IM_ソロ選手結果がフェードイン完了したら PCS名・TES名・各ラベルを表示
+            sb.Completed += (s, e) =>
             {
-                // PCS名を取得して表示
                 SetPCSNames();
-
-                // PCS名、Red、Total名、Rank名を一気に表示
-                PartsSOL003.LB_PCS名1.Visibility = Visibility.Visible;
-                PartsSOL003.LB_PCS名2.Visibility = Visibility.Visible;
-                PartsSOL003.LB_PCS名3.Visibility = Visibility.Visible;
-                PartsSOL003.LB_PCS名4.Visibility = Visibility.Visible;
-                PartsSOL003.LB_Red名.Content = "Red";
-                PartsSOL003.LB_Red名.Visibility = Visibility.Visible;
-                PartsSOL003.LB_Total名.Content = "Total";
+                PartsSOL003.LB_PCS名1.Visibility  = Visibility.Visible;
+                PartsSOL003.LB_PCS名2.Visibility  = Visibility.Visible;
+                PartsSOL003.LB_PCS名3.Visibility  = Visibility.Visible;
+                PartsSOL003.LB_PCS名4.Visibility  = Visibility.Visible;
+                PartsSOL003.LB_Red名.Content      = "Red";
+                PartsSOL003.LB_Red名.Visibility   = Visibility.Visible;
+                PartsSOL003.LB_Total名.Content    = "Total";
                 PartsSOL003.LB_Total名.Visibility = Visibility.Visible;
-                PartsSOL003.LB_Rank名.Content = "Rank";
-                PartsSOL003.LB_Rank名.Visibility = Visibility.Visible;
-
-                //TESも表示
-                PartsSOL003.LB_TES1.Visibility = Visibility.Visible;
-                PartsSOL003.LB_TES2.Visibility = Visibility.Visible;
-                PartsSOL003.LB_TES3.Visibility = Visibility.Visible;
-
-
-
-                // 選手情報をフェードイン
-                PartsSOL003.LB_選手紹介.Content = _背番号 + " " + _選手名L + "・" + _選手名P;
-                // フォントサイズ自動調整
-                _partsMain?.フォントサイズ自動調整(
-                    label: PartsSOL003.LB_選手紹介,
-                    text: _選手名L,
-                    maxWidth: 400,
-                    maxFontSize: 22,
-                    minFontSize: 20,
-                    fontFamilyName: FONT_FAMILY_NAME);
-
-
-                // 選手情報のフェードイン
-                var playerStoryboard = new Storyboard();
-                PartsSOL003.LB_選手紹介.Opacity = 0;
-                _partsMain?.フェードイン(true, PartsSOL003.LB_選手紹介, playerStoryboard, 100);
-                playerStoryboard.Begin();
+                PartsSOL003.LB_Rank名.Content     = "Rank";
+                PartsSOL003.LB_Rank名.Visibility  = Visibility.Visible;
+                PartsSOL003.LB_TES1.Visibility    = Visibility.Visible;
+                PartsSOL003.LB_TES2.Visibility    = Visibility.Visible;
+                PartsSOL003.LB_TES3.Visibility    = Visibility.Visible;
             };
 
-            imageStoryboard.Begin();
+            sb.Begin();
 
-            // 画像のスライドアニメーション
+            // IM_種目のスライドアニメーション（フェードインと同時に開始）
             CreateAndStartSlideAnimation(PartsSOL003.IM_種目1, SLIDE_FROM_RIGHT);
             CreateAndStartSlideAnimation(PartsSOL003.IM_種目2, SLIDE_FROM_LEFT);
         }

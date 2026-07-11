@@ -227,96 +227,63 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// Step2: 画像とPCS名、選手情報をアニメーション表示
+        /// Step2: IM_タイトルとラベルを同時にフェードイン表示
         /// </summary>
         public void Step2()
         {
-            // PartsMainの初期化確認
             EnsurePartsMainInitialized();
-
             if (_partsMain == null) return;
 
+            // --- ラベルのテキストとフォントサイズを先にセット ---
+            string 区分名  = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
+            string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
+            PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+            PartsLST001.LB_タイトル3.Content = "途中経過";
 
-            // 画像の初期状態を設定（フェードイン用に透明にする）
-            PartsLST001.IM_タイトル1.Opacity = 0;
-            PartsLST001.IM_タイトル2.Opacity = 0;
-            PartsLST001.IM_タイトル3.Opacity = 0;
+            _partsMain.フォントサイズ自動調整(
+                label: PartsLST001.LB_タイトル1,
+                text: PartsLST001.LB_タイトル1.Content.ToString() ?? "",
+                maxWidth: 300, maxFontSize: 14, minFontSize: 8,
+                fontFamilyName: FONT_FAMILY_NAME);
+            _partsMain.フォントサイズ自動調整(
+                label: PartsLST001.LB_タイトル2,
+                text: PartsLST001.LB_タイトル2.Content.ToString() ?? "",
+                maxWidth: 450, maxFontSize: 16, minFontSize: 8,
+                fontFamilyName: FONT_FAMILY_NAME);
 
-            // 画像のフェードインアニメーション
-            // ① まず IM_種目1・IM_種目2 をフェードイン（beginTime=0: 即開始、800ms で完了）
-            // ② その後（1000ms後）に IM_ソロ選手結果1～4 をフェードイン
-            var imageStoryboard = new Storyboard();
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル1, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル2, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル3, imageStoryboard, 0);
+            // --- Visible にしてから Opacity=0 で隠す ---
+            PartsLST001.LB_タイトル1.Visibility    = Visibility.Visible;
+            PartsLST001.LB_タイトル2.Visibility    = Visibility.Visible;
+            PartsLST001.LB_タイトル3.Visibility    = Visibility.Visible;
+            PartsLST001.LB_タイトル_減点.Visibility = Visibility.Visible;
+            PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
 
+            PartsLST001.IM_タイトル1.Opacity        = 0;
+            PartsLST001.IM_タイトル2.Opacity        = 0;
+            PartsLST001.IM_タイトル3.Opacity        = 0;
+            PartsLST001.LB_タイトル1.Opacity        = 0;
+            PartsLST001.LB_タイトル2.Opacity        = 0;
+            PartsLST001.LB_タイトル3.Opacity        = 0;
+            PartsLST001.LB_タイトル_減点.Opacity    = 0;
+            PartsLST001.LB_タイトル_Total.Opacity   = 0;
 
-            // 画像フェードイン完了後に表示
-            imageStoryboard.Completed += (s, e) =>
-            {
-                // 区分ラウンド名・種目名をヘルパーから取得して設定
-                string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
-                string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-                PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
-                PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+            // --- IM_タイトルとラベルを同時にフェードイン ---
+            var sb = new Storyboard();
+            _partsMain.フェードイン(true, PartsLST001.IM_タイトル1,        sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.IM_タイトル2,        sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.IM_タイトル3,        sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル1,        sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル2,        sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル3,        sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル_減点,    sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル_Total,   sb, 0);
+            sb.Begin();
 
-                PartsLST001.LB_タイトル3.Content = "途中経過";
-
-
-
-                // 一気に表示
-                PartsLST001.LB_タイトル1.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル2.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル3.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_減点.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
-
-
-
-              
-                // フォントサイズ自動調整  区分ラウンド名
-                _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル1,
-                    text: PartsLST001.LB_タイトル1.Content.ToString(),
-                    maxWidth: 300,
-                    maxFontSize: 14,
-                    minFontSize: 8,
-                    fontFamilyName: FONT_FAMILY_NAME);
-
-                // フォントサイズ自動調整  種目名
-                _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル2,
-                    text: PartsLST001.LB_タイトル2.Content.ToString(),
-                    maxWidth: 450,
-                    maxFontSize: 16,
-                    minFontSize: 8,
-                    fontFamilyName: FONT_FAMILY_NAME);
-
-
-
-                // フェードイン
-                var playerStoryboard = new Storyboard();
-                PartsLST001.LB_タイトル1.Opacity = 0;
-                PartsLST001.LB_タイトル2.Opacity = 0;
-                PartsLST001.LB_タイトル3.Opacity = 0;
-                PartsLST001.LB_タイトル_減点.Opacity = 0;
-                PartsLST001.LB_タイトル_Total.Opacity = 0;
-
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル1, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル2, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル3, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_減点, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_Total, playerStoryboard, 100);
-                playerStoryboard.Begin();
-            };
-
-            imageStoryboard.Begin();
-
-            // 画像のスライドアニメーション
+            // IM_タイトルのスライドアニメーション（フェードインと同時に開始）
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル1, SLIDE_FROM_RIGHT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル2, SLIDE_FROM_LEFT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル3, SLIDE_FROM_RIGHT);
-
         }
 
 

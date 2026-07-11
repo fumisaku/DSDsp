@@ -9,8 +9,16 @@
     <Grid>
         <Canvas x:Name="SOL_選手結果_PD" Margin="39,108,28,40" Background="Transparent">
 
-            <Image x:Name="IM_種目2" Height="108" Source="..\イメージ\CHR169_タイトル2.png" Stretch="Fill" Width="537" Canvas.Left="22" Canvas.Top="12" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-            <Image x:Name="IM_種目1" Height="108" Source="..\イメージ\CHR169_タイトル1.png" Stretch="Fill" Width="538" Canvas.Top="16" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Left="18"/>
+            <Image x:Name="IM_種目2" Height="108" Source="..\イメージ\CHR169_タイトル2.png" Stretch="Fill" Width="537" Canvas.Left="22" Canvas.Top="12" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <Image.RenderTransform>
+                    <TranslateTransform X="0" Y="0"/>
+                </Image.RenderTransform>
+            </Image>
+            <Image x:Name="IM_種目1" Height="108" Source="..\イメージ\CHR169_タイトル1.png" Stretch="Fill" Width="538" Canvas.Top="16" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Left="18">
+                <Image.RenderTransform>
+                    <TranslateTransform X="0" Y="0"/>
+                </Image.RenderTransform>
+            </Image>
             <Image x:Name="IM_ソロ選手結果1" Height="37" Source="..\イメージ\CHR169_ソロ選手結果1.png" Stretch="Fill" Width="400" Canvas.Left="44" Canvas.Top="179" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Image x:Name="IM_ソロ選手結果2" Height="68" Source="..\イメージ\CHR169_ソロ選手結果2.png" Stretch="Fill" Width="101" Canvas.Left="458" Canvas.Top="128" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Image x:Name="IM_ソロ選手結果3" Height="30" Source="..\イメージ\CHR169_ソロ選手結果3.png" Stretch="Fill" Width="101" Canvas.Left="458" Canvas.Top="196" HorizontalAlignment="Center" VerticalAlignment="Top"/>
@@ -18,7 +26,7 @@
 
 
 
-            <Label x:Name="LB_選手紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="44" Canvas.Top="55" HorizontalAlignment="Center" VerticalAlignment="Top" Width="477" Height="45" Foreground="White" FontSize="22" FontFamily="Segoe UI Semibold"/>
+            <Label x:Name="LB_選手紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="44" Canvas.Top="49" HorizontalAlignment="Center" VerticalAlignment="Top" Width="477" Height="45" Foreground="White" FontSize="22" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_PCS名1" Content="TQ" HorizontalContentAlignment="Center" Canvas.Left="35" Canvas.Top="180" Width="54" Height="30" Foreground="DarkCyan" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_PCS名2" Content="MM" HorizontalContentAlignment="Center" Canvas.Left="110" Canvas.Top="180" Width="54" Height="30" Foreground="DarkCyan" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_PCS名3" Content="PS" HorizontalContentAlignment="Center" Canvas.Left="185" Canvas.Top="180" Width="54" Height="30" Foreground="DarkCyan" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>

@@ -17,7 +17,7 @@ namespace DSDsp.画面
         private const int ANIMATION_DURATION_SECONDS = 1;
         private const double SLIDE_FROM_LEFT = -1000;
         private const double SLIDE_FROM_RIGHT = 1000;
-        private const int FADE_DELAY_MILLISECONDS = 1000;
+        private const int FADE_DELAY_MILLISECONDS = 0;
 
         // フォントサイズ調整用の定数
         private const double MAX_FONT_SIZE = 24;
