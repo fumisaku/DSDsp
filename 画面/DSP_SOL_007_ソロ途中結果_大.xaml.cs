@@ -127,6 +127,40 @@ namespace DSDsp.画面
 
         #region プライベートメソッド
 
+        /// <summary>
+        /// DSP_SOL_007 専用のレイアウト調整。
+        /// LST001パーツは他画面と共用のため、XAML側は変更せずここで上書きする。
+        ///   ・選手名 : Width 153 → 306
+        ///   ・所属   : Canvas.Left 256 → 370、Width 114 → 50
+        ///   ・減点   : Visibility = Collapsed
+        /// </summary>
+        private void AdjustLayoutForSOL007()
+        {
+            var 選手名リスト = new Label[]
+            {
+                PartsLST001.LB_結果1_選手名, PartsLST001.LB_結果2_選手名, PartsLST001.LB_結果3_選手名, PartsLST001.LB_結果4_選手名,
+                PartsLST001.LB_結果5_選手名, PartsLST001.LB_結果6_選手名, PartsLST001.LB_結果7_選手名, PartsLST001.LB_結果8_選手名
+            };
+            var 所属リスト = new Label[]
+            {
+                PartsLST001.LB_結果1_所属, PartsLST001.LB_結果2_所属, PartsLST001.LB_結果3_所属, PartsLST001.LB_結果4_所属,
+                PartsLST001.LB_結果5_所属, PartsLST001.LB_結果6_所属, PartsLST001.LB_結果7_所属, PartsLST001.LB_結果8_所属
+            };
+            var 減点リスト = new Label[]
+            {
+                PartsLST001.LB_結果1_減点, PartsLST001.LB_結果2_減点, PartsLST001.LB_結果3_減点, PartsLST001.LB_結果4_減点,
+                PartsLST001.LB_結果5_減点, PartsLST001.LB_結果6_減点, PartsLST001.LB_結果7_減点, PartsLST001.LB_結果8_減点
+            };
+
+            for (int i = 0; i < 8; i++)
+            {
+                選手名リスト[i].Width = 306;
+                Canvas.SetLeft(所属リスト[i], 370);
+                所属リスト[i].Width = 50;
+                減点リスト[i].Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void 非表示()
         {
          
@@ -205,6 +239,11 @@ namespace DSDsp.画面
 
             // 一旦非表示にする
             非表示();
+
+            // DSP_SOL_007 専用レイアウト調整:
+            // 選手名を広く（153→306）、所属を減点列位置に小さく（Left=370, Width=50）、
+            // 減点列は非表示にする。LST001パーツは他画面共用のため、ここでコード上書きする。
+            AdjustLayoutForSOL007();
 
             // COM003 の　LB_右上をクリアする
             PartsCOM003.LB_右上.Content = string.Empty;
