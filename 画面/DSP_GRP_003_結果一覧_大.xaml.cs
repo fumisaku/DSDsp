@@ -383,8 +383,8 @@ namespace DSDsp.画面
 
                 // 選手情報
                 var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
-                string 選手名L = DSDspDataHelper.Get選手名L(選手情報);
-                string 選手名P = DSDspDataHelper.Get選手名P(選手情報);
+                string 選手名L = Get苗字(DSDspDataHelper.Get選手名L(選手情報));
+                string 選手名P = Get苗字(DSDspDataHelper.Get選手名P(選手情報));
                 string 選手名表示 = string.IsNullOrEmpty(選手名P)
                     ? 選手名L
                     : 選手名L + "・" + 選手名P;
@@ -408,13 +408,19 @@ namespace DSDsp.画面
                 _減点LB[i].Foreground = 前景色;
                 _得点LB[i].Foreground = 前景色;
 
-                // Visibility は Collapsed のまま（フェードイン時に Visible にする）
-                _順位LB[i].Opacity = 0;
+                // Visibility を Visible にしてから Opacity=0 で隠す（フェードイン準備）
+                _順位LB[i].Visibility  = Visibility.Visible;
+                _背番号LB[i].Visibility = Visibility.Visible;
+                _選手名LB[i].Visibility = Visibility.Visible;
+                _所属LB[i].Visibility   = Visibility.Visible;
+                _減点LB[i].Visibility   = Visibility.Visible;
+                _得点LB[i].Visibility   = Visibility.Visible;
+                _順位LB[i].Opacity  = 0;
                 _背番号LB[i].Opacity = 0;
                 _選手名LB[i].Opacity = 0;
-                _所属LB[i].Opacity = 0;
-                _減点LB[i].Opacity = 0;
-                _得点LB[i].Opacity = 0;
+                _所属LB[i].Opacity   = 0;
+                _減点LB[i].Opacity   = 0;
+                _得点LB[i].Opacity   = 0;
             }
 
             // ---- フォントサイズ自動調整（選手名）----
@@ -507,6 +513,26 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
             fadeOutStoryboard.Begin();
+        }
+
+        /// <summary>
+        /// 氏名文字列から苗字部分を抽出する。
+        /// 半角スペース・全角スペースの最初の出現位置より前を苗字とする。
+        /// スペースが含まれない場合は文字列全体を返す。
+        /// </summary>
+        private static string Get苗字(string 氏名)
+        {
+            if (string.IsNullOrEmpty(氏名)) return 氏名;
+            int idx = -1;
+            for (int i = 0; i < 氏名.Length; i++)
+            {
+                if (氏名[i] == ' ' || 氏名[i] == '\u3000')   // 半角スペース or 全角スペース
+                {
+                    idx = i;
+                    break;
+                }
+            }
+            return idx >= 0 ? 氏名.Substring(0, idx) : 氏名;
         }
 
         #endregion
