@@ -398,14 +398,19 @@ namespace DSDsp.画面
                 _背番号LB[i].Content = 背番号;
                 _選手名LB[i].Content = 選手名表示;
                 _所属LB[i].Content = 所属;
-                _減点LB[i].Content = 失格 ? "" : (減点合計 == 0 ? "" : 減点合計.ToString("F1"));
+                _減点LB[i].Content = 失格 ? "" : 減点合計.ToString("F1");
                 _得点LB[i].Content = 失格 ? "失格" : 得点.ToString("F3");
+
+                // 減点が0より大きい場合は赤字、それ以外はDarkBlue
+                var 減点前景色 = (!失格 && 減点合計 > 0)
+                    ? new SolidColorBrush(Colors.Red)
+                    : 前景色;
 
                 _順位LB[i].Foreground = 前景色;
                 _背番号LB[i].Foreground = 前景色;
                 _選手名LB[i].Foreground = 前景色;
                 _所属LB[i].Foreground = 前景色;
-                _減点LB[i].Foreground = 前景色;
+                _減点LB[i].Foreground = 減点前景色;
                 _得点LB[i].Foreground = 前景色;
 
                 // Visibility を Visible にしてから Opacity=0 で隠す（フェードイン準備）
