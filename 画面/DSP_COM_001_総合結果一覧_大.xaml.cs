@@ -128,6 +128,18 @@ namespace DSDsp.画面
         #region プライベートメソッド
 
         /// <summary>
+        /// 指定区分・ラウンドの総種目数を返す。
+        /// DA_Master の DD_DGRPs[0]["DE_DANCEs"] の Count を使用。
+        /// 取得できない場合は 0 を返す。
+        /// </summary>
+        private static int Get総種目数(JsonNode? daMaster, string kbnNo, string rndNo)
+        {
+            var round = DSDspDataHelper.Getラウンド(daMaster, kbnNo, rndNo);
+            var dances = round?["DD_DGRPs"]?.AsArray()?[0]?["DE_DANCEs"]?.AsArray();
+            return dances?.Count ?? 0;
+        }
+
+        /// <summary>
         /// DSP_COM_001 専用のレイアウト調整。
         /// LST001パーツは他画面と共用のため、XAML側は変更せずここで上書きする。
         /// DSP_SOL_007 と同じ数値を適用する。
@@ -292,13 +304,25 @@ namespace DSDsp.画面
             // 画像フェードイン完了後に表示
             imageStoryboard.Completed += (s, e) =>
             {
-                // 区分ラウンド名・種目名をヘルパーから取得して設定
+                // 区分ラウンド名をヘルパーから取得して設定
                 string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
                 string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
                 PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
-                PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
 
-                PartsLST001.LB_タイトル3.Content = "総合結果";
+                // 総種目数を取得して最終種目か判定
+                int 総種目数 = Get総種目数(DA_Master, 区分番号, ラウンド番号);
+                bool 最終種目 = (種目番号 >= 総種目数 && 総種目数 > 0);
+
+                if (最終種目)
+                {
+                    PartsLST001.LB_タイトル2.Content = "総合結果";
+                    PartsLST001.LB_タイトル3.Content = "表彰式";
+                }
+                else
+                {
+                    PartsLST001.LB_タイトル2.Content = $"総合結果（途中経過）　{種目番号}種目目まで";
+                    PartsLST001.LB_タイトル3.Content = "総合結果(途中)";
+                }
 
 
 
