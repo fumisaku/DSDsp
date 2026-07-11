@@ -127,6 +127,41 @@ namespace DSDsp.画面
 
         #region プライベートメソッド
 
+        /// <summary>
+        /// DSP_COM_001 専用のレイアウト調整。
+        /// LST001パーツは他画面と共用のため、XAML側は変更せずここで上書きする。
+        /// DSP_SOL_007 と同じ数値を適用する。
+        ///   ・選手名 : Width 153 → 290
+        ///   ・所属   : Canvas.Left 256 → 330、Width 114 → 90（右端 420）
+        ///   ・減点   : Visibility = Collapsed（この画面では減点不要）
+        /// </summary>
+        private void AdjustLayoutForCOM001()
+        {
+            var 選手名リスト = new Label[]
+            {
+                PartsLST001.LB_結果1_選手名, PartsLST001.LB_結果2_選手名, PartsLST001.LB_結果3_選手名, PartsLST001.LB_結果4_選手名,
+                PartsLST001.LB_結果5_選手名, PartsLST001.LB_結果6_選手名, PartsLST001.LB_結果7_選手名, PartsLST001.LB_結果8_選手名
+            };
+            var 所属リスト = new Label[]
+            {
+                PartsLST001.LB_結果1_所属, PartsLST001.LB_結果2_所属, PartsLST001.LB_結果3_所属, PartsLST001.LB_結果4_所属,
+                PartsLST001.LB_結果5_所属, PartsLST001.LB_結果6_所属, PartsLST001.LB_結果7_所属, PartsLST001.LB_結果8_所属
+            };
+            var 減点リスト = new Label[]
+            {
+                PartsLST001.LB_結果1_減点, PartsLST001.LB_結果2_減点, PartsLST001.LB_結果3_減点, PartsLST001.LB_結果4_減点,
+                PartsLST001.LB_結果5_減点, PartsLST001.LB_結果6_減点, PartsLST001.LB_結果7_減点, PartsLST001.LB_結果8_減点
+            };
+
+            for (int i = 0; i < 8; i++)
+            {
+                選手名リスト[i].Width = 290;
+                Canvas.SetLeft(所属リスト[i], 330);
+                所属リスト[i].Width = 90;
+                減点リスト[i].Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void 非表示()
         {
          
@@ -206,6 +241,9 @@ namespace DSDsp.画面
             // 一旦非表示にする
             非表示();
 
+            // DSP_COM_001 専用レイアウト調整（選手名拡大・所属移動・減点非表示）
+            AdjustLayoutForCOM001();
+
             // COM003 の　LB_右上をクリアする
             PartsCOM003.LB_右上.Content = string.Empty;
 
@@ -264,11 +302,11 @@ namespace DSDsp.画面
 
 
 
-                // 一気に表示
+                // 一気に表示（LB_タイトル_減点はこの画面では不要なので表示しない）
                 PartsLST001.LB_タイトル1.Visibility = Visibility.Visible;
                 PartsLST001.LB_タイトル2.Visibility = Visibility.Visible;
                 PartsLST001.LB_タイトル3.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_減点.Visibility = Visibility.Visible;
+                PartsLST001.LB_タイトル_減点.Visibility = Visibility.Collapsed;
                 PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
 
 
@@ -408,13 +446,18 @@ namespace DSDsp.画面
                 _減点LB[i].Foreground = 前景色;
                 _得点LB[i].Foreground = 前景色;
 
-                // Visibility は Collapsed のまま（フェードイン時に Visible にする）
-                _順位LB[i].Opacity = 0;
+                // Visibility を Visible にしてから Opacity=0 で隠す（フェードイン準備）
+                // 減点は Collapsed のまま（この画面では不要）
+                _順位LB[i].Visibility  = Visibility.Visible;
+                _背番号LB[i].Visibility = Visibility.Visible;
+                _選手名LB[i].Visibility = Visibility.Visible;
+                _所属LB[i].Visibility   = Visibility.Visible;
+                _得点LB[i].Visibility   = Visibility.Visible;
+                _順位LB[i].Opacity  = 0;
                 _背番号LB[i].Opacity = 0;
                 _選手名LB[i].Opacity = 0;
-                _所属LB[i].Opacity = 0;
-                _減点LB[i].Opacity = 0;
-                _得点LB[i].Opacity = 0;
+                _所属LB[i].Opacity   = 0;
+                _得点LB[i].Opacity   = 0;
             }
 
             // ---- フォントサイズ自動調整（選手名）----
@@ -423,7 +466,7 @@ namespace DSDsp.画面
                 _partsMain.フォントサイズ自動調整(
                     label: _選手名LB[i],
                     text: _選手名LB[i].Content?.ToString() ?? "",
-                    maxWidth: 148,
+                    maxWidth: 290,
                     maxFontSize: 16,
                     minFontSize: 8,
                     fontFamilyName: FONT_FAMILY_NAME);
@@ -449,7 +492,7 @@ namespace DSDsp.画面
                     _partsMain?.フェードイン(true, _背番号LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _選手名LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _所属LB[i], 結果Storyboard, 0);
-                    _partsMain?.フェードイン(true, _減点LB[i], 結果Storyboard, 0);
+                    // _減点LB はこの画面では不要なためフェードインしない
                     _partsMain?.フェードイン(true, _得点LB[i], 結果Storyboard, 0);
                 }
                 結果Storyboard.Begin();
