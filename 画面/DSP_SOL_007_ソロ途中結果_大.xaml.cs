@@ -130,8 +130,8 @@ namespace DSDsp.画面
         /// <summary>
         /// DSP_SOL_007 専用のレイアウト調整。
         /// LST001パーツは他画面と共用のため、XAML側は変更せずここで上書きする。
-        ///   ・選手名 : Width 153 → 306
-        ///   ・所属   : Canvas.Left 256 → 370、Width 114 → 50
+        ///   ・選手名 : Width 153 → 290（得点列左端422まで余白を確保）
+        ///   ・所属   : Canvas.Left 256 → 330、Width 114 → 90（右端420で得点列422に被らない）
         ///   ・減点   : Visibility = Collapsed
         /// </summary>
         private void AdjustLayoutForSOL007()
@@ -154,9 +154,11 @@ namespace DSDsp.画面
 
             for (int i = 0; i < 8; i++)
             {
-                選手名リスト[i].Width = 306;
-                Canvas.SetLeft(所属リスト[i], 370);
-                所属リスト[i].Width = 50;
+                // 選手名: Left=122、Width=290 → 右端 412（所属との間に余白）
+                選手名リスト[i].Width = 290;
+                // 所属: Left=330、Width=90 → 右端 420（得点 Left=422 に被らない）
+                Canvas.SetLeft(所属リスト[i], 330);
+                所属リスト[i].Width = 90;
                 減点リスト[i].Visibility = Visibility.Collapsed;
             }
         }
@@ -315,7 +317,7 @@ namespace DSDsp.画面
             _partsMain.フェードイン(true, PartsLST001.LB_タイトル1,        sb, 0);
             _partsMain.フェードイン(true, PartsLST001.LB_タイトル2,        sb, 0);
             _partsMain.フェードイン(true, PartsLST001.LB_タイトル3,        sb, 0);
-            _partsMain.フェードイン(true, PartsLST001.LB_タイトル_減点,    sb, 0);
+            //_partsMain.フェードイン(true, PartsLST001.LB_タイトル_減点,    sb, 0);
             _partsMain.フェードイン(true, PartsLST001.LB_タイトル_Total,   sb, 0);
             sb.Begin();
 
@@ -431,11 +433,24 @@ namespace DSDsp.画面
                 _partsMain.フォントサイズ自動調整(
                     label: _選手名LB[i],
                     text: _選手名LB[i].Content?.ToString() ?? "",
-                    maxWidth: 148,
+                    maxWidth: 400,
                     maxFontSize: 16,
                     minFontSize: 8,
                     fontFamilyName: FONT_FAMILY_NAME);
             }
+
+            // ---- フォントサイズ自動調整（所属）----
+            for (int i = 0; i < 表示件数; i++)
+            {
+                _partsMain.フォントサイズ自動調整(
+                    label: _所属LB[i],
+                    text: _所属LB[i].Content?.ToString() ?? "",
+                    maxWidth: 100,
+                    maxFontSize: 16,
+                    minFontSize: 8,
+                    fontFamilyName: FONT_FAMILY_NAME);
+            }
+
 
             // ---- IM_明細を順にフェードイン（1秒で 表示件数 枚）----
             // 間隔: 1000ms ÷ 表示件数（最低100ms）
@@ -457,7 +472,7 @@ namespace DSDsp.画面
                     _partsMain?.フェードイン(true, _背番号LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _選手名LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _所属LB[i], 結果Storyboard, 0);
-                    _partsMain?.フェードイン(true, _減点LB[i], 結果Storyboard, 0);
+                   // _partsMain?.フェードイン(true, _減点LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _得点LB[i], 結果Storyboard, 0);
                 }
                 結果Storyboard.Begin();
@@ -489,7 +504,7 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, _背番号LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _選手名LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _所属LB[i], fadeOutStoryboard, 0);
-                _partsMain.フェードアウト(true, _減点LB[i], fadeOutStoryboard, 0);
+          //      _partsMain.フェードアウト(true, _減点LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _得点LB[i], fadeOutStoryboard, 0);
             }
 
