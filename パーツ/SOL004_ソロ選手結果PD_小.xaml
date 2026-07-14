@@ -26,7 +26,7 @@
 
 
 
-            <Label x:Name="LB_選手紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="27" Canvas.Top="7" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
+            <Label x:Name="LB_選手紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="27" Canvas.Top="4" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_PCS名1" Content="TQ" HorizontalContentAlignment="Center" Canvas.Left="35" Canvas.Top="72" Width="54" Height="30" Foreground="DarkCyan" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_PCS名2" Content="MM" HorizontalContentAlignment="Center" Canvas.Left="110" Canvas.Top="72" Width="54" Height="30" Foreground="DarkCyan" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_PCS名3" Content="PS" HorizontalContentAlignment="Center" Canvas.Left="185" Canvas.Top="72" Width="54" Height="30" Foreground="DarkCyan" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
@@ -50,9 +50,9 @@
             <Label x:Name="LB_TES_1" Content="99.99" HorizontalContentAlignment="Center" Canvas.Left="124" Canvas.Top="32" Width="64" Height="30" Foreground="DarkBlue" FontSize="18" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Label x:Name="LB_TES_2" Content="99.99" HorizontalContentAlignment="Center" Canvas.Left="241" Canvas.Top="32" Width="64" Height="30" Foreground="DarkBlue" FontSize="18" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Label x:Name="LB_TES_3" Content="99.99" HorizontalContentAlignment="Center" Canvas.Left="354" Canvas.Top="32" Width="64" Height="30" Foreground="DarkBlue" FontSize="18" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-            <Label x:Name="LB_TES_1_RD" Content="FPE WS HPE WF" HorizontalContentAlignment="Center" Foreground="Red" FontSize="10" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Height="23" Canvas.Left="117" Canvas.Top="53" Width="79" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-            <Label x:Name="LB_TES_2_RD" Content="FPE WS HPE WF" HorizontalContentAlignment="Center" Foreground="Red" FontSize="10" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Height="23" Canvas.Left="232" Canvas.Top="53" Width="79" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-            <Label x:Name="LB_TES_3_RD" Content="FPE WS HPE WF" HorizontalContentAlignment="Center" Foreground="Red" FontSize="10" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Height="23" Canvas.Left="347" Canvas.Top="53" Width="79" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <Label x:Name="LB_TES_1_RD" Content="FPE WS HPE WF" HorizontalContentAlignment="Center" Foreground="Red" FontSize="9" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Height="23" Canvas.Left="110" Canvas.Top="53" Width="85" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+            <Label x:Name="LB_TES_2_RD" Content="FPE WS HPE WF" HorizontalContentAlignment="Center" Foreground="Red" FontSize="9" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Height="23" Canvas.Left="225" Canvas.Top="53" Width="85" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+            <Label x:Name="LB_TES_3_RD" Content="FPE WS HPE WF" HorizontalContentAlignment="Center" Foreground="Red" FontSize="9" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Height="23" Canvas.Left="340" Canvas.Top="53" Width="85" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 
 
         </Canvas>

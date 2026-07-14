@@ -42,9 +42,10 @@ namespace DSDsp.画面
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数（Step0, Step1, Step2, Step3, Step4の5ステップ）
+        /// 総ステップ数（Step1+Step2同時(1) + Step3(1) + Step4(1) の3ステップ）
         /// </summary>
-        protected override int TotalSteps => 5;
+        protected override int TotalSteps => 3;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -74,17 +75,14 @@ namespace DSDsp.画面
             {
                 case 0:
                     Step1();
-                    break;
-                case 1:
                     Step2();
                     break;
-                case 2:
+                case 1:
                     Step3(DV_Result);
                     break;
-                case 3:
+                case 2:
                     Step4();
                     break;
-
             }
         }
         #endregion
@@ -182,7 +180,7 @@ namespace DSDsp.画面
 
             // DS_Statusから選手情報を取得
             _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号, 区分番号);
             _選手名L = DSDspDataHelper.Get選手名L(選手情報);
             _選手名P = DSDspDataHelper.Get選手名P(選手情報);
 
@@ -225,7 +223,7 @@ namespace DSDsp.画面
             // IM_ソロ選手結果: 2000ms 開始（選手名フェードイン完了後）
             const int T_IMG   = 0;
             const int T_NAME  = 800;
-            const int T_RESULT = 2000;
+            const int T_RESULT = 1000;
 
             var sb = new Storyboard();
             _partsMain.フェードイン(true, PartsSOL003.IM_種目1,         sb, T_IMG);
@@ -361,7 +359,7 @@ namespace DSDsp.画面
                 {
                     foreach (var 減点 in 一般減点Array)
                     {
-                        減点合計 += 減点?["減点値"]?.GetValue<double>() ?? 0;
+                        減点合計 += 減点?["一般減点"]?.GetValue<double>() ?? 0;
                     }
                 }
             }
@@ -383,20 +381,90 @@ namespace DSDsp.画面
             }
             else
             {
-                PartsSOL003.LB_Red.Content = 減点合計.ToString("F1");
+                PartsSOL003.LB_Red.Content = 減点合計.ToString("F2");
             }
 
-            //TESを表示
-            double tes1 = 選手結果["TES1"]?.GetValue<double>() ?? 0;
-            double tes2 = 選手結果["TES2"]?.GetValue<double>() ?? 0;
-            double tes3 = 選手結果["TES3"]?.GetValue<double>() ?? 0;
+            // TESを表示
+            // TES > TES詳細 > 課題番号=N の TESBase点 + TES減点合計 + GOE得点
+            var tesDetails = 選手結果["TES"]?["TES詳細"]?.AsArray();
+            var goeArray = 選手結果["GOE"]?.AsArray();
+            double GetTES得点(int 課題番号)
+            {
+                if (tesDetails == null) return 0;
+                var detail = tesDetails.FirstOrDefault(d => d?["課題番号"]?.GetValue<int>() == 課題番号);
+                if (detail == null) return 0;
+                double base点 = detail["TESBase点"]?.GetValue<double>() ?? 0;
+                double 減点計 = 0;
+                var 減点Array = detail["TES減点"]?.AsArray();
+                if (減点Array != null)
+                    foreach (var rd in 減点Array)
+                        減点計 += rd?["TES減点"]?.GetValue<double>() ?? 0;
+                // 同じ課題番号の GOE得点を加算
+                double goe = 0;
+                if (goeArray != null)
+                {
+                    var goeEntry = goeArray.FirstOrDefault(g => g?["課題番号"]?.GetValue<int>() == 課題番号);
+                    goe = goeEntry?["GOE得点"]?.GetValue<double>() ?? 0;
+                }
+                return base点 + 減点計 + goe;
+            }
+            // DA_Master の TES減点設定から 減点番号→減点略称 の辞書を構築
+            // "TES減点N" の N が減点番号に対応する
+            var tes略称Map = new Dictionary<int, string>();
+            if (DA_Master != null && !string.IsNullOrEmpty(_採点方式ID))
+            {
+                var 採点方式リスト = DA_Master["DJ_採点方式リスト"]?.AsArray();
+                var 採点方式 = 採点方式リスト?.FirstOrDefault(s => s?["採点方式ID"]?.ToString() == _採点方式ID);
+                var tes減点設定 = 採点方式?["TES減点設定"]?.AsArray();
+                if (tes減点設定 != null)
+                {
+                    foreach (var item in tes減点設定)
+                    {
+                        int 番号 = item?["減点番号"]?.GetValue<int>() ?? 0;
+                        string 略称 = item?["減点略称"]?.ToString() ?? string.Empty;
+                        if (番号 > 0) tes略称Map[番号] = 略称;
+                    }
+                }
+            }
+
+            // TES減点が0でない項目の減点略称をスペース区切りで結合
+            // "TES減点N" の N を減点番号として DA_Master の略称に変換する
+            string GetTES減点項目名(int 課題番号)
+            {
+                if (tesDetails == null) return string.Empty;
+                var detail = tesDetails.FirstOrDefault(d => d?["課題番号"]?.GetValue<int>() == 課題番号);
+                if (detail == null) return string.Empty;
+                var 減点Array = detail["TES減点"]?.AsArray();
+                if (減点Array == null) return string.Empty;
+                var 略称リスト = 減点Array
+                    .Where(rd => (rd?["TES減点"]?.GetValue<double>() ?? 0) != 0)
+                    .Select(rd =>
+                    {
+                        string raw = rd?["TES減点項目名"]?.ToString() ?? string.Empty;
+                        // "TES減点N" から番号を抽出して略称に変換
+                        if (raw.StartsWith("TES減点") &&
+                            int.TryParse(raw.Substring("TES減点".Length), out int no) &&
+                            tes略称Map.TryGetValue(no, out string? 略称) &&
+                            !string.IsNullOrEmpty(略称))
+                            return 略称;
+                        return raw; // 変換できない場合はそのまま
+                    })
+                    .Where(name => !string.IsNullOrEmpty(name));
+                return string.Join(" ", 略称リスト);
+            }
+            double tes1 = GetTES得点(1);
+            double tes2 = GetTES得点(2);
+            double tes3 = GetTES得点(3);
 
             PartsSOL003.LB_TES_1.Content = tes1.ToString("F2");
             PartsSOL003.LB_TES_2.Content = tes2.ToString("F2");
             PartsSOL003.LB_TES_3.Content = tes3.ToString("F2");
 
-            // TES減点項目を表示
-            
+            // TES減点項目名を表示
+            PartsSOL003.LB_TES_1_RD.Content = GetTES減点項目名(1);
+            PartsSOL003.LB_TES_2_RD.Content = GetTES減点項目名(2);
+            PartsSOL003.LB_TES_3_RD.Content = GetTES減点項目名(3);
+
 
             // PCS得点と減点をフェードイン
             var pcsStoryboard = new Storyboard();
@@ -415,9 +483,15 @@ namespace DSDsp.画面
             PartsSOL003.LB_TES_1.Opacity = 0;
             PartsSOL003.LB_TES_2.Opacity = 0;
             PartsSOL003.LB_TES_3.Opacity = 0;
+            PartsSOL003.LB_TES_1_RD.Opacity = 0;
+            PartsSOL003.LB_TES_2_RD.Opacity = 0;
+            PartsSOL003.LB_TES_3_RD.Opacity = 0;
             _partsMain.フェードイン(true, PartsSOL003.LB_TES_1, pcsStoryboard, 0);
             _partsMain.フェードイン(true, PartsSOL003.LB_TES_2, pcsStoryboard, 0);
             _partsMain.フェードイン(true, PartsSOL003.LB_TES_3, pcsStoryboard, 0);
+            _partsMain.フェードイン(true, PartsSOL003.LB_TES_1_RD, pcsStoryboard, 0);
+            _partsMain.フェードイン(true, PartsSOL003.LB_TES_2_RD, pcsStoryboard, 0);
+            _partsMain.フェードイン(true, PartsSOL003.LB_TES_3_RD, pcsStoryboard, 0);
 
 
 
@@ -508,8 +582,11 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsSOL003.LB_TES_1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsSOL003.LB_TES_2, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsSOL003.LB_TES_3, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsSOL003.LB_TES_1_RD, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsSOL003.LB_TES_2_RD, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsSOL003.LB_TES_3_RD, fadeOutStoryboard, 0);
 
-
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
 

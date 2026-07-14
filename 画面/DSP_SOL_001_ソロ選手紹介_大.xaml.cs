@@ -28,9 +28,10 @@ namespace DSDsp.画面
 
         #region オーバーライド
         /// <summary>
-        /// ステップ数（Step0, Step1, Step2, Step3の4ステップ）
+        /// ステップ数（Step1+Step2同時(1) + Step3(1) の2ステップ）
         /// </summary>
-        protected override int TotalSteps => 4;
+        protected override int TotalSteps => 2;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -47,11 +48,9 @@ namespace DSDsp.画面
             {
                 case 0:
                     Step1();
-                    break;
-                case 1:
                     Step2();
                     break;
-                case 2:
+                case 1:
                     Step3();
                     break;
             }
@@ -59,8 +58,9 @@ namespace DSDsp.画面
 
         protected override void EnsurePartsMainInitialized()
         {
+            bool wasNull = (_partsMain == null);
             base.EnsurePartsMainInitialized();
-            if (_partsMain != null)
+            if (wasNull && _partsMain != null)
             {
                 // 初回のみ非表示を実行
                 非表示();
@@ -137,7 +137,7 @@ namespace DSDsp.画面
             string 背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
             
             // DA_Masterから選手情報を取得
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号, 区分番号);
             string 選手名L = DSDspDataHelper.Get選手名L(選手情報);
             string 選手名P = DSDspDataHelper.Get選手名P(選手情報);
             string 所属 = DSDspDataHelper.Get所属(選手情報);
@@ -234,6 +234,7 @@ namespace DSDsp.画面
 
             _partsMain.フェードアウト(true, PartsTIT004.IM_種目1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT004.IM_種目2, fadeOutStoryboard, 0);
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
         #endregion

@@ -17,7 +17,7 @@ namespace DSDsp.画面
         private const int ANIMATION_DURATION_SECONDS = 1;
         private const double SLIDE_FROM_LEFT = -1000;
         private const double SLIDE_FROM_RIGHT = 1000;
-        private const int FADE_DELAY_MILLISECONDS = 0;
+        private const int FADE_DELAY_MILLISECONDS = 800;
 
         // フォントサイズ調整用の定数
         private const double MAX_FONT_SIZE = 24;
@@ -28,9 +28,10 @@ namespace DSDsp.画面
 
         #region オーバーライド
         /// <summary>
-        /// ステップ数（Step0, Step1, Step2, Step3の4ステップ）
+        /// ステップ数（Step1+Step2同時(1) + Step3(1) の2ステップ）
         /// </summary>
-        protected override int TotalSteps => 4;
+        protected override int TotalSteps => 2;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -47,11 +48,9 @@ namespace DSDsp.画面
             {
                 case 0:
                     Step1();
-                    break;
-                case 1:
                     Step2();
                     break;
-                case 2:
+                case 1:
                     Step3();
                     break;
             }
@@ -59,8 +58,9 @@ namespace DSDsp.画面
 
         protected override void EnsurePartsMainInitialized()
         {
+            bool wasNull = (_partsMain == null);
             base.EnsurePartsMainInitialized();
-            if (_partsMain != null)
+            if (wasNull && _partsMain != null)
             {
                 // 初回のみ非表示を実行
                 非表示();
@@ -101,7 +101,7 @@ namespace DSDsp.画面
 
             string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
             string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-            PartsCOM001.TB_左上2.Text = 区分名 + " " + ラウンド名;
+            PartsCOM001.TB_左上2.Text = 区分名 + "　" + ラウンド名;
 
             // 種目情報を取得
             var dance = DSDspDataHelper.Get種目(DA_Master, 区分番号, ラウンド番号, 種目番号);
@@ -111,7 +111,7 @@ namespace DSDsp.画面
                 string 種目カテゴリ = DSDspDataHelper.Get種目カテゴリ(DA_Master, 区分番号, ラウンド番号, 種目番号);
                 string 種目名 = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
                 
-                PartsCOM002.LB_右上.Content = 種目順.ToString() + "種目目" + " " + 種目カテゴリ + " " + 種目名;
+                PartsCOM002.LB_右上.Content = 種目順.ToString() + "種目目" + "　" + 種目カテゴリ + "　" + 種目名;
             }
             else
             {
@@ -134,7 +134,7 @@ namespace DSDsp.画面
             string 背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
             
             // DA_Masterから選手情報を取得
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号, 区分番号);
             string 選手名L = DSDspDataHelper.Get選手名L(選手情報);
             string 選手名P = DSDspDataHelper.Get選手名P(選手情報);
             string 所属 = DSDspDataHelper.Get所属(選手情報);
@@ -144,6 +144,8 @@ namespace DSDsp.画面
             PartsTIT005.LB_選手紹介.Visibility = Visibility.Visible;
             PartsTIT005.LB_所属.Visibility = Visibility.Visible;
             // 画像の初期状態を設定（フェードイン用に透明にする）
+            PartsTIT005.IM_種目1.Visibility = Visibility.Visible;
+            PartsTIT005.IM_種目2.Visibility = Visibility.Visible;
             PartsTIT005.IM_種目1.Opacity = 0;
             PartsTIT005.IM_種目2.Opacity = 0;
 
@@ -159,8 +161,9 @@ namespace DSDsp.画面
  
             // タイトルテキストの設定とフォントサイズの自動調整
             PartsTIT005.LB_演技順.Content = ヒート番号.ToString() + "組目";
-            PartsTIT005.LB_選手紹介.Content = 背番号;
-            PartsTIT005.LB_所属.Content = 所属;
+            PartsTIT005.LB_選手紹介.Content = 背番号 + "　" + 選手名L + "・" + 選手名P+ "　"+ 所属;
+            PartsTIT005.LB_選手紹介.HorizontalContentAlignment = HorizontalAlignment.Center;  // 中央寄せに設定
+            PartsTIT005.LB_所属.Content = string.Empty;
 
             // COM000_PartsMainの共通機能を使用してフォントサイズを自動調整
             // 全てのパラメータを明示的に指定
@@ -168,8 +171,8 @@ namespace DSDsp.画面
                 label: PartsTIT005.LB_選手紹介,
                 text: 選手名L,
                 maxWidth: 400,
-                maxFontSize: 22,
-                minFontSize: 20,
+                maxFontSize: 16,
+                minFontSize: 8,
                 fontFamilyName: FONT_FAMILY_NAME);
 
         
@@ -177,8 +180,8 @@ namespace DSDsp.画面
                 label: PartsTIT005.LB_所属,
                 text: 所属,
                 maxWidth: 400,
-                maxFontSize: 20,
-                minFontSize: 20,
+                maxFontSize: 16,
+                minFontSize: 8,
                 fontFamilyName: FONT_FAMILY_NAME);
 
             // タイトルのフェードインアニメーション
@@ -210,6 +213,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT005.LB_所属, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT005.IM_種目1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT005.IM_種目2, fadeOutStoryboard, 0);
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
         #endregion

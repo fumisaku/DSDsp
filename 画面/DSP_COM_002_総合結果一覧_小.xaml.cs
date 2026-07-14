@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -37,6 +37,8 @@ namespace DSDsp.画面
         private string _背番号 = string.Empty;
         private string _選手名L = string.Empty;
         private string _選手名P = string.Empty;
+        // 総合結果の総選手数（Step1でキャッシュ。ページ数計算に使用）
+        private int _総選手数 = 0;
 
         // 表示対象行の Image / Label 配列（Step3で初期化）
         private Image[]? _明細IM;
@@ -45,16 +47,17 @@ namespace DSDsp.画面
         private Label[]? _選手名LB;
         private Label[]? _得点LB;
         private int _前回表示件数 = 0;
+        // Step1 で確定したページ数（TotalSteps を一定に保つために使用）
+        private int _ページ数 = 1;
         #endregion
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数：Step1(1) + Step2(1) + [Step3+Step4] × ページ数 + Step5(1)
+        /// 総ステップ数：Step1+Step2+Step3(1) + Step4(1) + [Step3+Step4] × (ページ数-1) + Step5(1)
+        /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
         /// </summary>
-        protected override int TotalSteps => 2 + ページ数 * 2 + 1;
-
-        /// <summary>表示ページ数（8件/ページ）</summary>
-        private int ページ数 => Math.Max(1, (int)Math.Ceiling(ヒート番号 / 8.0));
+        protected override int TotalSteps => _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -75,30 +78,51 @@ namespace DSDsp.画面
         #region オーバーライドメソッド
         protected override void ExecuteCurrentStep()
         {
+            // ステップ割り当て:
+            //   case 0       → Step1 + Step2 + Step3(p=0) 自動実行
+            //   case 1       → Step4(p=0)
+            //   case 1+p*2   → Step3(p=1,2...) ※p≥1 の場合
+            //   case 2+p*2   → Step4(p=1,2...)
+            //   最後          → Step5
             if (_currentStep == 0)
             {
                 Step1();
-                return;
-            }
-            if (_currentStep == 1)
-            {
                 Step2();
+                // Step1+Step2の直後に1ページ目のStep3を自動実行
+                Step3(DV_Result, 0);
                 return;
             }
 
-            int ブロック内 = _currentStep - 2;
-            int ページ = ブロック内 / 2;
-            int ブロック位置 = ブロック内 % 2;
+            // _currentStep=1 以降: Step4(p=0), Step3(p=1), Step4(p=1), ...
+            int ブロック内 = _currentStep;   // 1→Step4(p=0), 2→Step3(p=1), 3→Step4(p=1)...
 
-            if (ページ < ページ数)
+            // p=0 のStep4 (ブロック内=1)
+            if (ブロック内 == 1)
             {
-                if (ブロック位置 == 0)
-                    Step3(DV_Result, ページ * 8);
-                else
-                    Step4();
+                // 1ページのみの場合はStep4完了後にStep5を自動実行
+                Step4(_ページ数 == 1 ? (Action)Step5 : null);
                 return;
             }
 
+            // p≥1 のStep3/Step4 (ブロック内≥2, 2ステップずつ)
+            int p = (ブロック内 - 2) / 2 + 1;     // ページ番号（1始まり）
+            int pos = (ブロック内 - 2) % 2;        // 0=Step3, 1=Step4
+
+            if (p < _ページ数)
+            {
+                if (pos == 0)
+                {
+                    Step3(DV_Result, p * 8);
+                }
+                else
+                {
+                    // 最終ページのStep4完了後はStep5を自動実行
+                    Step4(p == _ページ数 - 1 ? (Action)Step5 : null);
+                }
+                return;
+            }
+
+            // 全ページ終了後 → Step5
             Step5();
         }
         #endregion
@@ -123,6 +147,16 @@ namespace DSDsp.画面
                 _選手名LB![i].Visibility = Visibility.Collapsed;
                 _得点LB![i].Visibility = Visibility.Collapsed;
             }
+        }
+
+        /// <summary>
+        /// 指定区分・ラウンドの総種目数を返す。
+        /// </summary>
+        private static int Get総種目数(JsonNode? daMaster, string kbnNo, string rndNo)
+        {
+            var round = DSDspDataHelper.Getラウンド(daMaster, kbnNo, rndNo);
+            var dances = round?["DD_DGRPs"]?.AsArray()?[0]?["DE_DANCEs"]?.AsArray();
+            return dances?.Count ?? 0;
         }
 
         /// <summary>
@@ -167,10 +201,10 @@ namespace DSDsp.画面
             _採点方式ID = SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
             if (DA_Master == null) return;
 
-            _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号);
-            _選手名L = DSDspDataHelper.Get選手名L(選手情報);
-            _選手名P = DSDspDataHelper.Get選手名P(選手情報);
+            // 総合結果の選手数をキャッシュ（ページ数計算用）
+            var 総合結果 = DV_Result?["総合結果"]?.AsArray();
+            _総選手数 = 総合結果?.Count ?? 0;
+            _ページ数 = Math.Max(1, (int)Math.Ceiling(_総選手数 / 8.0));
         }
 
         /// <summary>
@@ -195,8 +229,20 @@ namespace DSDsp.画面
                 string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
                 string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
                 PartsLST004.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
-                PartsLST004.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
-                PartsLST004.LB_タイトル3.Content = "総合結果";
+
+                // 総種目数を取得して最終種目か判定
+                int 総種目数 = Get総種目数(DA_Master, 区分番号, ラウンド番号);
+                bool 最終種目 = (種目番号 >= 総種目数 && 総種目数 > 0);
+                if (最終種目)
+                {
+                    PartsLST004.LB_タイトル2.Content = "総合結果";
+                    PartsLST004.LB_タイトル3.Content = "表彰式";
+                }
+                else
+                {
+                    PartsLST004.LB_タイトル2.Content = $"総合({種目番号}種目まで)";
+                    PartsLST004.LB_タイトル3.Content = "総合(途中)";
+                }
 
                 PartsLST004.LB_タイトル1.Visibility = Visibility.Visible;
                 PartsLST004.LB_タイトル2.Visibility = Visibility.Visible;
@@ -206,7 +252,7 @@ namespace DSDsp.画面
                     label: PartsLST004.LB_タイトル1,
                     text: PartsLST004.LB_タイトル1.Content.ToString(),
                     maxWidth: 170,
-                    maxFontSize: 10,
+                    maxFontSize: 9,
                     minFontSize: 6,
                     fontFamilyName: FONT_FAMILY_NAME);
 
@@ -214,7 +260,7 @@ namespace DSDsp.画面
                     label: PartsLST004.LB_タイトル2,
                     text: PartsLST004.LB_タイトル2.Content.ToString(),
                     maxWidth: 170,
-                    maxFontSize: 12,
+                    maxFontSize: 10,
                     minFontSize: 6,
                     fontFamilyName: FONT_FAMILY_NAME);
 
@@ -237,25 +283,22 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// Step3: 途中結果一覧の表示（開始インデックスから最大8件）
+        /// Step3: 総合結果一覧の表示（開始インデックスから最大8件）
+        /// DSP_COM_001 と同様に DV_Result の「総合結果」から総合順位・総合得点を取得する。
         /// </summary>
         public void Step3(JsonNode? dvResult, int 開始インデックス = 0)
         {
             EnsurePartsMainInitialized();
             if (_partsMain == null || dvResult == null) return;
 
-            var 種目結果リスト = dvResult["種目結果"]?.AsArray();
-            if (種目結果リスト == null) return;
+            // ---- 総合結果を取得 ----
+            var 総合結果リスト = dvResult["総合結果"]?.AsArray();
+            if (総合結果リスト == null || 総合結果リスト.Count == 0) return;
 
-            var 種目結果 = 種目結果リスト.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
-            if (種目結果 == null) return;
-
-            var 選手結果リスト = 種目結果["選手結果"]?.AsArray();
-            if (選手結果リスト == null) return;
-
-            var 全順位リスト = 選手結果リスト
+            // 総合順位番号昇順で並べ、開始インデックスから最大8件を取得
+            var 全順位リスト = 総合結果リスト
                 .Where(p => p != null)
-                .OrderBy(p => p!["種目順位番号"]?.GetValue<int>() ?? int.MaxValue)
+                .OrderBy(p => p!["総合順位番号"]?.GetValue<int>() ?? int.MaxValue)
                 .ToList();
             var 表示対象 = 全順位リスト
                 .Skip(開始インデックス)
@@ -268,23 +311,22 @@ namespace DSDsp.画面
             {
                 var p = 表示対象[i];
                 string 背番号 = p?["背番号"]?.ToString() ?? "";
-                string 順位表記 = p?["種目順位表記"]?.ToString() ?? "";
-                double 得点 = p?["種目得点"]?.GetValue<double>() ?? 0;
-                bool 失格 = p?["失格FLAG"]?.ToString() == "1";
+                string 順位表記 = p?["総合順位表記"]?.ToString() ?? "";
+                double 得点 = p?["総合得点"]?.GetValue<double>() ?? 0;
 
-                var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
-                string 選手名L = DSDspDataHelper.Get選手名L(選手情報);
-                string 選手名P = DSDspDataHelper.Get選手名P(選手情報);
+                var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号, 区分番号);
+                string 選手名L = Get苗字(DSDspDataHelper.Get選手名L(選手情報));
+                string 選手名P = Get苗字(DSDspDataHelper.Get選手名P(選手情報));
                 string 選手名表示 = string.IsNullOrEmpty(選手名P)
                     ? 選手名L
                     : 選手名L + "・" + 選手名P;
 
                 var 前景色 = new SolidColorBrush(Colors.DarkBlue);
 
-                _順位LB![i].Content = 失格 ? "失格" : 順位表記;
+                _順位LB![i].Content = 順位表記;
                 _背番号LB![i].Content = 背番号;
                 _選手名LB![i].Content = 選手名表示;
-                _得点LB![i].Content = 失格 ? "失格" : 得点.ToString("F3");
+                _得点LB![i].Content = 得点.ToString("F3");
 
                 _順位LB[i].Foreground = 前景色;
                 _背番号LB[i].Foreground = 前景色;
@@ -336,7 +378,8 @@ namespace DSDsp.画面
         /// <summary>
         /// Step4: 直前の Step3 で表示した行をフェードアウト
         /// </summary>
-        public void Step4()
+        /// <param name="onCompleted">フェードアウト完了後に呼び出すコールバック（省略可）</param>
+        public void Step4(Action? onCompleted = null)
         {
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
@@ -350,6 +393,10 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, _選手名LB![i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _得点LB![i], fadeOutStoryboard, 0);
             }
+
+            if (onCompleted != null)
+                fadeOutStoryboard.Completed += (s, e) => onCompleted();
+
             fadeOutStoryboard.Begin();
         }
 
@@ -368,8 +415,32 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル2, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, fadeOutStoryboard, 0);
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
+
+
+
+        /// <summary>
+        /// 氏名文字列から苗字部分を抽出する。
+        /// 半角スペース・全角スペースの最初の出現位置より前を苗字とする。
+        /// スペースが含まれない場合は文字列全体を返す。
+        /// </summary>
+        private static string Get苗字(string 氏名)
+        {
+            if (string.IsNullOrEmpty(氏名)) return 氏名;
+            int idx = -1;
+            for (int i = 0; i < 氏名.Length; i++)
+            {
+                if (氏名[i] == ' ' || 氏名[i] == '\u3000')   // 半角スペース or 全角スペース
+                {
+                    idx = i;
+                    break;
+                }
+            }
+            return idx >= 0 ? 氏名.Substring(0, idx) : 氏名;
+        }
+
 
         #endregion
     }

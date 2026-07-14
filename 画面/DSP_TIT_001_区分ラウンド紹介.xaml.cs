@@ -109,9 +109,10 @@ namespace DSDsp.画面
             
             if (_partsMain == null) return;
 
-            // ヘルパーを使用して区分名とラウンド名を取得（基底クラスのプロパティを使用）
+            // 共通ヘルパーで区分名・ラウンド名を取得し TB_左上2 に設定
             string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
             string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            PartsCOM001.TB_左上2.Text = 区分名 + "　" + ラウンド名;
 
             // 画像とタイトルを表示状態に設定
             PartsTIT001.IM_1.Visibility = Visibility.Visible;

@@ -19,6 +19,12 @@ namespace DSDsp.画面
         protected DispatcherTimer? _timer;
         protected int _currentStep = 0;
         protected bool _disposed = false;
+
+        /// <summary>
+        /// 最終ステップのフェードアウトアニメーションが完了したときに発火するイベント。
+        /// このイベントが設定されている場合、MainWindowは次の画面の表示をこのイベント完了まで待つ。
+        /// </summary>
+        public event EventHandler? LastStepFadeOutCompleted;
         
         // データソース
         private JsonNode? _daMaster;
@@ -28,6 +34,7 @@ namespace DSDsp.画面
         private string _rndNo = string.Empty;
         private int _dncNo = 0;
         private int _heatNo = 0;
+        private bool _isOverviewMode = false;
         #endregion
 
         #region プロパティ
@@ -92,6 +99,16 @@ namespace DSDsp.画面
         {
             get => _heatNo;
             set => _heatNo = value;
+        }
+
+        /// <summary>
+        /// デュエルヒート表の一覧表示モード。
+        /// true の場合、種目内の全ヒート選手一覧をヒート番号付きで表示する。
+        /// </summary>
+        public bool IsOverviewMode
+        {
+            get => _isOverviewMode;
+            set => _isOverviewMode = value;
         }
 
         /// <summary>
@@ -178,6 +195,22 @@ namespace DSDsp.画面
         /// 総ステップ数を取得
         /// </summary>
         public int GetTotalSteps() => TotalSteps;
+
+        /// <summary>
+        /// 最終ステップでフェードアウト完了まで次画面への遷移を待機するかどうか。
+        /// true にした画面では、最終Step の Storyboard.Completed で RaiseLastStepFadeOutCompleted() を呼ぶこと。
+        /// デフォルトは false（即時遷移）。
+        /// </summary>
+        public virtual bool WaitsForLastStepFadeOut => false;
+
+        /// <summary>
+        /// 最終ステップのフェードアウトアニメーション完了を通知する。
+        /// 最終 Step の Storyboard.Completed コールバックから呼び出すこと。
+        /// </summary>
+        protected void RaiseLastStepFadeOutCompleted()
+        {
+            LastStepFadeOutCompleted?.Invoke(this, EventArgs.Empty);
+        }
         #endregion
 
         #region プロテクテッドメソッド
@@ -253,7 +286,7 @@ namespace DSDsp.画面
 
             string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
             string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-            tb左上2.Text = 区分名 + " " + ラウンド名;
+            tb左上2.Text = 区分名 + "　" + ラウンド名;
 
             lb右上.Content = DSDspDataHelper.Get種目表示テキスト(DA_Master, 区分番号, ラウンド番号, 種目番号);
 
@@ -275,7 +308,7 @@ namespace DSDsp.画面
                 From = fromOffset,
                 To = 0,
                 Duration = TimeSpan.FromSeconds(durationSeconds),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
             };
 
             Storyboard.SetTarget(slideAnimation, target);

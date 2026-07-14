@@ -38,9 +38,10 @@ namespace DSDsp.画面
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数（Step0, Step1, Step2, Step3の4ステップ）
+        /// 総ステップ数（Step1(1) + Step2(1) + Step3(1) の3ステップ）
         /// </summary>
-        protected override int TotalSteps => 4;
+        protected override int TotalSteps => 3;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -68,15 +69,9 @@ namespace DSDsp.画面
         {
             switch (_currentStep)
             {
-                case 0:
-                    Step1();
-                    break;
-                case 1:
-                    Step2();
-                    break;
-                case 2:
-                    Step3();
-                    break;
+                case 0: Step1(); break;
+                case 1: Step2(); break;
+                case 2: Step3(); break;
             }
         }
         #endregion
@@ -119,7 +114,7 @@ namespace DSDsp.画面
             PartsCOM001.TB_左上1.Text = DSDspDataHelper.Get競技会名(DA_Master);
             string 区分名H = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
             string ラウンド名H = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-            PartsCOM001.TB_左上2.Text = 区分名H + " " + ラウンド名H;
+            PartsCOM001.TB_左上2.Text = 区分名H + "　" + ラウンド名H;
         }
 
         /// <summary>
@@ -204,6 +199,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT002.IM_種目1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT002.IM_種目2, fadeOutStoryboard, 0);
 
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
         #endregion

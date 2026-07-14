@@ -14,7 +14,7 @@
             <ColumnDefinition Width="262*"/>
         </Grid.ColumnDefinitions>
         <!-- フレーム16対9背景 -->
-        <frame:フレーム16対9_UC x:Name="FrameBackground" Grid.ColumnSpan="2"/>
+        <frame:フレーム16対9_UC x:Name="FrameBackground" Grid.ColumnSpan="2" RenderTransformOrigin="0.501,0.551"/>
 
         <!-- 左上パーツ: JDSFロゴと競技会名 -->
         <parts:COM001_左上 x:Name="PartsCOM001"
@@ -32,14 +32,14 @@
         <parts:COM003_右上02 x:Name="PartsCOM003"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
-                   Margin="0,0,0,0"/>
+                   Margin="0,1,0,0"/>
 
         <!-- DUE選手結果_小 -->
         <parts:DUE002_デュエル選手結果_小 x:Name="PartsDUE002"
                    Grid.ColumnSpan="2"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
-                   Margin="0,0,0,0"/>
+                   Margin="0,57,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

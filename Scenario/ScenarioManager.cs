@@ -40,8 +40,10 @@ namespace DSDsp.Scenario
             ["Duel"] = new()
             {
                 ("DSP_TIT_002", "DSP_TIT_003"),
-                ("DSP_TIT_006", "DSP_TIT_007"),
+                ("DSP_GRP_001", "DSP_GRP_002"),
+                ("DSP_GRP_003", "DSP_GRP_004"),
                 ("DSP_DUE_001", "DSP_DUE_002"),
+                ("DSP_DUE_003", "DSP_DUE_004"),
                 ("DSP_SOL_007", "DSP_SOL_008"),
             },
         };
@@ -301,6 +303,18 @@ namespace DSDsp.Scenario
                     AddFirstEnabled(result, groupScreens,
                         new[] { "DSP_TIT_002", "DSP_TIT_003" }, danceNo, 0, "種目紹介");
 
+                    // デュエル競技の場合、種目先頭に全ヒート選手一覧（ヒート表）を1回表示
+                    if (dncSg is "D" or "Duel")
+                    {
+                        // ヒートリストを先取りして全ヒートのヒート表アイテムを追加（ヒート番号=0 で一覧モード）
+                        var previewHeats = dance["DS_PRGHEATs"]?.AsArray();
+                        if (previewHeats != null && previewHeats.Count > 0)
+                        {
+                            AddFirstEnabledOverview(result, groupScreens,
+                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, "デュエルヒート表");
+                        }
+                    }
+
                     // 4. ヒートリストを取得して昇順ソート
                     var heats = dance["DS_PRGHEATs"]?.AsArray();
                     if (heats == null || heats.Count == 0)
@@ -345,12 +359,26 @@ namespace DSDsp.Scenario
                         }
                         else // "D"
                         {
-                            // デュエル競技
-                            AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_TIT_006", "DSP_TIT_007" }, danceNo, heatNo, "デュエル選手紹介");
+                            // デュエル競技：ヒートの出場選手数によって使用画面を切り替え
+                            int 出場選手数 = GetHeatPlayerCount(prgrs, danceNo, heatNo, sortedHeats);
+                            if (出場選手数 >= 3)
+                            {
+                                // 3組以上：グループ用画面で表示
+                                AddFirstEnabled(result, groupScreens,
+                                    new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, "デュエル選手紹介（3組以上）");
 
-                            AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_DUE_001", "DSP_DUE_002" }, danceNo, heatNo, "デュエル選手結果");
+                                AddFirstEnabled(result, groupScreens,
+                                    new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, "デュエル選手結果（3組以上）");
+                            }
+                            else
+                            {
+                                // 2組以下：デュエル専用画面で表示
+                                AddFirstEnabled(result, groupScreens,
+                                    new[] { "DSP_DUE_001", "DSP_DUE_002" }, danceNo, heatNo, "デュエル選手紹介");
+
+                                AddFirstEnabled(result, groupScreens,
+                                    new[] { "DSP_DUE_003", "DSP_DUE_004" }, danceNo, heatNo, "デュエル選手結果");
+                            }
 
                             AddFirstEnabled(result, groupScreens,
                                 new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, "途中結果");
@@ -525,6 +553,72 @@ namespace DSDsp.Scenario
                     return; // 最初の1件だけ追加
                 }
             }
+        }
+
+        /// <summary>
+        /// 候補画面IDリストの中から Enabled:true の最初の1件を IsOverviewMode=true で result へ追加する。
+        /// デュエルヒート表（種目先頭の全ヒート選手一覧）用。
+        /// </summary>
+        private static void AddFirstEnabledOverview(
+            List<AjsProgressItem> result,
+            Dictionary<string, AjsScreenEntry> group,
+            string[] candidates,
+            int danceNo,
+            string description)
+        {
+            foreach (var screenId in candidates)
+            {
+                if (group.TryGetValue(screenId, out var entry) && entry.Enabled)
+                {
+                    result.Add(new AjsProgressItem
+                    {
+                        ScreenId       = screenId,
+                        DanceNo        = danceNo,
+                        HeatNo         = 0,
+                        Description    = description,
+                        IsOverviewMode = true,
+                    });
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 指定のヒートに出場する選手数を PlayerAssignments から計算する。
+        /// </summary>
+        private static int GetHeatPlayerCount(
+            JsonNode? prgrs,
+            int danceNo,
+            int heatNo,
+            System.Collections.Generic.List<System.Text.Json.Nodes.JsonNode?> sortedHeats)
+        {
+            if (prgrs == null) return 0;
+
+            // ヒートの HeatId を取得
+            var heat = sortedHeats.FirstOrDefault(h => h?["DS_HeatNo"]?.GetValue<int>() == heatNo);
+            if (heat == null) return 0;
+            var heatId = heat["DS_HeatId"]?.ToString();
+            if (string.IsNullOrEmpty(heatId)) return 0;
+
+            // PlayerAssignments からこの HeatId を持つ選手数をカウント
+            var playerAssignments = prgrs["PlayerAssignments"]?.AsArray();
+            if (playerAssignments == null) return 0;
+
+            int count = 0;
+            foreach (var assignment in playerAssignments)
+            {
+                var assignedHeatIds = assignment?["AssignedHeatIds"]?.AsArray();
+                if (assignedHeatIds == null) continue;
+                foreach (var id in assignedHeatIds)
+                {
+                    if (id?.ToString() == heatId)
+                    {
+                        count++;
+                        break;
+                    }
+                }
+            }
+            return count;
         }
 
         // -------------------------------------------------------------------------

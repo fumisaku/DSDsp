@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Windows;
@@ -26,7 +26,8 @@ namespace DSDsp.画面
         /// <summary>
         /// ステップ数: Step1(0), Step2(1), Step3(2) の 3 ステップ
         /// </summary>
-        protected override int TotalSteps => 3;
+        protected override int TotalSteps => 2;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -41,17 +42,18 @@ namespace DSDsp.画面
         {
             switch (_currentStep)
             {
-                case 0: Step1(); break;
-                case 1: Step2(); break;
-                case 2: Step3(); break;
+                case 0: Step1(); Step2(); break;
+                case 1: Step3(); break;
             }
         }
 
         protected override void EnsurePartsMainInitialized()
         {
+            bool wasNull = (_partsMain == null);
             base.EnsurePartsMainInitialized();
-            if (_partsMain != null)
+            if (wasNull && _partsMain != null)
             {
+                // 初回のみ非表示を実行
                 非表示();
             }
         }
@@ -67,6 +69,7 @@ namespace DSDsp.画面
             PartsTIT006.IM_種目1_2.Visibility = Visibility.Collapsed;
             PartsTIT006.IM_種目2_1.Visibility = Visibility.Collapsed;
             PartsTIT006.IM_種目2_2.Visibility = Visibility.Collapsed;
+            PartsTIT006.IM_VS.Visibility = Visibility.Collapsed;
 
             // テキスト共通（演技順 = ヒート表示）
             PartsTIT006.LB_演技順.Visibility   = Visibility.Collapsed;
@@ -122,8 +125,8 @@ namespace DSDsp.画面
             string 背番号2 = 背番号リスト.Count > 1 ? 背番号リスト[1] : "???";
 
             // ---- DA_Masterから選手情報を取得 ----
-            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, 背番号1);
-            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, 背番号2);
+            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, 背番号1, 区分番号);
+            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, 背番号2, 区分番号);
 
             string 選手名L1 = DSDspDataHelper.Get選手名L(選手1);
             string 選手名P1 = DSDspDataHelper.Get選手名P(選手1);
@@ -143,6 +146,7 @@ namespace DSDsp.画面
             PartsTIT006.IM_種目1_2.Opacity = 0;
             PartsTIT006.IM_種目2_1.Opacity = 0;
             PartsTIT006.IM_種目2_2.Opacity = 0;
+            PartsTIT006.IM_VS.Visibility = Visibility.Visible;
 
             // テキスト
             PartsTIT006.LB_演技順.Visibility   = Visibility.Visible;
@@ -227,6 +231,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT006.IM_種目1_2, sb, 0);
             _partsMain.フェードアウト(true, PartsTIT006.IM_種目2_1, sb, 0);
             _partsMain.フェードアウト(true, PartsTIT006.IM_種目2_2, sb, 0);
+            _partsMain.フェードアウト(true, PartsTIT006.IM_VS, sb, 0);
 
             foreach (var lb in new System.Windows.Controls.Label[]
             {
@@ -240,6 +245,7 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, lb, sb, 0);
             }
 
+            sb.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             sb.Begin();
         }
 

@@ -33,23 +33,19 @@ namespace DSDsp.パーツ
             {
                 if (obj.Opacity == 0)
                 {
-                    DoubleAnimation fadeInAnimation = new DoubleAnimation();
+                    var fadeInAnimation = new DoubleAnimation
+                    {
+                        Duration = fadeFlag
+                            ? new Duration(TimeSpan.FromMilliseconds(800))
+                            : new Duration(TimeSpan.FromMilliseconds(250)),
+                        BeginTime = TimeSpan.FromMilliseconds(beginTime),
+                        From = 0.0,
+                        To = 1.0,
+                        DecelerationRatio = 0.8,
+                    };
 
                     Storyboard.SetTarget(fadeInAnimation, obj);
-
-                    fadeInAnimation.Duration = fadeFlag
-                        ? new Duration(TimeSpan.FromMilliseconds(800))
-                        : new Duration(TimeSpan.FromMilliseconds(250));
-
-                    fadeInAnimation.BeginTime = TimeSpan.FromMilliseconds(beginTime);
-                    fadeInAnimation.From = 0.0;
-                    fadeInAnimation.To = 1.0;
-                    fadeInAnimation.DecelerationRatio = 0.8;
-
-                    Storyboard.SetTargetProperty(
-                        fadeInAnimation,
-                        new PropertyPath("Opacity"));
-
+                    Storyboard.SetTargetProperty(fadeInAnimation, new PropertyPath("Opacity"));
                     sb.Children.Add(fadeInAnimation);
 
                     obj.Visibility = Visibility.Visible;
@@ -61,23 +57,19 @@ namespace DSDsp.パーツ
         {
             if (obj != null)
             {
-                DoubleAnimation fadeOutAnimation = new DoubleAnimation();
+                var fadeOutAnimation = new DoubleAnimation
+                {
+                    Duration = fadeFlag
+                        ? new Duration(TimeSpan.FromMilliseconds(800))
+                        : new Duration(TimeSpan.FromMilliseconds(100)),
+                    BeginTime = TimeSpan.FromMilliseconds(beginTime),
+                    From = 1.0,
+                    To = 0.0,
+                    DecelerationRatio = 0.8,
+                };
 
                 Storyboard.SetTarget(fadeOutAnimation, obj);
-
-                fadeOutAnimation.Duration = fadeFlag
-                    ? new Duration(TimeSpan.FromMilliseconds(800))
-                    : new Duration(TimeSpan.FromMilliseconds(100));
-
-                fadeOutAnimation.BeginTime = TimeSpan.FromMilliseconds(beginTime);
-                fadeOutAnimation.From = 1.0;
-                fadeOutAnimation.To = 0.0;
-                fadeOutAnimation.DecelerationRatio = 0.8;
-
-                Storyboard.SetTargetProperty(
-                    fadeOutAnimation,
-                    new PropertyPath("Opacity"));
-
+                Storyboard.SetTargetProperty(fadeOutAnimation, new PropertyPath("Opacity"));
                 sb.Children.Add(fadeOutAnimation);
 
                 obj.Visibility = Visibility.Visible;

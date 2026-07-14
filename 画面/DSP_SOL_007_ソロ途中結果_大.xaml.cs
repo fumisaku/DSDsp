@@ -49,17 +49,19 @@ namespace DSDsp.画面
         private Label[]? _得点LB;
         // 直前の Step3 で実際に表示した件数（Step4 のフェードアウト範囲を限定するために使用）
         private int _前回表示件数 = 0;
+        // Step1 で確定したページ数（TotalSteps を一定に保つために使用）
+        private int _ページ数 = 1;
         #endregion
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数：Step1(1) + Step2(1) + [Step3+Step4] × ページ数 + Step5(1)
-        /// ヒート番号が 8 以下なら 5 ステップ、9～16 なら 7 ステップ、以降 2 ずつ増加。
+        /// 総ステップ数：Step1+Step2+Step3(1) + Step4(1) + [Step3+Step4] × (ページ数-1) + Step5(1)
+        /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
+        /// 1ページのみの場合：Step0(Step1+Step2+Step3) + Step1(Step4→Step5自動) = 2ステップ
+        /// 複数ページの場合：Step0 + Step1(Step4) + [Step3+Step4]*(n-1) + Step5 = _ページ数*2+1 ステップ
         /// </summary>
-        protected override int TotalSteps => 2 + ページ数 * 2 + 1;
-
-        /// <summary>表示ページ数（8件/ページ）</summary>
-        private int ページ数 => Math.Max(1, (int)Math.Ceiling(ヒート番号 / 8.0));
+        protected override int TotalSteps => _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -86,36 +88,45 @@ namespace DSDsp.画面
         protected override void ExecuteCurrentStep()
         {
             // ステップ割り当て:
-            //   case 0       → Step1
-            //   case 1       → Step2
-            //   case 2+p*2   → Step3 (p=0,1,2... ページ目)
-            //   case 3+p*2   → Step4
+            //   case 0       → Step1 + Step2 + Step3(p=0) 自動実行
+            //   case 1       → Step4(p=0)  ※1ページのみの場合はStep4完了後にStep5も自動実行
+            //   case 1+p*2   → Step3(p=1,2...) ※p≥1 の場合
+            //   case 2+p*2   → Step4(p=1,2...)  ※最終ページの場合はStep4完了後にStep5も自動実行
             //   最後          → Step5
             if (_currentStep == 0)
             {
                 Step1();
-                return;
-            }
-            if (_currentStep == 1)
-            {
                 Step2();
+                // Step1+Step2の直後に1ページ目のStep3を自動実行
+                Step3(DV_Result, 0);
                 return;
             }
 
-            // Step3/Step4 の繰り返しブロック（case 2以降、2ステップずつ）
-            int ブロック内 = _currentStep - 2;   // 0始まり
-            int ページ = ブロック内 / 2;
-            int ブロック位置 = ブロック内 % 2;
+            // _currentStep=1 以降: Step4(p=0), Step3(p=1), Step4(p=1), ...
+            int ブロック内 = _currentStep;   // 1→Step4(p=0), 2→Step3(p=1), 3→Step4(p=1)...
 
-            if (ページ < ページ数)
+            // p=0 のStep4 (ブロック内=1)
+            if (ブロック内 == 1)
             {
-                if (ブロック位置 == 0)
+                // 1ページのみの場合はStep4完了後にStep5を自動実行
+                Step4(_ページ数 == 1 ? (Action)Step5 : null);
+                return;
+            }
+
+            // p≥1 のStep3/Step4 (ブロック内≥2, 2ステップずつ)
+            int p = (ブロック内 - 2) / 2 + 1;     // ページ番号（1始まり）
+            int pos = (ブロック内 - 2) % 2;        // 0=Step3, 1=Step4
+
+            if (p < _ページ数)
+            {
+                if (pos == 0)
                 {
-                    Step3(DV_Result, ページ * 8);
+                    Step3(DV_Result, p * 8);
                 }
                 else
                 {
-                    Step4();
+                    // 最終ページのStep4完了後はStep5を自動実行
+                    Step4(p == _ページ数 - 1 ? (Action)Step5 : null);
                 }
                 return;
             }
@@ -157,7 +168,7 @@ namespace DSDsp.画面
                 // 選手名: Left=122、Width=290 → 右端 412（所属との間に余白）
                 選手名リスト[i].Width = 290;
                 // 所属: Left=330、Width=90 → 右端 420（得点 Left=422 に被らない）
-                Canvas.SetLeft(所属リスト[i], 330);
+                Canvas.SetLeft(所属リスト[i], 340);
                 所属リスト[i].Width = 90;
                 減点リスト[i].Visibility = Visibility.Collapsed;
             }
@@ -255,11 +266,18 @@ namespace DSDsp.画面
 
             // COM001/COM002 の標準ヘッダを設定（競技会名・区分ラウンド名・種目情報）
             _採点方式ID = SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
+
+            // DV_Result から選手結果件数を取得し、ページ数を確定する（TotalSteps を固定するため）
+            var 種目結果リスト = DV_Result?["種目結果"]?.AsArray();
+            var 種目結果 = 種目結果リスト?.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
+            int 件数 = 種目結果?["選手結果"]?.AsArray()?.Count ?? 0;
+            _ページ数 = Math.Max(1, (int)Math.Ceiling(件数 / 8.0));
+
             if (DA_Master == null) return;
 
             // DS_Statusから選手情報を取得
             _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号, 区分番号);
             _選手名L = DSDspDataHelper.Get選手名L(選手情報);
             _選手名P = DSDspDataHelper.Get選手名P(選手情報);
 
@@ -386,11 +404,11 @@ namespace DSDsp.画面
                     var 一般減点Array = p?["一般減点"]?.AsArray();
                     if (一般減点Array != null)
                         foreach (var r in 一般減点Array)
-                            減点合計 += r?["減点値"]?.GetValue<double>() ?? 0;
+                            減点合計 += r?["一般減点"]?.GetValue<double>() ?? 0;
                 }
 
                 // 選手情報
-                var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
+                var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号, 区分番号);
                 string 選手名L = DSDspDataHelper.Get選手名L(選手情報);
                 string 選手名P = DSDspDataHelper.Get選手名P(選手情報);
                 string 選手名表示 = string.IsNullOrEmpty(選手名P)
@@ -411,11 +429,16 @@ namespace DSDsp.画面
                 _減点LB[i].Content = 失格 ? "" : (減点合計 == 0 ? "" : 減点合計.ToString("F1"));
                 _得点LB[i].Content = 失格 ? "失格" : 得点.ToString("F3");
 
+                // 減点が0より大きい場合は赤字、それ以外は通常色
+                var 減点前景色 = (!失格 && 減点合計 != 0)
+                    ? new SolidColorBrush(Colors.Red)
+                    : 前景色;
+
                 _順位LB[i].Foreground = 前景色;
                 _背番号LB[i].Foreground = 前景色;
                 _選手名LB[i].Foreground = 前景色;
                 _所属LB[i].Foreground = 前景色;
-                _減点LB[i].Foreground = 前景色;
+                _減点LB[i].Foreground = 減点前景色;
                 _得点LB[i].Foreground = 前景色;
 
                 // Visibility は Collapsed のまま（フェードイン時に Visible にする）
@@ -488,7 +511,8 @@ namespace DSDsp.画面
         /// Step4: 直前の Step3 で表示した行だけフェードアウト。
         /// 表示していない行（Opacity=0）には触れず、一瞬見えてしまう現象を防ぐ。
         /// </summary>
-        public void Step4()
+        /// <param name="onCompleted">フェードアウト完了後に呼び出すコールバック（省略可）</param>
+        public void Step4(Action? onCompleted = null)
         {
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
@@ -507,6 +531,9 @@ namespace DSDsp.画面
           //      _partsMain.フェードアウト(true, _減点LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _得点LB[i], fadeOutStoryboard, 0);
             }
+
+            if (onCompleted != null)
+                fadeOutStoryboard.Completed += (s, e) => onCompleted();
 
             fadeOutStoryboard.Begin();
         }
@@ -529,6 +556,7 @@ namespace DSDsp.画面
 
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
 

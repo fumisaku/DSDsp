@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -23,7 +23,8 @@ namespace DSDsp.画面
         /// <summary>
         /// ステップ数: Step1(0), Step2(1), Step3(2) の 3 ステップ
         /// </summary>
-        protected override int TotalSteps => 3;
+        protected override int TotalSteps => 2;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -38,17 +39,18 @@ namespace DSDsp.画面
         {
             switch (_currentStep)
             {
-                case 0: Step1(); break;
-                case 1: Step2(); break;
-                case 2: Step3(); break;
+                case 0: Step1(); Step2(); break;
+                case 1: Step3(); break;
             }
         }
 
         protected override void EnsurePartsMainInitialized()
         {
+            bool wasNull = (_partsMain == null);
             base.EnsurePartsMainInitialized();
-            if (_partsMain != null)
+            if (wasNull && _partsMain != null)
             {
+                // 初回のみ非表示を実行
                 非表示();
             }
         }
@@ -64,6 +66,7 @@ namespace DSDsp.画面
             PartsTIT007.IM_種目1_2.Visibility = Visibility.Collapsed;
             PartsTIT007.IM_種目2_1.Visibility = Visibility.Collapsed;
             PartsTIT007.IM_種目2_2.Visibility = Visibility.Collapsed;
+            PartsTIT007.IM_VS.Visibility = Visibility.Collapsed;
 
             // テキスト共通
             PartsTIT007.LB_演技順.Visibility      = Visibility.Collapsed;
@@ -116,13 +119,15 @@ namespace DSDsp.画面
             string 背番号2 = 背番号リスト.Count > 1 ? 背番号リスト[1] : "???";
 
             // ---- DA_Masterから選手情報を取得 ----
-            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, 背番号1);
-            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, 背番号2);
+            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, 背番号1, 区分番号);
+            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, 背番号2, 区分番号);
 
             // TIT007 は1行ラベルのため「背番号 選手名L・選手名P」を1つの文字列にまとめる
             string 選手名L1 = DSDspDataHelper.Get選手名L(選手1);
             string 選手名P1 = DSDspDataHelper.Get選手名P(選手1);
             string 所属1   = DSDspDataHelper.Get所属(選手1);
+
+
             string 選手紹介1 = string.IsNullOrEmpty(選手名P1)
                 ? $"{背番号1} {選手名L1}"
                 : $"{背番号1} {選手名L1}・{選手名P1}";
@@ -143,6 +148,7 @@ namespace DSDsp.画面
             PartsTIT007.IM_種目1_2.Opacity = 0;
             PartsTIT007.IM_種目2_1.Opacity = 0;
             PartsTIT007.IM_種目2_2.Opacity = 0;
+            PartsTIT007.IM_VS.Visibility = Visibility.Visible;
 
             PartsTIT007.LB_演技順.Visibility     = Visibility.Visible;
             PartsTIT007.LB_選手紹介_1.Visibility = Visibility.Visible;
@@ -157,18 +163,29 @@ namespace DSDsp.画面
             PartsTIT007.LB_選手紹介_2.Content = 選手紹介2;
             PartsTIT007.LB_所属_2.Content     = 所属2;
 
-            // ---- フォントサイズ自動調整 ----
+            // ---- フォントサイズ自動調整（選手紹介: 14～8）----
             foreach (var (lb, txt) in new[]
             {
                 (PartsTIT007.LB_選手紹介_1, 選手紹介1),
-                (PartsTIT007.LB_所属_1,     所属1),
                 (PartsTIT007.LB_選手紹介_2, 選手紹介2),
-                (PartsTIT007.LB_所属_2,     所属2),
             })
             {
                 _partsMain.フォントサイズ自動調整(
                     label: lb, text: txt,
                     maxWidth: 280, maxFontSize: 14, minFontSize: 8,
+                    fontFamilyName: FONT_FAMILY_NAME);
+            }
+
+            // ---- フォントサイズ自動調整（所属: 12～6）----
+            foreach (var (lb, txt) in new[]
+            {
+                (PartsTIT007.LB_所属_1, 所属1),
+                (PartsTIT007.LB_所属_2, 所属2),
+            })
+            {
+                _partsMain.フォントサイズ自動調整(
+                    label: lb, text: txt,
+                    maxWidth: 280, maxFontSize: 12, minFontSize: 6,
                     fontFamilyName: FONT_FAMILY_NAME);
             }
 
@@ -191,7 +208,7 @@ namespace DSDsp.画面
             {
                 PartsTIT007.LB_演技順,
                 PartsTIT007.LB_選手紹介_1, PartsTIT007.LB_所属_1,
-                PartsTIT007.LB_選手紹介_2, PartsTIT007.LB_所属_2,
+                PartsTIT007.LB_選手紹介_2, PartsTIT007.LB_所属_2,                
             })
             {
                 lb.Opacity = 0;
@@ -214,6 +231,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT007.IM_種目1_2, sb, 0);
             _partsMain.フェードアウト(true, PartsTIT007.IM_種目2_1, sb, 0);
             _partsMain.フェードアウト(true, PartsTIT007.IM_種目2_2, sb, 0);
+            _partsMain.フェードアウト(true, PartsTIT007.IM_VS, sb, 0);
 
             foreach (var lb in new System.Windows.Controls.Label[]
             {
@@ -225,6 +243,7 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, lb, sb, 0);
             }
 
+            sb.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             sb.Begin();
         }
 

@@ -134,6 +134,13 @@ namespace DSDsp.Scenario
         /// <summary>説明（表示用）</summary>
         public string Description { get; set; } = string.Empty;
 
+        /// <summary>
+        /// デュエルヒート表の一覧表示モード。
+        /// true の場合、DSP_GRP_001 は種目内の全ヒート選手一覧を表示し、
+        /// 順位列にヒート番号（"1H", "2H" など）を表示する。
+        /// </summary>
+        public bool IsOverviewMode { get; set; } = false;
+
         public override string ToString()
         {
             if (DanceNo == 0 && HeatNo == 0)

@@ -38,6 +38,9 @@ namespace DSDsp
         // AJS区分情報（キー: 表示テキスト, 値: "区分No-ラウンドNo"）
         private Dictionary<string, string> _ajsCategoryKeys = new Dictionary<string, string>();
 
+        // プログラムによる LstAjsProgress.SelectedIndex 変更時に SelectionChanged を無視するフラグ
+        private bool _suppressAjsSelectionChanged = false;
+
         // テスト用データマネージャー（サーバー未接続時にJSONファイルから直接投入）
         private DataManager? _testDataManager;
 
@@ -337,9 +340,7 @@ namespace DSDsp
             _fullScreenWindow.WindowState = WindowState.Normal;
             _fullScreenWindow.Topmost = true;
             _fullScreenWindow.Show();
-            // Visibility.Hidden ではなく Opacity=0 + Visibility=Visible で「非表示」を表現する。
-            // Hidden にするとDWMのウィンドウ再表示アニメーション（フェードイン）が発生するため。
-            _fullScreenWindow.Opacity = 0;
+            _fullScreenWindow.Visibility = Visibility.Hidden;
 
             // オフスクリーンウィンドウが既にあればミラーソースを設定
             if (_offScreenWindow != null)
@@ -379,7 +380,6 @@ namespace DSDsp
             _fullScreenWindow.Width  = screen.Bounds.Width  / dpiScaleX;
             _fullScreenWindow.Height = screen.Bounds.Height / dpiScaleY;
 
-            _fullScreenWindow.Opacity = 1;
             _fullScreenWindow.Visibility = Visibility.Visible;
             _activeScreenIndex = screenIndex;
             UpdateToggleDisplayButton(true);
@@ -411,10 +411,10 @@ namespace DSDsp
         /// </summary>
         private void BtnToggleDisplay_Click(object sender, RoutedEventArgs e)
         {
-            if (_fullScreenWindow != null && _fullScreenWindow.Opacity > 0)
+            if (_fullScreenWindow != null && _fullScreenWindow.IsVisible)
             {
-                // 表示中 → 非表示（Opacity=0 で隠す。Visibility.Hidden はDWMアニメーションを誘発するため使わない）
-                _fullScreenWindow.Opacity = 0;
+                // 表示中 → 非表示
+                _fullScreenWindow.Visibility = Visibility.Hidden;
                 _activeScreenIndex = -1;
                 UpdateToggleDisplayButton(false);
                 _log?.LogAdd("全画面表示を非表示", _log.INFO);
@@ -436,8 +436,8 @@ namespace DSDsp
                 }
                 else
                 {
-                    // 同じスクリーン・ウィンドウ既存 → Opacity を戻すだけ（DWMアニメーションなし）
-                    _fullScreenWindow.Opacity = 1;
+                    // 同じスクリーン・ウィンドウ既存 → Visible に戻すだけ
+                    _fullScreenWindow.Visibility = Visibility.Visible;
                     UpdateToggleDisplayButton(true);
                     _log?.LogAdd($"スクリーン{_selectedScreenIndex + 1}に全画面表示を再表示", _log.INFO);
                 }
@@ -652,6 +652,9 @@ namespace DSDsp
 
         private void LstAjsProgress_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // プログラムによる変更（ステップ進行中の自動移動）のときは _currentStep をリセットしない
+            if (_suppressAjsSelectionChanged) return;
+
             _currentAjsIndex = LstAjsProgress.SelectedIndex;
             _currentStep = 0;
             _log?.LogAdd($"AJS項目選択: {_currentAjsIndex}", _log.DEBUG);
@@ -793,6 +796,7 @@ namespace DSDsp
             {
                 "DSP_TIT_001" => new 画面.DSP_TIT_001_区分ラウンド紹介(),
                 "DSP_TIT_002" => new 画面.DSP_TIT_002_種目紹介大(),
+                "DSP_TIT_003" => new 画面.DSP_TIT_003_種目紹介小(),
                 "DSP_SOL_001" => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
                 "DSP_SOL_002" => new 画面.DSP_SOL_002_ソロ選手紹介_小(),
                 "DSP_SOL_003" => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
@@ -805,7 +809,13 @@ namespace DSDsp
                 "DSP_GRP_002" => new 画面.DSP_GRP_002_出場選手一覧_小(),
                 "DSP_GRP_003" => new 画面.DSP_GRP_003_結果一覧_大(),
                 "DSP_GRP_004" => new 画面.DSP_GRP_004_結果一覧_小(),
+                "DSP_DUE_001" => new 画面.DSP_DUE_001_DUE選手紹介_大(),
+                "DSP_DUE_002" => new 画面.DSP_DUE_002_DUE選手紹介_小(),
+                "DSP_DUE_003" => new 画面.DSP_DUE_003_DUE選手結果_大(),
+                "DSP_DUE_004" => new 画面.DSP_DUE_004_DUE選手結果_小(),
                 "DSP_COM_001" => new 画面.DSP_COM_001_総合結果一覧_大(),
+                "DSP_COM_002" => new 画面.DSP_COM_002_総合結果一覧_小(),
+
                 _ => null
             };
 
@@ -828,6 +838,7 @@ namespace DSDsp
                 screen.ラウンド番号 = roundNo;
                 screen.種目番号    = item.DanceNo;
                 screen.ヒート番号  = item.HeatNo;
+                screen.IsOverviewMode = item.IsOverviewMode;
 
                 // オフスクリーンに画面を表示（モニター・全画面ミラーに自動反映）
                 _offScreenWindow?.ShowScreen(screen);
@@ -852,9 +863,23 @@ namespace DSDsp
 
                 if (_currentAjsIndex < _currentAjsProgressItems.Count)
                 {
-                    LstAjsProgress.SelectedIndex = _currentAjsIndex;
-                    _log?.LogAdd($"次の画面へ移動: Index={_currentAjsIndex}", _log.INFO);
-                    ExecuteAjsStep();
+                    // 最終StepにフェードアウトWait設定がある場合は完了イベントを待つ
+                    if (currentScreen.WaitsForLastStepFadeOut)
+                    {
+                        // イベントが発火したときに次の画面遷移を実行
+                        void OnFadeOutCompleted(object? s, EventArgs e)
+                        {
+                            currentScreen.LastStepFadeOutCompleted -= OnFadeOutCompleted;
+                            // UIスレッドで実行（Storyboard.Completed はUIスレッドで呼ばれるが念のため）
+                            Dispatcher.Invoke(() => MoveToNextAjsScreen());
+                        }
+                        currentScreen.LastStepFadeOutCompleted += OnFadeOutCompleted;
+                    }
+                    else
+                    {
+                        // フェードアウト完了イベントなし → 即時遷移（従来動作）
+                        MoveToNextAjsScreen();
+                    }
                 }
                 else
                 {
@@ -866,6 +891,23 @@ namespace DSDsp
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// AJS次の画面へ遷移し、Step0を実行する。
+        /// フェードアウト完了イベントのコールバックまたは即時遷移の両方から呼ばれる。
+        /// </summary>
+        private void MoveToNextAjsScreen()
+        {
+            _suppressAjsSelectionChanged = true;
+            LstAjsProgress.SelectedIndex = _currentAjsIndex;
+            _suppressAjsSelectionChanged = false;
+            _log?.LogAdd($"次の画面へ移動: Index={_currentAjsIndex}", _log.INFO);
+            bool nextStepDone = ExecuteAjsStep();
+            // ExecuteAjsStep() で次の画面の Step0（Step1+Step2自動実行）が正常完了した場合、
+            // _currentStep を 1 に進めておく（次の再生ボタンで Step1 から続きを実行するため）
+            if (nextStepDone)
+                _currentStep = 1;
         }
 
         /// <summary>

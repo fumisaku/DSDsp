@@ -37,8 +37,7 @@
         <!-- DUE選手紹介_小 -->
         <parts:TIT007_下_選手紹介_デュエル x:Name="PartsTIT007"
                    HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Margin="0,0,0,0"/>
+                   VerticalAlignment="Top" Margin="0,37,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

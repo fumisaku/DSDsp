@@ -135,34 +135,49 @@ namespace DSDsp.画面
 
             string 種目カテゴリ = Get種目カテゴリ(daMaster, kbnNo, rndNo, dncNo);
             string 種目名 = Get種目名(daMaster, kbnNo, rndNo, dncNo);
-            return $"{dncNo}種目目 {種目カテゴリ} {種目名}";
+            return $"{dncNo}種目目　{種目カテゴリ}　{種目名}";
         }
 
         /// <summary>
-        /// 選手情報を取得（背番号から検索）
+        /// 選手情報を取得（区分番号 + 背番号で検索）。
+        /// 区分の DB_KbnSenM（選手マスターID）と一致する DM_MasNo を持つ DM_MASTER の中から
+        /// DM_No（背番号）が一致するものを返す。
+        /// kbnNo が空またはマスターIDが未設定の場合は背番号のみで全件検索する（後方互換）。
         /// </summary>
-        public static JsonNode? Get選手情報(JsonNode? daMaster, string 背番号)
+        public static JsonNode? Get選手情報(JsonNode? daMaster, string 背番号, string kbnNo = "")
         {
             if (daMaster == null) return null;
-            
+
             var members = daMaster["DM_MEMBERs"]?.AsArray();
             if (members == null) return null;
-            
+
+            // 区分番号が指定されている場合は DB_KbnSenM（選手マスターID）を取得して絞り込む
+            string? senM = null;
+            if (!string.IsNullOrEmpty(kbnNo))
+            {
+                var kubun = Get区分(daMaster, kbnNo);
+                senM = kubun?["DB_KbnSenM"]?.ToString();
+            }
+
             foreach (var member in members)
             {
                 var masters = member?["DM_MASTERs"]?.AsArray();
-                if (masters != null)
+                if (masters == null) continue;
+
+                foreach (var master in masters)
                 {
-                    foreach (var master in masters)
+                    // 選手マスターIDによる絞り込み（senM が取得できた場合のみ適用）
+                    if (!string.IsNullOrEmpty(senM))
                     {
-                        if (master?["DM_No"]?.ToString() == 背番号)
-                        {
-                            return master;
-                        }
+                        var masNo = master?["DM_MasNo"]?.ToString();
+                        if (masNo != senM) continue;
                     }
+
+                    if (master?["DM_No"]?.ToString() == 背番号)
+                        return master;
                 }
             }
-            
+
             return null;
         }
 
@@ -375,6 +390,91 @@ namespace DSDsp.画面
                                 }
                             }
                         }
+                        return result;
+                    }
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// DS_Statusから指定種目の全ヒート選手一覧を取得する（デュエルヒート表用）。
+        /// 戻り値: (ヒート番号, 背番号) のリスト。ヒート番号昇順にソート済み。
+        /// 同一ヒートに複数選手がいる場合、それぞれ個別エントリで返す。
+        /// </summary>
+        public static List<(int HeatNo, string PlayerNo)> Get全ヒート選手リスト(
+            JsonNode? dsStatus, string kbnNo, string rndNo, int dncNo)
+        {
+            var result = new List<(int, string)>();
+            if (dsStatus == null) return result;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return result;
+
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+
+                    var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
+                    if (prgDances == null) continue;
+
+                    foreach (var prgDance in prgDances)
+                    {
+                        if (prgDance?["DS_DncNo"]?.GetValue<int>() != dncNo) continue;
+
+                        var heats = prgDance?["DS_PRGHEATs"]?.AsArray();
+                        if (heats == null) return result;
+
+                        // ヒートID → ヒート番号 の対応表を作成
+                        var heatIdToNo = new System.Collections.Generic.Dictionary<string, int>();
+                        foreach (var heat in heats)
+                        {
+                            var hId = heat?["DS_HeatId"]?.ToString();
+                            var hNo = heat?["DS_HeatNo"]?.GetValue<int>() ?? 0;
+                            if (!string.IsNullOrEmpty(hId))
+                                heatIdToNo[hId!] = hNo;
+                        }
+
+                        // PlayerAssignments から各選手のヒート番号を収集
+                        // 各選手は複数ヒートに出場するが、ここでは全選手×全ヒートの組み合わせを返す
+                        // デュエルヒート表では「1ヒートに何名出場するか」ではなく
+                        // 「全ヒートに誰が出るか」を一覧表示するため、各ヒートへの出場をフラットに展開する
+                        var playerAssignments = prg?["PlayerAssignments"]?.AsArray();
+                        if (playerAssignments == null) return result;
+
+                        // ヒート番号 → 出場選手リスト のマップを構築
+                        var heatPlayerMap = new System.Collections.Generic.Dictionary<int, List<string>>();
+                        foreach (var assignment in playerAssignments)
+                        {
+                            var playerNo = assignment?["PlayerNo"]?.ToString();
+                            if (string.IsNullOrEmpty(playerNo)) continue;
+
+                            var assignedHeatIds = assignment?["AssignedHeatIds"]?.AsArray();
+                            if (assignedHeatIds == null) continue;
+
+                            foreach (var id in assignedHeatIds)
+                            {
+                                var idStr = id?.ToString();
+                                if (string.IsNullOrEmpty(idStr) || !heatIdToNo.TryGetValue(idStr!, out var hNo))
+                                    continue;
+                                if (!heatPlayerMap.ContainsKey(hNo))
+                                    heatPlayerMap[hNo] = new List<string>();
+                                heatPlayerMap[hNo].Add(playerNo!);
+                            }
+                        }
+
+                        // ヒート番号昇順に展開
+                        foreach (var kvp in heatPlayerMap.OrderBy(x => x.Key))
+                        {
+                            foreach (var p in kvp.Value)
+                                result.Add((kvp.Key, p));
+                        }
+
                         return result;
                     }
                 }

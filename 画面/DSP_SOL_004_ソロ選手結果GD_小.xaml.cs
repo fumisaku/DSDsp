@@ -42,9 +42,10 @@ namespace DSDsp.画面
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数（Step0, Step1, Step2, Step3, Step4の5ステップ）
+        /// 総ステップ数（Step1+Step2同時(1) + Step3(1) + Step4(1) の3ステップ）
         /// </summary>
-        protected override int TotalSteps => 5;
+        protected override int TotalSteps => 3;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -74,17 +75,14 @@ namespace DSDsp.画面
             {
                 case 0:
                     Step1();
-                    break;
-                case 1:
                     Step2();
                     break;
-                case 2:
+                case 1:
                     Step3(DV_Result);
                     break;
-                case 3:
+                case 2:
                     Step4();
                     break;
-
             }
         }
         #endregion
@@ -153,7 +151,7 @@ namespace DSDsp.画面
 
             // DS_Statusから選手情報を取得
             _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号, 区分番号);
             _選手名L = DSDspDataHelper.Get選手名L(選手情報);
             _選手名P = DSDspDataHelper.Get選手名P(選手情報);
 
@@ -333,7 +331,7 @@ namespace DSDsp.画面
                 {
                     foreach (var 減点 in 一般減点Array)
                     {
-                        減点合計 += 減点?["減点値"]?.GetValue<double>() ?? 0;
+                        減点合計 += 減点?["一般減点"]?.GetValue<double>() ?? 0;
                     }
                 }
             }
@@ -449,6 +447,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsSOL002.LB_Total, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsSOL002.LB_Rank, fadeOutStoryboard, 0);
             
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
 

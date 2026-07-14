@@ -39,7 +39,7 @@
         <parts:TIT005_下_選手紹介 x:Name="PartsTIT005"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
-                   Margin="0,0,0,0"/>
+                   Margin="0,37,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

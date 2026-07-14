@@ -11,7 +11,7 @@
         <Viewbox Stretch="Uniform"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center">
-            <Grid x:Name="ContentGrid" Width="641" Height="387">
+            <Grid x:Name="ContentGrid" Width="641" Height="387" Background="Black">
                 <!-- 画面コンテンツがここに動的に配置されます -->
                 <!-- 16:9の比率を維持しながら、ウィンドウサイズに応じて拡大・縮小されます -->
             </Grid>

@@ -1,7 +1,7 @@
 {
   "WebSocketSettings": {
-    "ServerIpAddress": "127.0.0.1",
-    "ServerPort": 8080,
+    "ServerIpAddress": "10.3.2.108",
+    "ServerPort": 7269,
     "ClientId": "DSDsp_001",
     "OrgCd": "JS",
     "ReconnectInterval": 5000,

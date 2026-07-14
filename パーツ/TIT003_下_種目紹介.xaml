@@ -8,8 +8,16 @@
              d:DesignHeight="387" d:DesignWidth="641">
     <Grid>
         <Canvas x:Name="COM_種目紹介" Margin="58,279,58,7" Background="Transparent">
-            <Image x:Name="IM_種目2" Height="29" Source="..\イメージ\CHR169_種目紹介2.png" Stretch="Fill" Width="441" Canvas.Left="32" Canvas.Top="33" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-            <Image x:Name="IM_種目1" Height="29" Source="..\イメージ\CHR169_種目紹介1.png" Stretch="Fill" Width="443" Canvas.Left="37" Canvas.Top="38" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <Image x:Name="IM_種目2" Height="29" Source="..\イメージ\CHR169_種目紹介2.png" Stretch="Fill" Width="441" Canvas.Left="32" Canvas.Top="33" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <Image.RenderTransform>
+                    <TranslateTransform X="0" Y="0"/>
+                </Image.RenderTransform>
+            </Image>
+            <Image x:Name="IM_種目1" Height="29" Source="..\イメージ\CHR169_種目紹介1.png" Stretch="Fill" Width="443" Canvas.Left="37" Canvas.Top="38" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <Image.RenderTransform>
+                    <TranslateTransform X="0" Y="0"/>
+                </Image.RenderTransform>
+            </Image>
             <Label x:Name="LB_種目紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="43" Canvas.Top="35" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="20" Canvas.Top="11" HorizontalAlignment="Left" VerticalAlignment="Center" Width="68" Height="30" Foreground="Gold" FontWeight="Bold"/>
         </Canvas>

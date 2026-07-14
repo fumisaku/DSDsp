@@ -49,17 +49,17 @@ namespace DSDsp.画面
         private Label[]? _得点LB;
         // 直前の Step3 で実際に表示した件数（Step4 のフェードアウト範囲を限定するために使用）
         private int _前回表示件数 = 0;
+        // Step1 で確定したページ数（TotalSteps を一定に保つために使用）
+        private int _ページ数 = 1;
         #endregion
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数：Step1(1) + Step2(1) + [Step3+Step4] × ページ数 + Step5(1)
-        /// ヒート番号が 8 以下なら 5 ステップ、9～16 なら 7 ステップ、以降 2 ずつ増加。
+        /// 総ステップ数：Step1+Step2+Step3(1) + Step4(1) + [Step3+Step4] × (ページ数-1) + Step5(1)
+        /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
         /// </summary>
-        protected override int TotalSteps => 2 + ページ数 * 2 + 1;
-
-        /// <summary>表示ページ数（8件/ページ）</summary>
-        private int ページ数 => Math.Max(1, (int)Math.Ceiling(ヒート番号 / 8.0));
+        protected override int TotalSteps => _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -86,36 +86,45 @@ namespace DSDsp.画面
         protected override void ExecuteCurrentStep()
         {
             // ステップ割り当て:
-            //   case 0       → Step1
-            //   case 1       → Step2
-            //   case 2+p*2   → Step3 (p=0,1,2... ページ目)
-            //   case 3+p*2   → Step4
+            //   case 0       → Step1 + Step2 + Step3(p=0) 自動実行
+            //   case 1       → Step4(p=0)
+            //   case 1+p*2   → Step3(p=1,2...) ※p≥1 の場合
+            //   case 2+p*2   → Step4(p=1,2...)
             //   最後          → Step5
             if (_currentStep == 0)
             {
                 Step1();
-                return;
-            }
-            if (_currentStep == 1)
-            {
                 Step2();
+                // Step1+Step2の直後に1ページ目のStep3を自動実行
+                Step3(DV_Result, 0);
                 return;
             }
 
-            // Step3/Step4 の繰り返しブロック（case 2以降、2ステップずつ）
-            int ブロック内 = _currentStep - 2;   // 0始まり
-            int ページ = ブロック内 / 2;
-            int ブロック位置 = ブロック内 % 2;
+            // _currentStep=1 以降: Step4(p=0), Step3(p=1), Step4(p=1), ...
+            int ブロック内 = _currentStep;   // 1→Step4(p=0), 2→Step3(p=1), 3→Step4(p=1)...
 
-            if (ページ < ページ数)
+            // p=0 のStep4 (ブロック内=1)
+            if (ブロック内 == 1)
             {
-                if (ブロック位置 == 0)
+                // 1ページのみの場合はStep4完了後にStep5を自動実行
+                Step4(_ページ数 == 1 ? (Action)Step5 : null);
+                return;
+            }
+
+            // p≥1 のStep3/Step4 (ブロック内≥2, 2ステップずつ)
+            int p = (ブロック内 - 2) / 2 + 1;     // ページ番号（1始まり）
+            int pos = (ブロック内 - 2) % 2;        // 0=Step3, 1=Step4
+
+            if (p < _ページ数)
+            {
+                if (pos == 0)
                 {
-                    Step3(DV_Result, ページ * 8);
+                    Step3(DV_Result, p * 8);
                 }
                 else
                 {
-                    Step4();
+                    // 最終ページのStep4完了後はStep5を自動実行
+                    Step4(p == _ページ数 - 1 ? (Action)Step5 : null);
                 }
                 return;
             }
@@ -214,11 +223,18 @@ namespace DSDsp.画面
 
             // COM001/COM002 の標準ヘッダを設定（競技会名・区分ラウンド名・種目情報）
             _採点方式ID = SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
+
+            // DV_Result から選手結果件数を取得し、ページ数を確定する（TotalSteps を固定するため）
+            var 種目結果リスト = DV_Result?["種目結果"]?.AsArray();
+            var 種目結果 = 種目結果リスト?.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
+            int 件数 = 種目結果?["選手結果"]?.AsArray()?.Count ?? 0;
+            _ページ数 = Math.Max(1, (int)Math.Ceiling(件数 / 8.0));
+
             if (DA_Master == null) return;
 
             // DS_Statusから選手情報を取得
             _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
-            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号, 区分番号);
             _選手名L = DSDspDataHelper.Get選手名L(選手情報);
             _選手名P = DSDspDataHelper.Get選手名P(選手情報);
 
@@ -231,92 +247,59 @@ namespace DSDsp.画面
         /// </summary>
         public void Step2()
         {
-            // PartsMainの初期化確認
             EnsurePartsMainInitialized();
-
             if (_partsMain == null) return;
 
+            // --- ラベルのテキストとフォントサイズを先にセット ---
+            string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
+            string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
+            PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+            PartsLST001.LB_タイトル3.Content = "種目結果";
 
-            // 画像の初期状態を設定（フェードイン用に透明にする）
-            PartsLST001.IM_タイトル1.Opacity = 0;
-            PartsLST001.IM_タイトル2.Opacity = 0;
-            PartsLST001.IM_タイトル3.Opacity = 0;
+            _partsMain.フォントサイズ自動調整(
+                label: PartsLST001.LB_タイトル1,
+                text: PartsLST001.LB_タイトル1.Content.ToString() ?? "",
+                maxWidth: 300, maxFontSize: 14, minFontSize: 8,
+                fontFamilyName: FONT_FAMILY_NAME);
+            _partsMain.フォントサイズ自動調整(
+                label: PartsLST001.LB_タイトル2,
+                text: PartsLST001.LB_タイトル2.Content.ToString() ?? "",
+                maxWidth: 450, maxFontSize: 16, minFontSize: 8,
+                fontFamilyName: FONT_FAMILY_NAME);
 
-            // 画像のフェードインアニメーション
-            // ① まず IM_種目1・IM_種目2 をフェードイン（beginTime=0: 即開始、800ms で完了）
-            // ② その後（1000ms後）に IM_ソロ選手結果1～4 をフェードイン
-            var imageStoryboard = new Storyboard();
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル1, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル2, imageStoryboard, 0);
-            _partsMain.フェードイン(true, PartsLST001.IM_タイトル3, imageStoryboard, 0);
+            // --- Visible にしてから Opacity=0 で隠す ---
+            PartsLST001.LB_タイトル1.Visibility    = Visibility.Visible;
+            PartsLST001.LB_タイトル2.Visibility    = Visibility.Visible;
+            PartsLST001.LB_タイトル3.Visibility    = Visibility.Visible;
+            PartsLST001.LB_タイトル_減点.Visibility  = Visibility.Visible;
+            PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
 
+            PartsLST001.IM_タイトル1.Opacity        = 0;
+            PartsLST001.IM_タイトル2.Opacity        = 0;
+            PartsLST001.IM_タイトル3.Opacity        = 0;
+            PartsLST001.LB_タイトル1.Opacity        = 0;
+            PartsLST001.LB_タイトル2.Opacity        = 0;
+            PartsLST001.LB_タイトル3.Opacity        = 0;
+            PartsLST001.LB_タイトル_減点.Opacity    = 0;
+            PartsLST001.LB_タイトル_Total.Opacity   = 0;
 
-            // 画像フェードイン完了後に表示
-            imageStoryboard.Completed += (s, e) =>
-            {
-                // 区分ラウンド名・種目名をヘルパーから取得して設定
-                string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
-                string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-                PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
-                PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+            // --- IM_タイトルとラベルを同時にフェードイン ---
+            var sb = new Storyboard();
+            _partsMain.フェードイン(true, PartsLST001.IM_タイトル1,       sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.IM_タイトル2,       sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.IM_タイトル3,       sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル1,       sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル2,       sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル3,       sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル_減点,   sb, 0);
+            _partsMain.フェードイン(true, PartsLST001.LB_タイトル_Total,  sb, 0);
+            sb.Begin();
 
-                PartsLST001.LB_タイトル3.Content = "種目結果";
-
-
-
-                // 一気に表示
-                PartsLST001.LB_タイトル1.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル2.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル3.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_減点.Visibility = Visibility.Visible;
-                PartsLST001.LB_タイトル_Total.Visibility = Visibility.Visible;
-
-
-
-              
-                // フォントサイズ自動調整  区分ラウンド名
-                _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル1,
-                    text: PartsLST001.LB_タイトル1.Content.ToString(),
-                    maxWidth: 300,
-                    maxFontSize: 14,
-                    minFontSize: 8,
-                    fontFamilyName: FONT_FAMILY_NAME);
-
-                // フォントサイズ自動調整  種目名
-                _partsMain?.フォントサイズ自動調整(
-                    label: PartsLST001.LB_タイトル2,
-                    text: PartsLST001.LB_タイトル2.Content.ToString(),
-                    maxWidth: 450,
-                    maxFontSize: 16,
-                    minFontSize: 8,
-                    fontFamilyName: FONT_FAMILY_NAME);
-
-
-
-                // フェードイン
-                var playerStoryboard = new Storyboard();
-                PartsLST001.LB_タイトル1.Opacity = 0;
-                PartsLST001.LB_タイトル2.Opacity = 0;
-                PartsLST001.LB_タイトル3.Opacity = 0;
-                PartsLST001.LB_タイトル_減点.Opacity = 0;
-                PartsLST001.LB_タイトル_Total.Opacity = 0;
-
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル1, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル2, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル3, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_減点, playerStoryboard, 100);
-                _partsMain?.フェードイン(true, PartsLST001.LB_タイトル_Total, playerStoryboard, 100);
-                playerStoryboard.Begin();
-            };
-
-            imageStoryboard.Begin();
-
-            // 画像のスライドアニメーション
+            // IM_タイトルのスライドアニメーション（フェードインと同時に開始）
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル1, SLIDE_FROM_RIGHT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル2, SLIDE_FROM_LEFT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル3, SLIDE_FROM_RIGHT);
-
         }
 
 
@@ -378,11 +361,11 @@ namespace DSDsp.画面
                     var 一般減点Array = p?["一般減点"]?.AsArray();
                     if (一般減点Array != null)
                         foreach (var r in 一般減点Array)
-                            減点合計 += r?["減点値"]?.GetValue<double>() ?? 0;
+                            減点合計 += r?["一般減点"]?.GetValue<double>() ?? 0;
                 }
 
                 // 選手情報
-                var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号);
+                var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号, 区分番号);
                 string 選手名L = Get苗字(DSDspDataHelper.Get選手名L(選手情報));
                 string 選手名P = Get苗字(DSDspDataHelper.Get選手名P(選手情報));
                 string 選手名表示 = string.IsNullOrEmpty(選手名P)
@@ -401,8 +384,8 @@ namespace DSDsp.画面
                 _減点LB[i].Content = 失格 ? "" : 減点合計.ToString("F1");
                 _得点LB[i].Content = 失格 ? "失格" : 得点.ToString("F3");
 
-                // 減点が0より大きい場合は赤字、それ以外はDarkBlue
-                var 減点前景色 = (!失格 && 減点合計 > 0)
+                // 減点が0以外の場合は赤字、それ以外はDarkBlue
+                var 減点前景色 = (!失格 && 減点合計 != 0)
                     ? new SolidColorBrush(Colors.Red)
                     : 前景色;
 
@@ -476,7 +459,8 @@ namespace DSDsp.画面
         /// Step4: 直前の Step3 で表示した行だけフェードアウト。
         /// 表示していない行（Opacity=0）には触れず、一瞬見えてしまう現象を防ぐ。
         /// </summary>
-        public void Step4()
+        /// <param name="onCompleted">フェードアウト完了後に呼び出すコールバック（省略可）</param>
+        public void Step4(Action? onCompleted = null)
         {
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
@@ -495,6 +479,9 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, _減点LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _得点LB[i], fadeOutStoryboard, 0);
             }
+
+            if (onCompleted != null)
+                fadeOutStoryboard.Completed += (s, e) => onCompleted();
 
             fadeOutStoryboard.Begin();
         }
@@ -517,6 +504,7 @@ namespace DSDsp.画面
 
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
         }
 

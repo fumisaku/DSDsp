@@ -124,24 +124,44 @@
         "Description": "種目紹介 小（各種目の先頭で1回表示）",
         "Enabled": false
       },
-      "DSP_TIT_006": {
-        "ScreenId": "DSP_TIT_006",
-        "Description": "デュエル選手紹介 大（ヒート毎）",
+      "DSP_GRP_001": {
+        "ScreenId": "DSP_GRP_001",
+        "Description": "デュエルヒート表 大（各種目の先頭で1回表示。全ヒート選手一覧をヒート番号付きで表示）",
         "Enabled": true
       },
-      "DSP_TIT_007": {
-        "ScreenId": "DSP_TIT_007",
-        "Description": "デュエル選手紹介 小（ヒート毎）",
+      "DSP_GRP_002": {
+        "ScreenId": "DSP_GRP_002",
+        "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
         "Enabled": false
       },
       "DSP_DUE_001": {
         "ScreenId": "DSP_DUE_001",
-        "Description": "デュエル選手結果 大（ヒート毎）",
+        "Description": "デュエル選手紹介 大（ヒート毎・出場選手2組以下の場合）",
         "Enabled": true
       },
       "DSP_DUE_002": {
         "ScreenId": "DSP_DUE_002",
-        "Description": "デュエル選手結果 小（ヒート毎）",
+        "Description": "デュエル選手紹介 小（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": false
+      },
+      "DSP_DUE_003": {
+        "ScreenId": "DSP_DUE_003",
+        "Description": "デュエル選手結果 大（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": true
+      },
+      "DSP_DUE_004": {
+        "ScreenId": "DSP_DUE_004",
+        "Description": "デュエル選手結果 小（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": false
+      },
+      "DSP_GRP_003": {
+        "ScreenId": "DSP_GRP_003",
+        "Description": "デュエル選手結果（3組以上） 大（ヒート毎・出場選手3組以上の場合）",
+        "Enabled": true
+      },
+      "DSP_GRP_004": {
+        "ScreenId": "DSP_GRP_004",
+        "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
         "Enabled": false
       },
       "DSP_SOL_007": {
@@ -168,6 +188,8 @@
       "1. 最初に Common.DSP_TIT_001 を追加する（Enabled:true の場合）。",
       "2. DS_Status の DS_PRGDANCEs（種目リスト）を DS_DncNo 昇順で走査する。",
       "3. 各種目の先頭で、競技種別に対応する DSP_TIT_002 または DSP_TIT_003 を追加する（Enabled:true の方）。",
+      "3d. デュエル競技の場合、種目先頭に DSP_GRP_001/002（IsOverviewMode=true）を1回追加する。",
+      "    この画面は全ヒートの出場選手をヒート番号昇順で一覧表示し、LB_結果_順位 に '1H','2H' などを表示する。",
       "4. 各種目の DS_PRGHEATs（ヒートリスト）を DS_HeatNo 昇順で走査する。",
       "4a. ソロ競技（DE_DncSG='S'）かつ GD（DC_RndScrMtd に 'for GD' を含む）の場合：",
       "    DSP_SOL_001/002 → DSP_SOL_003/004 → DSP_SOL_007/008 をヒート毎に追加する（各 Enabled:true の方）。",
@@ -175,8 +197,9 @@
       "    DSP_SOL_001/002 → DSP_SOL_005/006 → DSP_SOL_007/008 をヒート毎に追加する（各 Enabled:true の方）。",
       "4c. グループ競技（DE_DncSG='G'）の場合：",
       "    DSP_GRP_001/002 → DSP_GRP_003/004 をヒート毎に追加する（各 Enabled:true の方）。",
-      "4d. デュエル競技（DE_DncSG='D'）の場合：",
-      "    DSP_TIT_006/007 → DSP_DUE_001/002 → DSP_SOL_007/008 をヒート毎に追加する（各 Enabled:true の方）。",
+      "4d. デュエル競技（DE_DncSG='D'）の場合（ヒート毎）：",
+      "    ヒートの出場選手が2組以下: DSP_DUE_001/002（選手紹介）→ DSP_DUE_003/004（選手結果）→ DSP_SOL_007/008（途中結果）",
+      "    ヒートの出場選手が3組以上: DSP_GRP_001/002（選手紹介）→ DSP_GRP_003/004（選手結果）→ DSP_SOL_007/008（途中結果）",
       "5. 種目終了後、1種目目の終了後と最終種目の終了後を除き、Common.DSP_COM_001 または DSP_COM_002 を追加する（Enabled:true の方）。"
     ]
   }

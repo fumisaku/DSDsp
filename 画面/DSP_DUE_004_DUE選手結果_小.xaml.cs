@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Windows;
@@ -35,7 +35,8 @@ namespace DSDsp.画面
         #endregion
 
         #region オーバーライド
-        protected override int TotalSteps => 4;
+        protected override int TotalSteps => 3;
+        public override bool WaitsForLastStepFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -51,10 +52,9 @@ namespace DSDsp.画面
         {
             switch (_currentStep)
             {
-                case 0: Step1(); break;
-                case 1: Step2(); break;
-                case 2: Step3(DV_Result); break;
-                case 3: Step4(); break;
+                case 0: Step1(); Step2(); break;
+                case 1: Step3(DV_Result); break;
+                case 2: Step4(); break;
             }
         }
         #endregion
@@ -81,6 +81,9 @@ namespace DSDsp.画面
             // ---- 選手紹介（1行形式）----
             PartsDUE002.LB_選手紹介_1.Visibility = Visibility.Collapsed;
             PartsDUE002.LB_選手紹介_2.Visibility = Visibility.Collapsed;
+
+            PartsDUE002.LB_選手紹介_1.Content = string.Empty;
+            PartsDUE002.LB_選手紹介_2.Content = string.Empty;
 
             // ---- PCS名・値・減点・Total・Rank（1選手目）----
             PartsDUE002.LB_PCS名1_1.Visibility = Visibility.Collapsed;
@@ -140,23 +143,25 @@ namespace DSDsp.画面
             _背番号1 = 背番号リスト.Count > 0 ? 背番号リスト[0] : "???";
             _背番号2 = 背番号リスト.Count > 1 ? 背番号リスト[1] : "???";
 
-            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, _背番号1);
-            string 選手名L1 = DSDspDataHelper.Get選手名L(選手1);
-            string 選手名P1 = DSDspDataHelper.Get選手名P(選手1);
+            var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, _背番号1, 区分番号);
+            string 選手名L1 = Get苗字(DSDspDataHelper.Get選手名L(選手1));
+            string 選手名P1 = Get苗字(DSDspDataHelper.Get選手名P(選手1));
+            
+
             _選手紹介1 = string.IsNullOrEmpty(選手名P1)
                 ? $"{_背番号1} {選手名L1}"
-                : $"{_背番号1} {選手名L1}・{選手名P1}";
+                : $"{_背番号1} {選手名L1}・{選手名P1} 組";
 
-            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, _背番号2);
-            string 選手名L2 = DSDspDataHelper.Get選手名L(選手2);
-            string 選手名P2 = DSDspDataHelper.Get選手名P(選手2);
+            var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, _背番号2, 区分番号);
+            string 選手名L2 = Get苗字(DSDspDataHelper.Get選手名L(選手2));
+            string 選手名P2 = Get苗字(DSDspDataHelper.Get選手名P(選手2));
             _選手紹介2 = string.IsNullOrEmpty(選手名P2)
                 ? $"{_背番号2} {選手名L2}"
-                : $"{_背番号2} {選手名L2}・{選手名P2}";
+                : $"{_背番号2} {選手名L2}・{選手名P2} 組";
 
             // COM003 右上にヒート情報を表示
             PartsCOM003.LB_右上.Content =
-                $"{ヒート番号}組目  {_背番号1} {選手名L1} vs {_背番号2} {選手名L2}";
+                $"{ヒート番号}H  {_選手紹介1} vs {_選手紹介2}";
         }
 
         /// <summary>
@@ -291,7 +296,7 @@ namespace DSDsp.画面
                     var 一般減点Array = 結果["一般減点"]?.AsArray();
                     if (一般減点Array != null)
                         foreach (var r in 一般減点Array)
-                            減点合計 += r?["減点値"]?.GetValue<double>() ?? 0;
+                            減点合計 += r?["一般減点"]?.GetValue<double>() ?? 0;
                 }
 
                 double 種目得点    = 失格 ? 0 : (結果["種目得点"]?.GetValue<double>() ?? 0);
@@ -427,6 +432,7 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, lb, sb, 0);
             }
 
+            sb.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             sb.Begin();
         }
 
@@ -465,6 +471,28 @@ namespace DSDsp.画面
             PartsDUE002.LB_Red名_2.Content   = "Red";
             PartsDUE002.LB_Total名_2.Content = "Total";
             PartsDUE002.LB_Rank名_2.Content  = "Rank";
+        }
+
+
+
+        /// <summary>
+        /// 氏名文字列から苗字部分を抽出する。
+        /// 半角スペース・全角スペースの最初の出現位置より前を苗字とする。
+        /// スペースが含まれない場合は文字列全体を返す。
+        /// </summary>
+        private static string Get苗字(string 氏名)
+        {
+            if (string.IsNullOrEmpty(氏名)) return 氏名;
+            int idx = -1;
+            for (int i = 0; i < 氏名.Length; i++)
+            {
+                if (氏名[i] == ' ' || 氏名[i] == '\u3000')   // 半角スペース or 全角スペース
+                {
+                    idx = i;
+                    break;
+                }
+            }
+            return idx >= 0 ? 氏名.Substring(0, idx) : 氏名;
         }
 
         #endregion
