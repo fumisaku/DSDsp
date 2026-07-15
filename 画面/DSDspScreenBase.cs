@@ -204,6 +204,15 @@ namespace DSDsp.画面
         public virtual bool WaitsForLastStepFadeOut => false;
 
         /// <summary>
+        /// フェードアウト完了後に自動で次の画面へ遷移せず、一旦停止するかどうか。
+        /// true の場合、フェードアウト完了後に _currentAjsIndex を進めて _currentStep=0 で待機する。
+        /// 次の再生ボタン操作で次画面の Step0 が実行される。
+        /// WaitsForLastStepFadeOut と組み合わせて使用する（両方 true にすること）。
+        /// デフォルトは false（自動遷移）。
+        /// </summary>
+        public virtual bool HoldsAfterFadeOut => false;
+
+        /// <summary>
         /// 最終ステップのフェードアウトアニメーション完了を通知する。
         /// 最終 Step の Storyboard.Completed コールバックから呼び出すこと。
         /// </summary>

@@ -999,8 +999,18 @@ namespace DSDsp
 
                 if (_currentAjsIndex < _currentAjsProgressItems.Count)
                 {
+                    // HoldsAfterFadeOut=true の場合はフェードアウト完了後も自動遷移せず一旦停止する
+                    if (currentScreen.HoldsAfterFadeOut)
+                    {
+                        // フェードアウトは既に実行中。インデックスだけ進めて停止。
+                        // リストの選択を次の項目に移す
+                        _suppressAjsSelectionChanged = true;
+                        LstAjsProgress.SelectedIndex = _currentAjsIndex;
+                        _suppressAjsSelectionChanged = false;
+                        _log?.LogAdd($"HoldsAfterFadeOut: 次の画面で停止 Index={_currentAjsIndex}", _log.INFO);
+                    }
                     // 最終StepにフェードアウトWait設定がある場合は完了イベントを待つ
-                    if (currentScreen.WaitsForLastStepFadeOut)
+                    else if (currentScreen.WaitsForLastStepFadeOut)
                     {
                         // イベントが発火したときに次の画面遷移を実行
                         void OnFadeOutCompleted(object? s, EventArgs e)
@@ -1155,7 +1165,15 @@ namespace DSDsp
 
                 if (_currentAjsSubIndex < _currentAjsSubProgressItems.Count)
                 {
-                    if (currentSubScreen.WaitsForLastStepFadeOut)
+                    // HoldsAfterFadeOut=true の場合はフェードアウト完了後も自動遷移せず一旦停止する
+                    if (currentSubScreen.HoldsAfterFadeOut)
+                    {
+                        _suppressAjsSubSelectionChanged = true;
+                        LstAjsSubProgress.SelectedIndex = _currentAjsSubIndex;
+                        _suppressAjsSubSelectionChanged = false;
+                        _log?.LogAdd($"SUB HoldsAfterFadeOut: 次の画面で停止 Index={_currentAjsSubIndex}", _log.INFO);
+                    }
+                    else if (currentSubScreen.WaitsForLastStepFadeOut)
                     {
                         void OnFadeOutCompleted(object? s, EventArgs e)
                         {

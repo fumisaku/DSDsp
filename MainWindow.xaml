@@ -326,23 +326,40 @@
                                        Text="画面進行（メイン）"
                                        FontWeight="Bold"
                                        FontSize="13"/>
-                            
+
                             <ListBox x:Name="LstAjsProgress"
                                      Grid.Row="2"
                                      SelectionChanged="LstAjsProgress_SelectionChanged"
                                      BorderBrush="#DDDDDD"
                                      FontSize="12"/>
 
-                            <!-- メイン クリアボタン（再生ボタンは上部共通パネルの BtnPlay） -->
-                            <Button x:Name="BtnMainClear"
-                                    Grid.Row="4"
-                                    Content="✕ メインクリア"
-                                    Click="BtnMainClear_Click"
-                                    Height="30"
-                                    Background="#F44336"
-                                    Foreground="White"
-                                    BorderThickness="0"
-                                    Cursor="Hand"/>
+                            <!-- メイン 操作ボタン（再生 / クリア） -->
+                            <Grid Grid.Row="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="BtnMainPlay"
+                                        Grid.Column="0"
+                                        Content="▶ メイン再生"
+                                        Click="BtnPlay_Click"
+                                        Height="30"
+                                        Background="#4CAF50"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        FontWeight="Bold"
+                                        Cursor="Hand"/>
+                                <Button x:Name="BtnMainClear"
+                                        Grid.Column="2"
+                                        Content="✕ メインクリア"
+                                        Click="BtnMainClear_Click"
+                                        Height="30"
+                                        Background="#F44336"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                            </Grid>
                         </Grid>
 
                         <!-- 区切り -->

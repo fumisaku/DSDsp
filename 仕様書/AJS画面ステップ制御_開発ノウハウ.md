@@ -352,11 +352,149 @@ MainWindow: LastStepFadeOutCompleted イベント受信 → MoveToNextAjsScreen(
 
 ---
 
-## 8. 関連ファイル一覧
+## 8. SUBシナリオ機能
+
+### 8.1 概要
+
+AJS シナリオファイルに `SubScenario` セクションを追加することで、メイン画面の上に透明背景で重ねて表示するSUB画面進行を定義できる。メインとSUBは完全に非同期・独立して再生・停止できる。
+
+```
+┌─ DisplayWindow（オフスクリーン）────────────────┐
+│  ┌─ LayeredContentGrid（641×387）─────────────┐  │
+│  │  ┌─ ContentGrid（Background=Black）───────┐│  │
+│  │  │  メイン画面                             ││  │
+│  │  └────────────────────────────────────────┘│  │
+│  │  ┌─ SubContentGrid（Background=Transparent）┐│ │
+│  │  │  SUB画面（透明背景でメインの上に重なる）  ││  │
+│  │  └────────────────────────────────────────┘│  │
+│  └────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────┘
+       ↑ VisualBrush で LayeredContentGrid ごとミラー
+```
+
+- モニター用・全画面ミラーは `LayeredContentGrid` をミラーソースにするため、メイン＋SUBが合成された状態で映る。
+
+### 8.2 アーキテクチャ追加点
+
+| 追加要素 | 内容 |
+|---|---|
+| `DisplayWindow.SubContentGrid` | 透明背景の SUB 表示グリッド |
+| `DisplayWindow.ShowSubScreen()` | SUB 画面を SubContentGrid に表示 |
+| `DisplayWindow.ClearSubScreen()` | SUB 画面をクリア |
+| `DisplayWindow.CurrentSubScreen` | 現在表示中の SUB 画面 |
+| `MainWindow._currentAjsSubProgressItems` | SUB 画面進行一覧 |
+| `MainWindow._currentAjsSubIndex` | SUB の選択インデックス |
+| `MainWindow._currentSubStep` | SUB のステップカウンター |
+| `MainWindow.ExecuteAjsSubStep()` | SUB のステップ実行（メインと独立） |
+| `MainWindow.MoveToNextAjsSubScreen()` | SUB の次画面遷移 |
+
+### 8.3 シナリオファイルへの SUBScenario の記述方法
+
+```json
+{
+  "ScenarioName": "...",
+  "Screens": { ... },       ← メインの画面定義（従来どおり）
+
+  "SubScenario": {          ← SUB専用セクション
+    "ScenarioName": "SUBシナリオ名",
+    "Description":  "説明文",
+    "Screens": {
+      "Common": { ... },
+      "Solo":   { ... },
+      "Group":  { ... },
+      "Duel":   { ... }
+    }
+  }
+}
+```
+
+- `SubScenario` セクション自体を省略した場合は SUB なし扱い。
+- SUB の背景は常に透明（`Background` 指定不要）。
+- `Screens` の構造・画面 ID はメインと同一。`"Enabled": true` にした画面のみ SUB 進行一覧に追加される。
+
+### 8.4 大/小ペアのルール（メイン・SUB 共通）
+
+同一役割の「大/小ペア」は**どちらか一方だけ** `true` にすること。両方 `true` にするとバリデーションエラーになる。
+
+| 大 | 小 | 備考 |
+|---|---|---|
+| DSP_TIT_002 | DSP_TIT_003 | 種目紹介 |
+| DSP_SOL_001 | DSP_SOL_002 | ソロ選手紹介 |
+| DSP_SOL_003 | DSP_SOL_004 | ソロ結果 GD |
+| DSP_SOL_005 | DSP_SOL_006 | ソロ結果 PD |
+| DSP_SOL_007 | DSP_SOL_008 | ソロ途中結果 |
+| DSP_GRP_001 | DSP_GRP_002 | グループ出場選手一覧 |
+| DSP_GRP_003 | DSP_GRP_004 | グループ結果一覧 |
+| DSP_DUE_001 | DSP_DUE_002 | デュエル選手紹介（2組以下） |
+| DSP_DUE_003 | DSP_DUE_004 | デュエル選手結果（2組以下） |
+| DSP_COM_001 | DSP_COM_002 | 途中総合結果一覧 |
+
+---
+
+## 9. シナリオファイルのよくあるエラー
+
+### 9.1 JSON 構文エラー：`true` のスペルミス
+
+**症状**: シナリオ読み込み時にエラーダイアログが出て、画面進行一覧が生成されない。
+
+**原因**: JSON の予約語 `true` / `false` を誤記している。よくある例：
+
+```json
+"Enabled": ture    ← NG（"true" の文字を入れ替えた誤記）
+"Enabled": True    ← NG（大文字始まりは JSON では無効）
+"Enabled": TRUE    ← NG
+```
+
+**修正**:
+
+```json
+"Enabled": true    ← 正しい（すべて小文字）
+"Enabled": false   ← 正しい
+```
+
+> **注意**: テキストエディタの補完に頼らず、コピー&ペーストするときに大文字化されていないか確認すること。
+
+### 9.2 バリデーションエラー：大/小ペアの両方を `true` にした
+
+**症状**: 画面進行一覧の生成に失敗し、エラーメッセージが表示される（ルール V1 違反）。
+
+**原因**: 同一役割の大/小ペア（上表参照）を両方 `true` にした。
+
+```json
+"DSP_SOL_007": { "Enabled": true  },   ← ソロ途中結果 大
+"DSP_SOL_008": { "Enabled": true  }    ← ソロ途中結果 小  ← 両方 true はNG
+```
+
+**修正**: どちらか一方だけを `true` にする。
+
+```json
+"DSP_SOL_007": { "Enabled": true  },   ← 大を使う
+"DSP_SOL_008": { "Enabled": false }    ← 小は使わない
+```
+
+### 9.3 【仕様】デュエル競技で「2組以下」と「3組以上」の画面サイズを混在させる
+
+**例**:
+```json
+"DSP_DUE_004": { "Enabled": true  },  ← 小（2組以下用）
+"DSP_GRP_003": { "Enabled": true  }   ← 大（3組以上用）
+```
+
+**これはエラーにならない**（大/小ペアの排他ルールの対象外）。
+デュエル競技では「2組以下」と「3組以上」で使われる画面グループが異なるため、それぞれの大/小を別々に選べる。
+ただし、大と小が混在するとヒートによって表示サイズが変わるため、**統一したい場合は全て大か全て小にそろえること**。
+
+---
+
+## 10. 関連ファイル一覧
 
 | ファイル | 役割 |
 |---|---|
-| `MainWindow.xaml.cs` | ステップ制御のメインロジック（`ExecuteAjsStep`, `MoveToNextAjsScreen`） |
+| `MainWindow.xaml.cs` | ステップ制御のメインロジック（`ExecuteAjsStep`, `MoveToNextAjsScreen`, `ExecuteAjsSubStep`, `MoveToNextAjsSubScreen`） |
+| `DisplayWindow.xaml` | 表示ウィンドウ（`ContentGrid`・`SubContentGrid`・`LayeredContentGrid`） |
+| `DisplayWindow.xaml.cs` | `ShowScreen`, `ShowSubScreen`, `ClearScreen`, `ClearSubScreen` |
+| `Scenario/ScenarioModels.cs` | `AjsScenarioDefinition`（`SubScenario` プロパティ含む）, `AjsSubScenarioDefinition` |
+| `Scenarios/*.json` | シナリオ定義ファイル（`Screens` + `SubScenario.Screens`） |
 | `画面/DSDspScreenBase.cs` | 画面基底クラス（`TotalSteps`, `WaitsForLastStepFadeOut`, `RaiseLastStepFadeOutCompleted`） |
 | `画面/DSP_TIT_001_*.cs` | 変更対象外（`TotalSteps=4`, 即時遷移） |
 | `画面/DSP_TIT_002_*.cs` | `TotalSteps=3`, Step1→Step2→Step3 全て手動操作 |

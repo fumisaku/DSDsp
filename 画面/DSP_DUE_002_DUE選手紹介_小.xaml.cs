@@ -25,6 +25,7 @@ namespace DSDsp.画面
         /// </summary>
         protected override int TotalSteps => 2;
         public override bool WaitsForLastStepFadeOut => true;
+        public override bool HoldsAfterFadeOut => true;
         #endregion
 
         #region コンストラクタ
