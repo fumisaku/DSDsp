@@ -229,6 +229,12 @@ namespace DSDsp.Scenario
         /// </summary>
         public bool IsOverviewMode { get; set; } = false;
 
+        /// <summary>
+        /// 種目内の最終ヒートかどうか。
+        /// true の場合、このヒートの DSP_SOL_007 等のフェードアウト後に COM002 右上をクリアする。
+        /// </summary>
+        public bool IsLastHeatInDance { get; set; } = false;
+
         public override string ToString()
         {
             if (DanceNo == 0 && HeatNo == 0)

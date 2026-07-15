@@ -970,11 +970,12 @@ namespace DSDsp
                 if (dm?.DS_Status != null) screen.DS_Status = dm.DS_Status;
                 if (dm?.DV_Result != null) screen.DV_Result = dm.DV_Result;
 
-                screen.区分番号    = kbnNo;
-                screen.ラウンド番号 = roundNo;
-                screen.種目番号    = item.DanceNo;
-                screen.ヒート番号  = item.HeatNo;
-                screen.IsOverviewMode = item.IsOverviewMode;
+                screen.区分番号       = kbnNo;
+                screen.ラウンド番号    = roundNo;
+                screen.種目番号       = item.DanceNo;
+                screen.ヒート番号     = item.HeatNo;
+                screen.IsOverviewMode  = item.IsOverviewMode;
+                screen.IsLastHeatInDance = item.IsLastHeatInDance;
 
                 // オフスクリーンに画面を表示（モニター・全画面ミラーに自動反映）
                 _offScreenWindow?.ShowScreen(screen);
@@ -1007,6 +1008,8 @@ namespace DSDsp
                         _suppressAjsSelectionChanged = true;
                         LstAjsProgress.SelectedIndex = _currentAjsIndex;
                         _suppressAjsSelectionChanged = false;
+                        // 最終ヒート後処理（COM002クリア等）を実行
+                        currentScreen.OnHoldsAfterFadeOut();
                         _log?.LogAdd($"HoldsAfterFadeOut: 次の画面で停止 Index={_currentAjsIndex}", _log.INFO);
                     }
                     // 最終StepにフェードアウトWait設定がある場合は完了イベントを待つ

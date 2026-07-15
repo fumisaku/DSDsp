@@ -328,9 +328,12 @@ namespace DSDsp.Scenario
                         .OrderBy(h => h!["DS_HeatNo"]?.GetValue<int>() ?? 0)
                         .ToList();
 
+                    int lastHeatNo = sortedHeats.LastOrDefault()?["DS_HeatNo"]?.GetValue<int>() ?? -1;
+
                     foreach (var heat in sortedHeats)
                     {
                         int heatNo = heat!["DS_HeatNo"]?.GetValue<int>() ?? 0;
+                        bool isLastHeat = (heatNo == lastHeatNo);
 
                         if (dncSg is "S" or "Solo")
                         {
@@ -347,6 +350,15 @@ namespace DSDsp.Scenario
 
                             AddFirstEnabled(result, groupScreens,
                                 new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, "ソロ途中結果");
+
+                            // 最終ヒートの DSP_SOL_007/008 に IsLastHeatInDance フラグを立てる
+                            if (isLastHeat)
+                            {
+                                var lastItem = result.LastOrDefault(x =>
+                                    x.DanceNo == danceNo && x.HeatNo == heatNo &&
+                                    (x.ScreenId == "DSP_SOL_007" || x.ScreenId == "DSP_SOL_008"));
+                                if (lastItem != null) lastItem.IsLastHeatInDance = true;
+                            }
                         }
                         else if (dncSg is "G" or "Group")
                         {

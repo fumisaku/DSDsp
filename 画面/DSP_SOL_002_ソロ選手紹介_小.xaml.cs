@@ -216,6 +216,17 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT005.IM_種目2, fadeOutStoryboard, 0);
             fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
+
+            // 右上02に選手名を表示する。
+            // DS_Statusから選手情報を取得
+            var _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+            var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号, 区分番号);
+            var _選手名L = DSDspDataHelper.Get選手名L(選手情報);
+            var _選手名P = DSDspDataHelper.Get選手名P(選手情報);
+
+            // PartsCOM003に選手情報を表示
+            PartsCOM003.LB_右上.Content = ヒート番号.ToString() + "組目　" + _背番号 + "　" + _選手名L + "・" + _選手名P;
+
         }
         #endregion
     }

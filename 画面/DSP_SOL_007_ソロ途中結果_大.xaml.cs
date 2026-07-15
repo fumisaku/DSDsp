@@ -84,6 +84,18 @@ namespace DSDsp.画面
 
         #region オーバーライドメソッド
         /// <summary>
+        /// HoldsAfterFadeOut 停止時の後処理。
+        /// 最終ヒートの場合は COM002 の右上（種目情報）をクリアする。
+        /// </summary>
+        public override void OnHoldsAfterFadeOut()
+        {
+            if (IsLastHeatInDance)
+            {
+                PartsCOM002.LB_右上.Content = string.Empty;
+            }
+        }
+
+        /// <summary>
         /// 現在のステップを実行
         /// </summary>
         protected override void ExecuteCurrentStep()

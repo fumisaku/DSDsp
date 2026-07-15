@@ -213,6 +213,19 @@ namespace DSDsp.画面
         public virtual bool HoldsAfterFadeOut => false;
 
         /// <summary>
+        /// 種目内の最終ヒートかどうか。MainWindow が AjsProgressItem.IsLastHeatInDance をセットする。
+        /// HoldsAfterFadeOut=true の画面で、フェードアウト停止時に OnHoldsAfterFadeOut() が呼ばれる。
+        /// </summary>
+        public bool IsLastHeatInDance { get; set; } = false;
+
+        /// <summary>
+        /// HoldsAfterFadeOut=true でフェードアウト完了後の停止時に MainWindow から呼ばれる。
+        /// 派生クラスでオーバーライドし、最終ヒート時の後処理（COM002 クリア等）を実装する。
+        /// デフォルトは何もしない。
+        /// </summary>
+        public virtual void OnHoldsAfterFadeOut() { }
+
+        /// <summary>
         /// 最終ステップのフェードアウトアニメーション完了を通知する。
         /// 最終 Step の Storyboard.Completed コールバックから呼び出すこと。
         /// </summary>
