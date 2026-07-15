@@ -48,9 +48,9 @@ namespace DSDsp.画面
             PartsCOM001.IM_JDSFマーク.Source = new BitmapImage(
                 new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
             PartsCOM001.TB_左上1.Text = DSDspDataHelper.Get競技会名(DA_Master);
-            
-
+            PartsCOM001.TB_左上2.Text = String.Empty;
            
+
         }
 
         #endregion

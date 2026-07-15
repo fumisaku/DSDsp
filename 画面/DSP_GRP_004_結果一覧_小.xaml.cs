@@ -213,9 +213,22 @@ namespace DSDsp.画面
             _採点方式ID = SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
 
             // DV_Result から選手結果件数を取得し、ページ数を確定する（TotalSteps を固定するため）
+            // ヒート番号 != 0 の場合は該当ヒートの出場選手のみカウントする
             var 種目結果リスト = DV_Result?["種目結果"]?.AsArray();
             var 種目結果 = 種目結果リスト?.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
-            int 件数 = 種目結果?["選手結果"]?.AsArray()?.Count ?? 0;
+            int 件数;
+            if (ヒート番号 != 0)
+            {
+                var 当該ヒート選手 = DSDspDataHelper.Get背番号リストFromHeat(
+                    DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+                件数 = 種目結果?["選手結果"]?.AsArray()
+                    ?.Where(p => 当該ヒート選手.Contains(p?["背番号"]?.ToString() ?? ""))
+                    .Count() ?? 0;
+            }
+            else
+            {
+                件数 = 種目結果?["選手結果"]?.AsArray()?.Count ?? 0;
+            }
             _ページ数 = Math.Max(1, (int)Math.Ceiling(件数 / 8.0));
 
             if (DA_Master == null) return;
@@ -342,9 +355,19 @@ namespace DSDsp.画面
             var 選手結果リスト = 種目結果["選手結果"]?.AsArray();
             if (選手結果リスト == null) return;
 
+            // ヒート番号 != 0 の場合は該当ヒートの出場選手のみに絞り込む
+            // ヒート番号 == 0 の場合は全選手を対象とする
+            IEnumerable<JsonNode?> フィルタ後リスト = 選手結果リスト.Where(p => p != null);
+            if (ヒート番号 != 0)
+            {
+                var 当該ヒート選手セット = DSDspDataHelper.Get背番号リストFromHeat(
+                    DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+                フィルタ後リスト = フィルタ後リスト
+                    .Where(p => 当該ヒート選手セット.Contains(p!["背番号"]?.ToString() ?? ""));
+            }
+
             // 順位昇順で並べ、開始インデックスから最大8件を取得
-            var 全順位リスト = 選手結果リスト
-                .Where(p => p != null)
+            var 全順位リスト = フィルタ後リスト
                 .OrderBy(p => p!["種目順位番号"]?.GetValue<int>() ?? int.MaxValue)
                 .ToList();
             var 表示対象 = 全順位リスト
@@ -354,9 +377,10 @@ namespace DSDsp.画面
             int 表示件数 = 表示対象.Count;
             if (表示件数 == 0) return;
 
-            // ---- 指定ヒートの出場選手（背番号リスト）を取得 ----
-            var 当該ヒート選手 = DSDspDataHelper.Get背番号リストFromHeat(
-                DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+            // 文字色ハイライト用に指定ヒートの出場選手リストを取得（ヒート番号=0時は空）
+            var 当該ヒート選手 = ヒート番号 != 0
+                ? DSDspDataHelper.Get背番号リストFromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号)
+                : new System.Collections.Generic.List<string>();
 
        
 
