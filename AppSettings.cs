@@ -33,6 +33,12 @@ namespace DSDsp
     {
         public string ScenarioPath { get; set; } = "./Scenarios";
         public int DefaultScreen { get; set; } = 0;
+        /// <summary>
+        /// 背景イメージファイルを格納するフォルダパス（予約。現在は未使用）。
+        /// Background.Type="Image" のファイルは、プロジェクトの「イメージ」フォルダに
+        /// &lt;Resource&gt; として追加すること。pack://application 経由で参照される。
+        /// </summary>
+        public string ImagePath { get; set; } = "./イメージ";
     }
 
     /// <summary>

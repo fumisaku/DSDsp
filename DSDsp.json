@@ -13,6 +13,7 @@
   },
   "DisplaySettings": {
     "ScenarioPath": "./Scenarios",
-    "DefaultScreen": 0
+    "DefaultScreen": 0,
+    "ImagePath": "./イメージ"
   }
 }

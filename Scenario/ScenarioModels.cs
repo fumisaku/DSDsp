@@ -47,6 +47,65 @@ namespace DSDsp.Scenario
     // -------------------------------------------------------------------------
 
     /// <summary>
+    /// 背景タイプ
+    /// </summary>
+    public enum AjsBackgroundType
+    {
+        /// <summary>背景なし（透明）</summary>
+        None,
+        /// <summary>イメージファイル</summary>
+        Image,
+        /// <summary>RGB色指定</summary>
+        Color,
+    }
+
+    /// <summary>
+    /// シナリオの背景設定。
+    /// Type に応じて ImageFile または R/G/B を使用する。
+    /// </summary>
+    public class AjsBackground
+    {
+        /// <summary>
+        /// 背景タイプ。"None" / "Image" / "Color" のいずれかを指定する。
+        /// </summary>
+        [JsonPropertyName("Type")]
+        public string Type { get; set; } = "None";
+
+        /// <summary>
+        /// Type="Image" のとき有効。イメージファイル名のみを指定する（例: "background.png"）。
+        /// ファイルはプロジェクトの「イメージ」フォルダに &lt;Resource&gt; として追加すること。
+        /// パーツの XAML で使用する画像（"../イメージ/xxx.png"）と同じ場所。
+        /// </summary>
+        [JsonPropertyName("ImageFile")]
+        public string ImageFile { get; set; } = string.Empty;
+
+        /// <summary>Type="Color" のとき有効。赤成分 0–255。</summary>
+        [JsonPropertyName("R")]
+        public byte R { get; set; } = 0;
+
+        /// <summary>Type="Color" のとき有効。緑成分 0–255。</summary>
+        [JsonPropertyName("G")]
+        public byte G { get; set; } = 0;
+
+        /// <summary>Type="Color" のとき有効。青成分 0–255。</summary>
+        [JsonPropertyName("B")]
+        public byte B { get; set; } = 0;
+
+        /// <summary>
+        /// 背景タイプを列挙型で取得する。
+        /// </summary>
+        public AjsBackgroundType GetBackgroundType()
+        {
+            return Type.ToUpperInvariant() switch
+            {
+                "IMAGE" => AjsBackgroundType.Image,
+                "COLOR" => AjsBackgroundType.Color,
+                _       => AjsBackgroundType.None,
+            };
+        }
+    }
+
+    /// <summary>
     /// AJSシナリオ定義ファイルの画面エントリ（1画面分の設定）
     /// </summary>
     public class AjsScreenEntry
@@ -111,6 +170,13 @@ namespace DSDsp.Scenario
 
         [JsonPropertyName("Screens")]
         public AjsScreens Screens { get; set; } = new();
+
+        /// <summary>
+        /// シナリオの背景設定。null の場合はデフォルト（黒）。
+        /// 将来的に画面ID別の上書き設定も追加予定。
+        /// </summary>
+        [JsonPropertyName("Background")]
+        public AjsBackground? Background { get; set; }
     }
 
     // -------------------------------------------------------------------------

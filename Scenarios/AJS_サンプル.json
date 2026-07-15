@@ -3,6 +3,17 @@
   "ScenarioType": "AJS",
   "Description": "AJS採点方式の画面進行シナリオ定義ファイル。区分・種目順・ヒート順をDS_Statusから取得し、画面進行一覧を動的生成する。",
 
+  "_BackgroundExamples": {
+    "Description": "背景設定の例（実際に使用するものを 'Background' キーとして定義する）",
+    "None":  { "Type": "None" },
+    "Image": { "Type": "Image", "ImageFile": "CHR169_タイトル1.png" },
+    "Color": { "Type": "Color", "R": 0, "G": 30, "B": 60 }
+  },
+
+  "Background": {
+    "Type": "None"
+  },
+
   "Screens": {
 
     "Common": {

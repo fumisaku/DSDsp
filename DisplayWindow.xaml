@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="表示ウィンドウ(モニター用)" Height="450" Width="800"
         Background="Black">
-    <Grid Background="Black">
+    <Grid x:Name="RootGrid" Background="Black">
         <Viewbox Stretch="Uniform"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center">

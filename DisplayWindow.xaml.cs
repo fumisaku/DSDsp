@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace DSDsp
 {
@@ -41,6 +42,56 @@ namespace DSDsp
         public DisplayWindow()
         {
             InitializeComponent();
+        }
+
+        /// <summary>
+        /// ウィンドウ全体の背景をイメージファイルで設定する。
+        /// ファイル名のみを渡すと、アセンブリに埋め込まれた pack://application リソース
+        /// （イメージ フォルダ）から読み込む。
+        /// </summary>
+        /// <param name="imageFileName">ファイル名のみ（例: "CHR169_背景01.png"）</param>
+        /// <returns>実際に参照した pack URI 文字列（ログ用）</returns>
+        public (string packUri, bool exists) SetBackgroundImage(string imageFileName)
+        {
+            var packUri = $"pack://application:,,,/DSDsp;component/イメージ/{imageFileName}";
+            var uri = new System.Uri(packUri, System.UriKind.Absolute);
+
+            // リソースとして存在するか確認
+            var info = Application.GetResourceStream(uri);
+            bool exists = (info != null);
+            info?.Stream.Dispose();
+
+            if (exists)
+            {
+                var bitmap = new BitmapImage(uri);
+                var brush = new ImageBrush(bitmap) { Stretch = Stretch.UniformToFill };
+                this.Background  = brush;
+                RootGrid.Background    = brush;
+                ContentGrid.Background = brush;
+            }
+
+            return (packUri, exists);
+        }
+
+        /// <summary>
+        /// ウィンドウ全体の背景を RGB 色で設定する。
+        /// </summary>
+        public void SetBackgroundColor(byte r, byte g, byte b)
+        {
+            var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+            this.Background  = brush;
+            RootGrid.Background    = brush;
+            ContentGrid.Background = brush;
+        }
+
+        /// <summary>
+        /// ウィンドウ全体の背景を黒（デフォルト）に戻す。
+        /// </summary>
+        public void ClearBackground()
+        {
+            this.Background  = Brushes.Black;
+            RootGrid.Background    = Brushes.Black;
+            ContentGrid.Background = Brushes.Black;
         }
 
         /// <summary>

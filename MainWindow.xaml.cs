@@ -117,6 +117,9 @@ namespace DSDsp
             _displayWindow?.SetMirrorSource(_offScreenWindow.ContentGrid);
             _fullScreenWindow?.SetMirrorSource(_offScreenWindow.ContentGrid);
 
+            // 現在のシナリオ背景を適用
+            ApplyScenarioBackground(_currentAjsScenario?.Background);
+
             _log?.LogAdd("オフスクリーンウィンドウを作成（画面外 Visible）", _log.INFO);
         }
 
@@ -506,6 +509,50 @@ namespace DSDsp
             MessageBox.Show("設定画面は未実装です", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        /// <summary>
+        /// シナリオの背景設定をすべての DisplayWindow（オフスクリーン・モニター・全画面）に適用する。
+        /// </summary>
+        /// <param name="bg">背景設定。null の場合はデフォルト（黒）にリセットする。</param>
+        private void ApplyScenarioBackground(Scenario.AjsBackground? bg)
+        {
+            void Apply(DisplayWindow? window)
+            {
+                if (window == null) return;
+
+                if (bg == null)
+                {
+                    window.ClearBackground();
+                    return;
+                }
+
+                switch (bg.GetBackgroundType())
+                {
+                    case Scenario.AjsBackgroundType.Image:
+                        if (!string.IsNullOrEmpty(bg.ImageFile))
+                        {
+                            var (packUri, exists) = window.SetBackgroundImage(bg.ImageFile);
+                            _log?.LogAdd($"背景イメージ参照URI: {packUri}", _log.INFO);
+                            _log?.LogAdd($"背景イメージ存在確認: {(exists ? "OK（設定済み）" : "NG（リソースが見つかりません）")}",
+                                         exists ? _log.INFO : _log.ERR);
+                        }
+                        break;
+
+                    case Scenario.AjsBackgroundType.Color:
+                        window.SetBackgroundColor(bg.R, bg.G, bg.B);
+                        _log?.LogAdd($"背景色を設定: RGB({bg.R},{bg.G},{bg.B})", _log.INFO);
+                        break;
+
+                    default: // None
+                        window.ClearBackground();
+                        break;
+                }
+            }
+
+            Apply(_offScreenWindow);
+            Apply(_displayWindow);
+            Apply(_fullScreenWindow);
+        }
+
         #endregion
 
         #region 進行タブ
@@ -555,6 +602,9 @@ namespace DSDsp
                 MessageBox.Show($"AJSシナリオの読み込みに失敗しました。\nログを確認してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+
+            // シナリオの背景設定を全ウィンドウに適用
+            ApplyScenarioBackground(_currentAjsScenario.Background);
 
             // DA_Masterから区分一覧を取得
             var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
