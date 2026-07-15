@@ -11,9 +11,16 @@
         <Viewbox Stretch="Uniform"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center">
-            <Grid x:Name="ContentGrid" Width="641" Height="387" Background="Black">
-                <!-- 画面コンテンツがここに動的に配置されます -->
-                <!-- 16:9の比率を維持しながら、ウィンドウサイズに応じて拡大・縮小されます -->
+            <!-- メインコンテンツ + SUBオーバーレイをまとめるグリッド -->
+            <Grid x:Name="LayeredContentGrid" Width="641" Height="387">
+                <Grid x:Name="ContentGrid" Width="641" Height="387" Background="Black">
+                    <!-- メイン画面コンテンツがここに動的に配置されます -->
+                    <!-- 16:9の比率を維持しながら、ウィンドウサイズに応じて拡大・縮小されます -->
+                </Grid>
+                <!-- SUBオーバーレイレイヤー。背景は透明。メインの上に重ねて表示される。 -->
+                <Grid x:Name="SubContentGrid" Width="641" Height="387" Background="Transparent">
+                    <!-- SUB画面コンテンツがここに動的に配置されます -->
+                </Grid>
             </Grid>
         </Viewbox>
         <!-- 全画面ウィンドウ用ミラー表示レイヤー。SetMirrorSource() でソースをセットする。 -->

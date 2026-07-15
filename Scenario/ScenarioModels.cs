@@ -155,6 +155,21 @@ namespace DSDsp.Scenario
     }
 
     /// <summary>
+    /// AJS SUBシナリオ定義ファイル（メインに重ねて表示するオーバーレイ用）
+    /// </summary>
+    public class AjsSubScenarioDefinition
+    {
+        [JsonPropertyName("ScenarioName")]
+        public string ScenarioName { get; set; } = string.Empty;
+
+        [JsonPropertyName("Description")]
+        public string Description { get; set; } = string.Empty;
+
+        [JsonPropertyName("Screens")]
+        public AjsScreens Screens { get; set; } = new();
+    }
+
+    /// <summary>
     /// AJSシナリオ定義ファイル
     /// </summary>
     public class AjsScenarioDefinition
@@ -177,6 +192,13 @@ namespace DSDsp.Scenario
         /// </summary>
         [JsonPropertyName("Background")]
         public AjsBackground? Background { get; set; }
+
+        /// <summary>
+        /// SUBシナリオ定義。メインの上に透明背景で重ねて表示される。
+        /// null の場合はSUBシナリオなし。
+        /// </summary>
+        [JsonPropertyName("SubScenario")]
+        public AjsSubScenarioDefinition? SubScenario { get; set; }
     }
 
     // -------------------------------------------------------------------------

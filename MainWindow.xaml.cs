@@ -26,11 +26,16 @@ namespace DSDsp
         // AJS画面進行一覧（BuildProgressList で動的生成）
         private List<AjsProgressItem>? _currentAjsProgressItems;
 
+        // AJS SUB画面進行一覧
+        private List<AjsProgressItem>? _currentAjsSubProgressItems;
+
         // 現在の選択
         private int _currentProgressIndex = -1;
         private int _currentAjsIndex = -1;
+        private int _currentAjsSubIndex = -1;     // SUB画面進行の選択インデックス
         private int _currentAwardIndex = -1;
         private int _currentStep = 0;
+        private int _currentSubStep = 0;           // SUB用ステップカウンター
         private int _selectedScreenIndex = -1;   // コンボボックスで選択されているスクリーン番号
         private int _activeScreenIndex = -1;     // 現在全画面表示中のスクリーン番号（-1=非表示）
         private bool _isTestDisplayActive = false;  // テスト表示が有効かどうか
@@ -40,6 +45,9 @@ namespace DSDsp
 
         // プログラムによる LstAjsProgress.SelectedIndex 変更時に SelectionChanged を無視するフラグ
         private bool _suppressAjsSelectionChanged = false;
+
+        // プログラムによる LstAjsSubProgress.SelectedIndex 変更時に SelectionChanged を無視するフラグ
+        private bool _suppressAjsSubSelectionChanged = false;
 
         // テスト用データマネージャー（サーバー未接続時にJSONファイルから直接投入）
         private DataManager? _testDataManager;
@@ -113,9 +121,9 @@ namespace DSDsp
 
             _offScreenWindow.Show();   // Visible のまま維持
 
-            // 既存のミラーウィンドウにソースを設定
-            _displayWindow?.SetMirrorSource(_offScreenWindow.ContentGrid);
-            _fullScreenWindow?.SetMirrorSource(_offScreenWindow.ContentGrid);
+            // 既存のミラーウィンドウにソースを設定（メイン＋SUBを含む LayeredContentGrid をミラー）
+            _displayWindow?.SetMirrorSource(_offScreenWindow.LayeredContentGrid);
+            _fullScreenWindow?.SetMirrorSource(_offScreenWindow.LayeredContentGrid);
 
             // 現在のシナリオ背景を適用
             ApplyScenarioBackground(_currentAjsScenario?.Background);
@@ -143,7 +151,7 @@ namespace DSDsp
 
             // オフスクリーンウィンドウが既にあればミラーソースを設定
             if (_offScreenWindow != null)
-                _displayWindow.SetMirrorSource(_offScreenWindow.ContentGrid);
+                _displayWindow.SetMirrorSource(_offScreenWindow.LayeredContentGrid);
 
             _log?.LogAdd("モニター用ミラーウィンドウを作成", _log.INFO);
         }
@@ -347,7 +355,7 @@ namespace DSDsp
 
             // オフスクリーンウィンドウが既にあればミラーソースを設定
             if (_offScreenWindow != null)
-                _fullScreenWindow.SetMirrorSource(_offScreenWindow.ContentGrid);
+                _fullScreenWindow.SetMirrorSource(_offScreenWindow.LayeredContentGrid);
 
             _log?.LogAdd("全画面ミラーウィンドウを作成", _log.INFO);
         }
@@ -478,7 +486,7 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// 再生ボタンクリック
+        /// 再生ボタンクリック（メイン）
         /// </summary>
         private void BtnPlay_Click(object sender, RoutedEventArgs e)
         {
@@ -491,14 +499,48 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// クリアボタンクリック
+        /// クリアボタンクリック（全画面共通）
         /// </summary>
         private void BtnClear_Click(object sender, RoutedEventArgs e)
         {
             _currentStep = 0;
             // オフスクリーン側をクリアすればモニター・全画面ミラーも自動反映
             _offScreenWindow?.ClearScreen();
-            _log?.LogAdd("画面クリア", _log.INFO);
+            _offScreenWindow?.ClearSubScreen();
+            _currentSubStep = 0;
+            _log?.LogAdd("画面クリア（メイン＋SUB）", _log.INFO);
+        }
+
+        /// <summary>
+        /// メインクリアボタンクリック（AJSタブのメイン画面進行のみクリア）
+        /// </summary>
+        private void BtnMainClear_Click(object sender, RoutedEventArgs e)
+        {
+            _currentStep = 0;
+            _offScreenWindow?.ClearScreen();
+            _log?.LogAdd("メイン画面クリア", _log.INFO);
+        }
+
+        /// <summary>
+        /// SUB再生ボタンクリック
+        /// </summary>
+        private void BtnSubPlay_Click(object sender, RoutedEventArgs e)
+        {
+            EnsureOffScreenWindowCreated();
+
+            bool stepped = ExecuteAjsSubStep();
+            if (stepped)
+                _currentSubStep++;
+        }
+
+        /// <summary>
+        /// SUBクリアボタンクリック
+        /// </summary>
+        private void BtnSubClear_Click(object sender, RoutedEventArgs e)
+        {
+            _currentSubStep = 0;
+            _offScreenWindow?.ClearSubScreen();
+            _log?.LogAdd("SUB画面クリア", _log.INFO);
         }
 
         /// <summary>
@@ -668,8 +710,15 @@ namespace DSDsp
             _currentAjsIndex = -1;
             _currentStep = 0;
 
+            // SUB画面進行もリセット
+            _currentAjsSubProgressItems = null;
+            LstAjsSubProgress.ItemsSource = null;
+            _currentAjsSubIndex = -1;
+            _currentSubStep = 0;
+
             if (dm?.DS_Status != null && dm?.DA_Master != null)
             {
+                // メイン画面進行一覧を生成
                 _currentAjsProgressItems = _scenarioManager.BuildProgressList(
                     _currentAjsScenario, dm.DS_Status, dm.DA_Master, kbnNo, roundNo);
 
@@ -683,6 +732,33 @@ namespace DSDsp
                     _log?.LogAdd("AJS画面進行一覧の生成に失敗しました", _log.ERR);
                     MessageBox.Show("画面進行一覧の生成に失敗しました。\nDS_StatusにこのラウンドのDE_DncSGが設定されているか確認してください。\nログを参照してください。",
                         "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                // SUBシナリオが定義されている場合はSUB画面進行一覧を生成
+                if (_currentAjsScenario.SubScenario != null)
+                {
+                    // AjsSubScenarioDefinition を AjsScenarioDefinition にラップして BuildProgressList を流用
+                    var subScenarioDef = new Scenario.AjsScenarioDefinition
+                    {
+                        ScenarioName = _currentAjsScenario.SubScenario.ScenarioName,
+                        ScenarioType = "AJS",
+                        Description  = _currentAjsScenario.SubScenario.Description,
+                        Screens      = _currentAjsScenario.SubScenario.Screens,
+                        Background   = null   // SUBは透明背景
+                    };
+
+                    _currentAjsSubProgressItems = _scenarioManager.BuildProgressList(
+                        subScenarioDef, dm.DS_Status, dm.DA_Master, kbnNo, roundNo);
+
+                    if (_currentAjsSubProgressItems != null)
+                    {
+                        LstAjsSubProgress.ItemsSource = _currentAjsSubProgressItems;
+                        _log?.LogAdd($"AJS SUB画面進行一覧生成: {_currentAjsSubProgressItems.Count}件 (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
+                    }
+                    else
+                    {
+                        _log?.LogAdd("AJS SUB画面進行一覧の生成に失敗しました", _log.WARNING);
+                    }
                 }
             }
             else
@@ -708,6 +784,16 @@ namespace DSDsp
             _currentAjsIndex = LstAjsProgress.SelectedIndex;
             _currentStep = 0;
             _log?.LogAdd($"AJS項目選択: {_currentAjsIndex}", _log.DEBUG);
+        }
+
+        private void LstAjsSubProgress_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // プログラムによる変更（ステップ進行中の自動移動）のときは _currentSubStep をリセットしない
+            if (_suppressAjsSubSelectionChanged) return;
+
+            _currentAjsSubIndex = LstAjsSubProgress.SelectedIndex;
+            _currentSubStep = 0;
+            _log?.LogAdd($"AJS SUB項目選択: {_currentAjsSubIndex}", _log.DEBUG);
         }
 
         #endregion
@@ -958,6 +1044,155 @@ namespace DSDsp
             // _currentStep を 1 に進めておく（次の再生ボタンで Step1 から続きを実行するため）
             if (nextStepDone)
                 _currentStep = 1;
+        }
+
+        /// <summary>
+        /// AJS SUBタブのステップを実行する。
+        /// メインと独立してオフスクリーンの SubContentGrid に表示する。
+        /// 戻り値: true=通常実行（呼び出し元で _currentSubStep++ すべき）
+        ///         false=最終ステップ完了によりリセット済み（++ 不要）
+        /// </summary>
+        private bool ExecuteAjsSubStep()
+        {
+            EnsureOffScreenWindowCreated();
+
+            if (_currentAjsSubProgressItems == null)
+            {
+                _log?.LogAdd("AJS SUB画面進行一覧が生成されていません", _log.WARNING);
+                return false;
+            }
+
+            if (_currentAjsSubIndex < 0 || _currentAjsSubIndex >= _currentAjsSubProgressItems.Count)
+            {
+                _log?.LogAdd("AJS SUB項目が選択されていません", _log.WARNING);
+                return false;
+            }
+
+            // 選択された区分情報を取得
+            if (CmbAjsCategory.SelectedItem == null) return false;
+            var displayText = CmbAjsCategory.SelectedItem.ToString();
+            if (string.IsNullOrEmpty(displayText)) return false;
+
+            if (!_ajsCategoryKeys.TryGetValue(displayText, out var key)) return false;
+            var keyParts = key.Split('-');
+            if (keyParts.Length != 2) return false;
+
+            var kbnNo   = keyParts[0];
+            var roundNo = keyParts[1];
+
+            var item = _currentAjsSubProgressItems[_currentAjsSubIndex];
+            _log?.LogAdd($"AJS SUBステップ実行: {item.ScreenId} Step{_currentSubStep} 種目{item.DanceNo} ヒート{item.HeatNo}", _log.INFO);
+
+            // 画面IDに基づいて画面インスタンスを生成
+            DSDspScreenBase? screen = item.ScreenId switch
+            {
+                "DSP_TIT_001" => new 画面.DSP_TIT_001_区分ラウンド紹介(),
+                "DSP_TIT_002" => new 画面.DSP_TIT_002_種目紹介大(),
+                "DSP_TIT_003" => new 画面.DSP_TIT_003_種目紹介小(),
+                "DSP_SOL_001" => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
+                "DSP_SOL_002" => new 画面.DSP_SOL_002_ソロ選手紹介_小(),
+                "DSP_SOL_003" => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
+                "DSP_SOL_004" => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
+                "DSP_SOL_005" => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
+                "DSP_SOL_006" => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
+                "DSP_SOL_007" => new 画面.DSP_SOL_007_ソロ途中結果_大(),
+                "DSP_SOL_008" => new 画面.DSP_SOL_008_ソロ途中結果_小(),
+                "DSP_GRP_001" => new 画面.DSP_GRP_001_出場選手一覧_大(),
+                "DSP_GRP_002" => new 画面.DSP_GRP_002_出場選手一覧_小(),
+                "DSP_GRP_003" => new 画面.DSP_GRP_003_結果一覧_大(),
+                "DSP_GRP_004" => new 画面.DSP_GRP_004_結果一覧_小(),
+                "DSP_DUE_001" => new 画面.DSP_DUE_001_DUE選手紹介_大(),
+                "DSP_DUE_002" => new 画面.DSP_DUE_002_DUE選手紹介_小(),
+                "DSP_DUE_003" => new 画面.DSP_DUE_003_DUE選手結果_大(),
+                "DSP_DUE_004" => new 画面.DSP_DUE_004_DUE選手結果_小(),
+                "DSP_COM_001" => new 画面.DSP_COM_001_総合結果一覧_大(),
+                "DSP_COM_002" => new 画面.DSP_COM_002_総合結果一覧_小(),
+
+                _ => null
+            };
+
+            if (screen == null)
+            {
+                _log?.LogAdd($"SUB: 未対応の画面ID: {item.ScreenId}", _log.WARNING);
+                MessageBox.Show($"SUB: 未対応の画面ID: {item.ScreenId}", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // 初回表示時（SubStep0）は画面を表示してデータを設定
+            if (_currentSubStep == 0)
+            {
+                var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+                if (dm?.DA_Master != null) screen.DA_Master = dm.DA_Master;
+                if (dm?.DS_Status != null) screen.DS_Status = dm.DS_Status;
+                if (dm?.DV_Result != null) screen.DV_Result = dm.DV_Result;
+
+                screen.区分番号    = kbnNo;
+                screen.ラウンド番号 = roundNo;
+                screen.種目番号    = item.DanceNo;
+                screen.ヒート番号  = item.HeatNo;
+                screen.IsOverviewMode = item.IsOverviewMode;
+
+                // オフスクリーンの SubContentGrid に表示（透明背景でメインの上に重なる）
+                _offScreenWindow?.ShowSubScreen(screen);
+                _log?.LogAdd($"SUB画面表示: {item.ScreenId}", _log.INFO);
+            }
+
+            var currentSubScreen = _offScreenWindow?.CurrentSubScreen as DSDspScreenBase;
+            if (currentSubScreen == null)
+            {
+                _log?.LogAdd("表示中のSUB画面がありません", _log.WARNING);
+                return false;
+            }
+
+            currentSubScreen.ExecuteStep(_currentSubStep);
+            _log?.LogAdd($"SUB {item.ScreenId} Step{_currentSubStep}実行完了", _log.INFO);
+
+            // 最終ステップに到達したら次の画面へ移動
+            if (_currentSubStep >= currentSubScreen.GetTotalSteps() - 1)
+            {
+                _currentAjsSubIndex++;
+                _currentSubStep = 0;
+
+                if (_currentAjsSubIndex < _currentAjsSubProgressItems.Count)
+                {
+                    if (currentSubScreen.WaitsForLastStepFadeOut)
+                    {
+                        void OnFadeOutCompleted(object? s, EventArgs e)
+                        {
+                            currentSubScreen.LastStepFadeOutCompleted -= OnFadeOutCompleted;
+                            Dispatcher.Invoke(() => MoveToNextAjsSubScreen());
+                        }
+                        currentSubScreen.LastStepFadeOutCompleted += OnFadeOutCompleted;
+                    }
+                    else
+                    {
+                        MoveToNextAjsSubScreen();
+                    }
+                }
+                else
+                {
+                    _log?.LogAdd("SUB: すべての画面が完了しました", _log.INFO);
+                    MessageBox.Show("SUB: すべての画面が完了しました", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// AJS SUB 次の画面へ遷移し、SubStep0 を実行する。
+        /// </summary>
+        private void MoveToNextAjsSubScreen()
+        {
+            _suppressAjsSubSelectionChanged = true;
+            LstAjsSubProgress.SelectedIndex = _currentAjsSubIndex;
+            _suppressAjsSubSelectionChanged = false;
+            _log?.LogAdd($"SUB: 次の画面へ移動: Index={_currentAjsSubIndex}", _log.INFO);
+            bool nextStepDone = ExecuteAjsSubStep();
+            if (nextStepDone)
+                _currentSubStep = 1;
         }
 
         /// <summary>

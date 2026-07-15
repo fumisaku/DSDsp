@@ -263,8 +263,8 @@
 
                     <!-- シナリオ選択 -->
                     <StackPanel Grid.Row="0">
-                        <TextBlock Text="シナリオ" 
-                                   FontWeight="Bold" 
+                        <TextBlock Text="シナリオ"
+                                   FontWeight="Bold"
                                    FontSize="13"
                                    Margin="0,0,0,5"/>
                         <ComboBox x:Name="CmbAjsScenario"
@@ -304,24 +304,103 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- 画面進行 -->
+                    <!-- 画面進行（メイン / SUB 横並び） -->
                     <Grid Grid.Row="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="5"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" 
-                                   Text="画面進行" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"/>
-                        
-                        <ListBox x:Name="LstAjsProgress"
-                                 Grid.Row="2"
-                                 SelectionChanged="LstAjsProgress_SelectionChanged"
-                                 BorderBrush="#DDDDDD"
-                                 FontSize="12"/>
+                        <!-- メイン画面進行 -->
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="画面進行（メイン）"
+                                       FontWeight="Bold"
+                                       FontSize="13"/>
+                            
+                            <ListBox x:Name="LstAjsProgress"
+                                     Grid.Row="2"
+                                     SelectionChanged="LstAjsProgress_SelectionChanged"
+                                     BorderBrush="#DDDDDD"
+                                     FontSize="12"/>
+
+                            <!-- メイン クリアボタン（再生ボタンは上部共通パネルの BtnPlay） -->
+                            <Button x:Name="BtnMainClear"
+                                    Grid.Row="4"
+                                    Content="✕ メインクリア"
+                                    Click="BtnMainClear_Click"
+                                    Height="30"
+                                    Background="#F44336"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"/>
+                        </Grid>
+
+                        <!-- 区切り -->
+                        <Border Grid.Column="1"
+                                BorderBrush="#DDDDDD"
+                                BorderThickness="1,0,0,0"
+                                Margin="7,0"/>
+
+                        <!-- SUB画面進行 -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="画面進行（SUB）"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Foreground="#7B1FA2"/>
+                            
+                            <ListBox x:Name="LstAjsSubProgress"
+                                     Grid.Row="2"
+                                     SelectionChanged="LstAjsSubProgress_SelectionChanged"
+                                     BorderBrush="#CE93D8"
+                                     FontSize="12"/>
+
+                            <!-- SUB 操作ボタン -->
+                            <Grid Grid.Row="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="BtnSubPlay"
+                                        Grid.Column="0"
+                                        Content="▶ SUB再生"
+                                        Click="BtnSubPlay_Click"
+                                        Height="30"
+                                        Background="#7B1FA2"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        FontWeight="Bold"
+                                        Cursor="Hand"/>
+                                <Button x:Name="BtnSubClear"
+                                        Grid.Column="2"
+                                        Content="✕ SUBクリア"
+                                        Click="BtnSubClear_Click"
+                                        Height="30"
+                                        Background="#AD1457"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"/>
+                            </Grid>
+                        </Grid>
                     </Grid>
                 </Grid>
             </TabItem>

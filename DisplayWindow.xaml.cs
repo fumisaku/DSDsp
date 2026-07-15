@@ -12,11 +12,17 @@ namespace DSDsp
     public partial class DisplayWindow : Window
     {
         private UserControl? _currentScreen;
+        private UserControl? _currentSubScreen;
 
         /// <summary>
-        /// 現在表示中の画面
+        /// 現在表示中のメイン画面
         /// </summary>
         public UserControl? CurrentScreen => _currentScreen;
+
+        /// <summary>
+        /// 現在表示中のSUB画面
+        /// </summary>
+        public UserControl? CurrentSubScreen => _currentSubScreen;
 
         /// <summary>
         /// VisualBrush ミラーモードを有効にする。
@@ -95,7 +101,7 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// 指定された画面を表示
+        /// 指定されたメイン画面を表示
         /// </summary>
         /// <param name="screen">表示する画面（UserControl）</param>
         public void ShowScreen(UserControl screen)
@@ -121,7 +127,31 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// 画面をクリア
+        /// 指定されたSUB画面を表示（メインの上に透明背景で重ねて表示）
+        /// </summary>
+        /// <param name="screen">表示するSUB画面（UserControl）</param>
+        public void ShowSubScreen(UserControl screen)
+        {
+            // 既存のSUB画面があれば削除
+            if (_currentSubScreen != null)
+            {
+                SubContentGrid.Children.Remove(_currentSubScreen);
+
+                if (_currentSubScreen is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+
+            // 新しいSUB画面を設定
+            _currentSubScreen = screen;
+            _currentSubScreen.Width  = SubContentGrid.Width;
+            _currentSubScreen.Height = SubContentGrid.Height;
+            SubContentGrid.Children.Add(_currentSubScreen);
+        }
+
+        /// <summary>
+        /// メイン画面をクリア
         /// </summary>
         public void ClearScreen()
         {
@@ -135,6 +165,24 @@ namespace DSDsp
                 }
                 
                 _currentScreen = null;
+            }
+        }
+
+        /// <summary>
+        /// SUB画面をクリア
+        /// </summary>
+        public void ClearSubScreen()
+        {
+            if (_currentSubScreen != null)
+            {
+                SubContentGrid.Children.Remove(_currentSubScreen);
+
+                if (_currentSubScreen is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                _currentSubScreen = null;
             }
         }
 
@@ -164,6 +212,18 @@ namespace DSDsp
                 }
                 
                 _currentScreen = null;
+            }
+
+            if (_currentSubScreen != null)
+            {
+                SubContentGrid.Children.Remove(_currentSubScreen);
+
+                if (_currentSubScreen is IDisposable disposable2)
+                {
+                    disposable2.Dispose();
+                }
+
+                _currentSubScreen = null;
             }
 
             base.OnClosing(e);
