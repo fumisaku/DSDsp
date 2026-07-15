@@ -62,6 +62,7 @@ namespace DSDsp.画面
         /// </summary>
         protected override int TotalSteps => _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
         public override bool WaitsForLastStepFadeOut => true;
+        public override bool HoldsAfterFadeOut => true;
         #endregion
 
         #region コンストラクタ
