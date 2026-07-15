@@ -181,26 +181,55 @@ namespace DSDsp.Scenario
         {
             var errors = new List<string>();
 
-            var groups = new Dictionary<string, Dictionary<string, AjsScreenEntry>>
+            // バリデーション対象のセクション群（フラット + Final/SemiFinal）
+            var sectionSets = new List<(string prefix, Dictionary<string, Dictionary<string, AjsScreenEntry>> groups)>
             {
-                ["Common"] = scenario.Screens.Common,
-                ["Solo"]   = scenario.Screens.Solo,
-                ["Group"]  = scenario.Screens.Group,
-                ["Duel"]   = scenario.Screens.Duel,
+                ("", new()
+                {
+                    ["Common"] = scenario.Screens.Common,
+                    ["Solo"]   = scenario.Screens.Solo,
+                    ["Group"]  = scenario.Screens.Group,
+                    ["Duel"]   = scenario.Screens.Duel,
+                }),
             };
 
-            foreach (var (groupName, pairs) in _screenPairs)
+            if (scenario.Screens.Final != null)
             {
-                if (!groups.TryGetValue(groupName, out var group)) continue;
-
-                foreach (var (large, small) in pairs)
+                sectionSets.Add(("Final.", new()
                 {
-                    bool largeEnabled = group.TryGetValue(large, out var largeEntry) && largeEntry.Enabled;
-                    bool smallEnabled = group.TryGetValue(small, out var smallEntry) && smallEntry.Enabled;
+                    ["Common"] = scenario.Screens.Final.Common,
+                    ["Solo"]   = scenario.Screens.Final.Solo,
+                    ["Group"]  = scenario.Screens.Final.Group,
+                    ["Duel"]   = scenario.Screens.Final.Duel,
+                }));
+            }
 
-                    if (largeEnabled && smallEnabled)
+            if (scenario.Screens.SemiFinal != null)
+            {
+                sectionSets.Add(("SemiFinal.", new()
+                {
+                    ["Common"] = scenario.Screens.SemiFinal.Common,
+                    ["Solo"]   = scenario.Screens.SemiFinal.Solo,
+                    ["Group"]  = scenario.Screens.SemiFinal.Group,
+                    ["Duel"]   = scenario.Screens.SemiFinal.Duel,
+                }));
+            }
+
+            foreach (var (prefix, groups) in sectionSets)
+            {
+                foreach (var (groupName, pairs) in _screenPairs)
+                {
+                    if (!groups.TryGetValue(groupName, out var group)) continue;
+
+                    foreach (var (large, small) in pairs)
                     {
-                        errors.Add($"{groupName} セクション: {large} と {small} が両方 Enabled:true です。どちらか一方のみ有効にしてください。");
+                        bool largeEnabled = group.TryGetValue(large, out var largeEntry) && largeEntry.Enabled;
+                        bool smallEnabled = group.TryGetValue(small, out var smallEntry) && smallEntry.Enabled;
+
+                        if (largeEnabled && smallEnabled)
+                        {
+                            errors.Add($"{prefix}{groupName} セクション: {large} と {small} が両方 Enabled:true です。どちらか一方のみ有効にしてください。");
+                        }
                     }
                 }
             }
@@ -237,7 +266,7 @@ namespace DSDsp.Scenario
                     return null;
                 }
 
-                // DA_Master から採点方式（DC_RndScrMtd）を取得
+                // DA_Master から採点方式（DC_RndScrMtd）とラウンド名を取得
                 var scrMtd = GetScrMtd(daMaster, kbnNo, roundNo);
                 if (string.IsNullOrEmpty(scrMtd))
                 {
@@ -248,6 +277,11 @@ namespace DSDsp.Scenario
                 // GD/PD を判定
                 bool isGd = scrMtd.IndexOf("for GD", StringComparison.OrdinalIgnoreCase) >= 0;
                 bool isPd = scrMtd.IndexOf("for PD", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                // ラウンド名を取得して決勝/準決勝用の画面セクションを解決する
+                var roundName = GetRoundName(daMaster, kbnNo, roundNo);
+                var resolvedScreens = scenario.Screens.ResolveByRoundName(roundName);
+                _log.LogAdd($"使用する画面セクション解決: ラウンド名='{roundName}', Final={(scenario.Screens.Final != null ? "あり" : "なし")}, SemiFinal={(scenario.Screens.SemiFinal != null ? "あり" : "なし")}", _log.DEBUG);
 
                 // DA_Master から種目情報（DE_DncSG）マップを取得
                 // キー: DS_DncNo（DS_Status上の種目順）→ DE_DncSG 値
@@ -271,7 +305,7 @@ namespace DSDsp.Scenario
                 var result = new List<AjsProgressItem>();
 
                 // 1. TIT_001（最初に1回）
-                AddIfEnabled(result, scenario.Screens.Common, "DSP_TIT_001", 0, 0, "区分ラウンド紹介");
+                AddIfEnabled(result, resolvedScreens.Common, "DSP_TIT_001", 0, 0, "区分ラウンド紹介");
 
                 for (int danceIdx = 0; danceIdx < sortedDances.Count; danceIdx++)
                 {
@@ -287,9 +321,9 @@ namespace DSDsp.Scenario
 
                     var groupScreens = dncSg switch
                     {
-                        "S" or "Solo" => scenario.Screens.Solo,
-                        "G" or "Group" => scenario.Screens.Group,
-                        "D" or "Duel" => scenario.Screens.Duel,
+                        "S" or "Solo"  => resolvedScreens.Solo,
+                        "G" or "Group" => resolvedScreens.Group,
+                        "D" or "Duel"  => resolvedScreens.Duel,
                         _ => null
                     };
 
@@ -404,7 +438,7 @@ namespace DSDsp.Scenario
 
                     if (!isFirst && !isLast)
                     {
-                        AddFirstEnabled(result, scenario.Screens.Common,
+                        AddFirstEnabled(result, resolvedScreens.Common,
                             new[] { "DSP_COM_001", "DSP_COM_002" }, danceNo, 0, "途中総合結果");
                     }
                 }
@@ -476,6 +510,32 @@ namespace DSDsp.Scenario
                 {
                     if ((round?["DC_RndNo"]?.GetValue<string>() ?? "") == roundNo)
                         return round?["DC_RndScrMtd"]?.GetValue<string>() ?? string.Empty;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// DA_Master から指定の区分・ラウンドのラウンド名（DC_RndName_J）を取得する。
+        /// 決勝/準決勝の判定に使用する。
+        /// </summary>
+        private string GetRoundName(JsonNode daMaster, string kbnNo, string roundNo)
+        {
+            var kubuns = daMaster["DB_KUBUNs"]?.AsArray();
+            if (kubuns == null) return string.Empty;
+
+            foreach (var kubun in kubuns)
+            {
+                if ((kubun?["DB_KbnNo"]?.GetValue<string>() ?? "") != kbnNo) continue;
+
+                var rounds = kubun?["DC_ROUNDs"]?.AsArray();
+                if (rounds == null) continue;
+
+                foreach (var round in rounds)
+                {
+                    if ((round?["DC_RndNo"]?.GetValue<string>() ?? "") == roundNo)
+                        return round?["DC_RndName_J"]?.GetValue<string>() ?? string.Empty;
                 }
             }
 

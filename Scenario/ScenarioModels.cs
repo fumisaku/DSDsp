@@ -137,9 +137,9 @@ namespace DSDsp.Scenario
     }
 
     /// <summary>
-    /// AJSシナリオ定義ファイルの Screens セクション
+    /// AJSシナリオ定義ファイルの Screens セクション（1ラウンド区分用）
     /// </summary>
-    public class AjsScreens
+    public class AjsRoundScreens
     {
         [JsonPropertyName("Common")]
         public Dictionary<string, AjsScreenEntry> Common { get; set; } = new();
@@ -152,6 +152,77 @@ namespace DSDsp.Scenario
 
         [JsonPropertyName("Duel")]
         public Dictionary<string, AjsScreenEntry> Duel { get; set; } = new();
+    }
+
+    /// <summary>
+    /// AJSシナリオ定義ファイルの Screens セクション。
+    /// 決勝（Final）・準決勝（SemiFinal）を別々に定義できる。
+    /// Final または SemiFinal が定義されている場合、ラウンド名に基づいて該当セクションを優先使用する。
+    /// 定義がない場合は後方互換としてフラットな Common/Solo/Group/Duel を使用する。
+    /// </summary>
+    public class AjsScreens
+    {
+        // ── 後方互換用フラットセクション（Final/SemiFinal 未定義時に使用） ──
+        [JsonPropertyName("Common")]
+        public Dictionary<string, AjsScreenEntry> Common { get; set; } = new();
+
+        [JsonPropertyName("Solo")]
+        public Dictionary<string, AjsScreenEntry> Solo { get; set; } = new();
+
+        [JsonPropertyName("Group")]
+        public Dictionary<string, AjsScreenEntry> Group { get; set; } = new();
+
+        [JsonPropertyName("Duel")]
+        public Dictionary<string, AjsScreenEntry> Duel { get; set; } = new();
+
+        // ── 決勝専用セクション（ラウンド名が「決勝」に合致する場合に使用） ──
+        /// <summary>
+        /// 決勝用画面定義。null または全セクションが空の場合はフラットセクションを使用する。
+        /// </summary>
+        [JsonPropertyName("Final")]
+        public AjsRoundScreens? Final { get; set; }
+
+        // ── 準決勝専用セクション（ラウンド名が「準決勝」に合致する場合に使用） ──
+        /// <summary>
+        /// 準決勝用画面定義。null または全セクションが空の場合はフラットセクションを使用する。
+        /// </summary>
+        [JsonPropertyName("SemiFinal")]
+        public AjsRoundScreens? SemiFinal { get; set; }
+
+        /// <summary>
+        /// ラウンド名に基づいて使用する AjsRoundScreens を返す。
+        /// ・ラウンド名に「準決勝」を含む → SemiFinal（定義があれば）
+        /// ・ラウンド名に「決勝」を含み「準決勝」を含まない → Final（定義があれば）
+        /// ・それ以外または該当セクションが空 → フラットセクション（後方互換）
+        /// </summary>
+        public AjsRoundScreens ResolveByRoundName(string roundName)
+        {
+            AjsRoundScreens? candidate = null;
+
+            if (roundName.Contains("準決勝"))
+                candidate = SemiFinal;
+            else if (roundName.Contains("決勝"))
+                candidate = Final;
+
+            // candidate が null または全セクションが空ならフラットセクションにフォールバック
+            if (candidate != null && (
+                candidate.Common.Count > 0 ||
+                candidate.Solo.Count   > 0 ||
+                candidate.Group.Count  > 0 ||
+                candidate.Duel.Count   > 0))
+            {
+                return candidate;
+            }
+
+            // フラットセクションを AjsRoundScreens として返す（共通フォールバック）
+            return new AjsRoundScreens
+            {
+                Common = this.Common,
+                Solo   = this.Solo,
+                Group  = this.Group,
+                Duel   = this.Duel,
+            };
+        }
     }
 
     /// <summary>
