@@ -104,7 +104,7 @@ namespace DSDsp.画面
 
             string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
             string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
-            PartsCOM001.TB_左上2.Text = 区分名 + " " + ラウンド名;
+            PartsCOM001.TB_左上2.Text = 区分名 + "　" + ラウンド名;
 
             // 種目情報を取得
             var dance = DSDspDataHelper.Get種目(DA_Master, 区分番号, ラウンド番号, 種目番号);
@@ -114,7 +114,7 @@ namespace DSDsp.画面
                 string 種目カテゴリ = DSDspDataHelper.Get種目カテゴリ(DA_Master, 区分番号, ラウンド番号, 種目番号);
                 string 種目名 = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
                 
-                PartsCOM002.LB_右上.Content = 種目順.ToString() + "種目目" + " " + 種目カテゴリ + " " + 種目名;
+                PartsCOM002.LB_右上.Content = 種目順.ToString() + "種目目" + "　" + 種目カテゴリ + "　" + 種目名;
             }
             else
             {

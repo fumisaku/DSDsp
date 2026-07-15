@@ -951,6 +951,7 @@ namespace DSDsp
                 "DSP_DUE_004" => new 画面.DSP_DUE_004_DUE選手結果_小(),
                 "DSP_COM_001" => new 画面.DSP_COM_001_総合結果一覧_大(),
                 "DSP_COM_002" => new 画面.DSP_COM_002_総合結果一覧_小(),
+                "DSP_TIT_999" => new 画面.DSP_TIT_999_終了(),
 
                 _ => null
             };
@@ -1120,6 +1121,7 @@ namespace DSDsp
                 "DSP_DUE_004" => new 画面.DSP_DUE_004_DUE選手結果_小(),
                 "DSP_COM_001" => new 画面.DSP_COM_001_総合結果一覧_大(),
                 "DSP_COM_002" => new 画面.DSP_COM_002_総合結果一覧_小(),
+                "DSP_TIT_999" => new 画面.DSP_TIT_999_終了(),
 
                 _ => null
             };
@@ -1273,6 +1275,7 @@ namespace DSDsp
                 画面.DSP_DUE_002_DUE選手紹介_小      => new 画面.DSP_DUE_002_DUE選手紹介_小(),
                 画面.DSP_DUE_003_DUE選手結果_大      => new 画面.DSP_DUE_003_DUE選手結果_大(),
                 画面.DSP_DUE_004_DUE選手結果_小      => new 画面.DSP_DUE_004_DUE選手結果_小(),
+                画面.DSP_TIT_999_終了                => new 画面.DSP_TIT_999_終了(),
                 _ => null
             };
 

@@ -159,8 +159,8 @@ namespace DSDsp.画面
             _背番号2 = 背番号リスト.Count > 1 ? 背番号リスト[1] : "???";
 
             var 選手1 = DSDspDataHelper.Get選手情報(DA_Master, _背番号1, 区分番号);
-            _選手名L1 = Get苗字(DSDspDataHelper.Get選手名L(選手1));
-            _選手名P1 = Get苗字(DSDspDataHelper.Get選手名P(選手1));
+            _選手名L1 = DSDspDataHelper.Get選手名L(選手1);
+            _選手名P1 = DSDspDataHelper.Get選手名P(選手1);
 
 
             _選手紹介1 = string.IsNullOrEmpty(_選手名P1)
@@ -168,8 +168,8 @@ namespace DSDsp.画面
                 : $"{_背番号1} {_選手名L1}・{_選手名P1} 組";
 
             var 選手2 = DSDspDataHelper.Get選手情報(DA_Master, _背番号2, 区分番号);
-            _選手名L2 = Get苗字(DSDspDataHelper.Get選手名L(選手2));
-            _選手名P2 = Get苗字(DSDspDataHelper.Get選手名P(選手2));
+            _選手名L2 = DSDspDataHelper.Get選手名L(選手2);
+            _選手名P2 = DSDspDataHelper.Get選手名P(選手2);
 
             _選手紹介2 = string.IsNullOrEmpty(_選手名P2)
                 ? $"{_背番号2} {_選手名L2}"
@@ -177,8 +177,10 @@ namespace DSDsp.画面
 
 
             // COM003 右上にヒート情報を表示
-            PartsCOM003.LB_右上.Content =
-                $"{ヒート番号}H  {_選手紹介1} vs {_選手紹介2}";
+           // PartsCOM003.LB_右上.Content =
+           //     $"{ヒート番号}H  {_選手紹介1} vs {_選手紹介2}";
+
+            PartsCOM003.LB_右上.Content = String.Empty;
         }
 
         /// <summary>

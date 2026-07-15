@@ -409,6 +409,15 @@ namespace DSDsp.Scenario
                     }
                 }
 
+                // 末尾に終了画面を固定追加
+                result.Add(new AjsProgressItem
+                {
+                    ScreenId    = "DSP_TIT_999",
+                    DanceNo     = 0,
+                    HeatNo      = 0,
+                    Description = "終了",
+                });
+
                 _log.LogAdd($"AJS画面進行一覧生成完了: {result.Count}件 (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
                 return result;
             }

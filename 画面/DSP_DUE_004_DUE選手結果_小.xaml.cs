@@ -160,8 +160,12 @@ namespace DSDsp.画面
                 : $"{_背番号2} {選手名L2}・{選手名P2} 組";
 
             // COM003 右上にヒート情報を表示
-            PartsCOM003.LB_右上.Content =
-                $"{ヒート番号}H  {_選手紹介1} vs {_選手紹介2}";
+           // PartsCOM003.LB_右上.Content =
+           //     $"{ヒート番号}H  {_選手紹介1} vs {_選手紹介2}";
+
+            PartsCOM003.LB_右上.Content = string.Empty;
+
+
         }
 
         /// <summary>

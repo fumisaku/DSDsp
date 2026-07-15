@@ -282,6 +282,9 @@ namespace DSDsp.画面
             var 総合結果 = DV_Result?["総合結果"]?.AsArray();
             _総選手数 = 総合結果?.Count ?? 0;
             _ページ数 = Math.Max(1, (int)Math.Ceiling(_総選手数 / 8.0));
+
+            // 種目名は非表示
+            PartsCOM003.LB_右上.Content = string.Empty;
         }
 
         /// <summary>
@@ -528,6 +531,8 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
             fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             fadeOutStoryboard.Begin();
+
+            PartsCOM002.LB_右上.Content = string.Empty;
         }
 
         #endregion
