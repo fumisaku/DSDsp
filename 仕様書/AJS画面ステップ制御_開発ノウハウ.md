@@ -578,3 +578,82 @@ var 当該ヒート選手 = ヒート番号 != 0
 `Step3` はページネーションループの中で毎ページ呼ばれるため、それぞれ独立してフィルタを適用している。
 パフォーマンス上は問題ないが、将来リファクタリングする際は `Step1` で計算した絞り込み済みリストを
 フィールドに保持して `Step3` でも再利用するとよい。
+
+## 12. 決勝/準決勝 別シナリオ定義機能
+
+### 12.1 概要
+
+シナリオファイルの `Screens` セクションに `Final`（決勝）と `SemiFinal`（準決勝）サブセクションを追加することで、同一シナリオファイル内で決勝と準決勝の画面構成を別々に定義できる。
+
+`BuildProgressList` 実行時に DA_Master のラウンド名（`DC_RndName_J`）を参照し、自動的に適切なセクションを選択する。
+
+### 12.2 選択ルール
+
+| ラウンド名の条件 | 使用セクション |
+|---|---|
+| 「準決勝」を含む | `Screens.SemiFinal` |
+| 「決勝」を含み「準決勝」を含まない | `Screens.Final` |
+| 上記以外 / セクションが未定義または空 | フラットな `Screens.Common/Solo/Group/Duel`（後方互換） |
+
+> **ポイント**：「準決勝」は「決勝」を含むため、準決勝の判定を先に行う。
+
+### 12.3 シナリオファイルの書き方
+
+```json
+{
+  "Screens": {
+    "_Comment": "後方互換用フラットセクション（Final/SemiFinal未定義時に使用）",
+    "Common": { ... },
+    "Solo":   { ... },
+    "Group":  { ... },
+    "Duel":   { ... },
+
+    "Final": {
+      "_Comment": "決勝用。内容を変えたい画面のみ Enabled を変更する",
+      "Common": { "DSP_TIT_001": { "ScreenId": "DSP_TIT_001", "Enabled": true }, ... },
+      "Solo":   { ... },
+      "Group":  { ... },
+      "Duel":   { ... }
+    },
+
+    "SemiFinal": {
+      "_Comment": "準決勝用",
+      "Common": { ... },
+      "Solo":   { ... },
+      "Group":  { ... },
+      "Duel":   { ... }
+    }
+  }
+}
+```
+
+`Final` / `SemiFinal` のどちらか（または両方）を省略した場合、省略したラウンド種別にはフラットセクションが使われる（後方互換）。
+
+### 12.4 実装の仕組み
+
+**モデル（[`ScenarioModels.cs`](../Scenario/ScenarioModels.cs)）**
+
+- `AjsRoundScreens`（新規）：1ラウンド区分の `Common/Solo/Group/Duel` を持つクラス
+- `AjsScreens.Final`・`AjsScreens.SemiFinal`：`AjsRoundScreens?` 型のプロパティ
+- `AjsScreens.ResolveByRoundName(roundName)`：ラウンド名を受けて適切な `AjsRoundScreens` を返すメソッド
+
+**ScenarioManager（[`ScenarioManager.cs`](../Scenario/ScenarioManager.cs)）**
+
+```csharp
+// ラウンド名を取得して決勝/準決勝用の画面セクションを解決する
+var roundName = GetRoundName(daMaster, kbnNo, roundNo);
+var resolvedScreens = scenario.Screens.ResolveByRoundName(roundName);
+
+// 以降は resolvedScreens.Common / Solo / Group / Duel を使用
+AddIfEnabled(result, resolvedScreens.Common, "DSP_TIT_001", ...);
+```
+
+`GetRoundName()` は `GetScrMtd()` と同じ構造で `DC_RndName_J` を取得するプライベートメソッド。
+
+### 12.5 バリデーション対応
+
+`ValidateAjsScenario()` は `Final` / `SemiFinal` の各セクションも大/小ペアチェックの対象とする。エラーメッセージには `"Final.Solo セクション: ..."` のようにプレフィックスが付く。
+
+### 12.6 後方互換性
+
+既存のシナリオファイルに `Final`/`SemiFinal` セクションが存在しない場合は、従来どおり `Screens.Common/Solo/Group/Duel` が使われる。変更は完全後方互換。
