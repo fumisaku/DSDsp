@@ -1034,7 +1034,6 @@ namespace DSDsp
                 else
                 {
                     _log?.LogAdd("すべての画面が完了しました", _log.INFO);
-                    MessageBox.Show("すべての画面が完了しました", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
 
                 return false;
@@ -1195,7 +1194,6 @@ namespace DSDsp
                 else
                 {
                     _log?.LogAdd("SUB: すべての画面が完了しました", _log.INFO);
-                    MessageBox.Show("SUB: すべての画面が完了しました", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
 
                 return false;

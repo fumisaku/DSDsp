@@ -7,7 +7,7 @@ namespace DSDsp.画面
     /// <summary>
     /// DSP_TIT_999_終了.xaml の相互作用ロジック
     /// 画面進行一覧の最後に固定で追加される終了画面。
-    /// ステップ構成: Step0（ヘッダ設定 + 「終了」フェードイン）の1ステップのみ。
+    /// ステップ構成: Step0（ヘッダ設定 )の1ステップのみ。
     /// </summary>
     public partial class DSP_TIT_999_終了 : DSDspScreenBase
     {
@@ -48,21 +48,9 @@ namespace DSDsp.画面
             PartsCOM001.IM_JDSFマーク.Source = new BitmapImage(
                 new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
             PartsCOM001.TB_左上1.Text = DSDspDataHelper.Get競技会名(DA_Master);
-            PartsCOM001.TB_左上2.Text = DSDspDataHelper.Get区分名(DA_Master, 区分番号)
-                                      + "　" + DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            
 
-            // 「終了」テキストをフェードインで表示
-            var sb = new Storyboard();
-            var fadeIn = new DoubleAnimation
-            {
-                From     = 0,
-                To       = 1,
-                Duration = System.TimeSpan.FromSeconds(1),
-            };
-            Storyboard.SetTarget(fadeIn, LB_終了);
-            Storyboard.SetTargetProperty(fadeIn, new System.Windows.PropertyPath("Opacity"));
-            sb.Children.Add(fadeIn);
-            sb.Begin();
+           
         }
 
         #endregion
