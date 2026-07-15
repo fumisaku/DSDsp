@@ -28,6 +28,7 @@ namespace DSDsp.画面
         /// <summary>総ステップ数（Step1(1) + Step2(1) + Step3(1) の3ステップ）</summary>
         protected override int TotalSteps => 3;
         public override bool WaitsForLastStepFadeOut => true;
+        public override bool HoldsAfterFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -155,6 +156,24 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT003.IM_種目2,    sb, 0);
             sb.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
             sb.Begin();
+
+            // 右上01に種目情報を表示する
+            // 種目情報を取得
+            var dance = DSDspDataHelper.Get種目(DA_Master, 区分番号, ラウンド番号, 種目番号);
+            if (dance != null)
+            {
+                int 種目順 = 種目番号;
+                string 種目カテゴリ = DSDspDataHelper.Get種目カテゴリ(DA_Master, 区分番号, ラウンド番号, 種目番号);
+                string 種目名 = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
+
+                PartsCOM002.LB_右上.Content = 種目順.ToString() + "種目目" + "　" + 種目カテゴリ + "　" + 種目名;
+            }
+            else
+            {
+                PartsCOM002.LB_右上.Content = "種目情報なし";
+            }
+
+
         }
 
         #endregion
