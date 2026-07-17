@@ -442,7 +442,20 @@ namespace DSDsp.画面
                 _partsMain.フォントサイズ自動調整(
                     label: _選手名LB[i],
                     text: _選手名LB[i].Content?.ToString() ?? "",
-                    maxWidth: 290,
+                    maxWidth: 200,
+                    maxFontSize: 16,
+                    minFontSize: 8,
+                    fontFamilyName: FONT_FAMILY_NAME);
+            }
+
+
+            // ---- フォントサイズ自動調整（所属）----
+            for (int i = 0; i < 表示件数; i++)
+            {
+                _partsMain.フォントサイズ自動調整(
+                    label: _所属LB[i],
+                    text: _所属LB[i].Content?.ToString() ?? "",
+                    maxWidth: 100,
                     maxFontSize: 16,
                     minFontSize: 8,
                     fontFamilyName: FONT_FAMILY_NAME);

@@ -41,8 +41,8 @@
             <Label x:Name="LB_Total名" Content="Total" HorizontalContentAlignment="Center" Foreground="DarkCyan" FontSize="16" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Canvas.Left="482" Canvas.Top="18" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Label x:Name="LB_Total" Content="99.999" HorizontalContentAlignment="Center" Canvas.Left="462" Canvas.Top="42" Width="85" Height="34" Foreground="DarkBlue" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
 
-            <Label x:Name="LB_Rank名" Content="Rank" HorizontalContentAlignment="Center" Foreground="DarkCyan" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Canvas.Left="467" Canvas.Top="73" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-            <Label x:Name="LB_Rank" Content="8位" HorizontalContentAlignment="Center" Canvas.Left="497" Canvas.Top="72" Width="54" Height="30" Foreground="DarkBlue" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
+            <Label x:Name="LB_Rank名" Content="Rank" HorizontalContentAlignment="Center" Foreground="DarkCyan" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" Canvas.Left="467" Canvas.Top="75" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <Label x:Name="LB_Rank" Content="8位" HorizontalContentAlignment="Center" Canvas.Left="497" Canvas.Top="73" Width="54" Height="30" Foreground="DarkBlue" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold"/>
 
         </Canvas>
 
