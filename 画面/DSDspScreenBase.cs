@@ -9,8 +9,25 @@ using System.Windows.Threading;
 namespace DSDsp.画面
 {
     /// <summary>
-    /// DSDsp画面の基底クラス
-    /// 共通プロパティとタイマー制御を提供
+    /// DSDsp画面の基底クラス。
+    ///
+    /// 【ステップ進行の仕組み】
+    ///   外部（MainWindow）から Advance() を呼ぶたびに次のステップへ進む。
+    ///   画面が全ステップを完了したとき ScreenCompleted イベントを発火する。
+    ///   MainWindow は ScreenCompleted を受け取ったときだけ次の画面へ遷移する。
+    ///   → MainWindow 側にステップカウンターは不要。
+    ///
+    /// 【完了の通知タイミング】
+    ///   フェードアウトアニメーションがある最終ステップ：
+    ///     Storyboard.Completed コールバックから RaiseScreenCompleted() を呼ぶ。
+    ///   フェードアウトがない最終ステップ：
+    ///     Advance() 内で _currentStep が TotalSteps を超えたとき自動発火。
+    ///
+    /// 【途中停止（クロマキーモード等）】
+    ///   画面クラスが自分で判断して Advance() 呼び出しを無視するか、
+    ///   あるいは次ステップを実行した後 ScreenCompleted を発火しないことで停止する。
+    ///   HoldsAfterFadeOut=true の画面はフェードアウト完了後も停止し、
+    ///   次の Advance() で ScreenCompleted を発火する。
     /// </summary>
     public abstract class DSDspScreenBase : UserControl, IDisposable
     {
@@ -20,12 +37,6 @@ namespace DSDsp.画面
         protected int _currentStep = 0;
         protected bool _disposed = false;
 
-        /// <summary>
-        /// 最終ステップのフェードアウトアニメーションが完了したときに発火するイベント。
-        /// このイベントが設定されている場合、MainWindowは次の画面の表示をこのイベント完了まで待つ。
-        /// </summary>
-        public event EventHandler? LastStepFadeOutCompleted;
-        
         // データソース
         private JsonNode? _daMaster;
         private JsonNode? _dsStatus;
@@ -38,106 +49,74 @@ namespace DSDsp.画面
         private bool _chromaKeyMode = false;
         #endregion
 
+        #region イベント
+        /// <summary>
+        /// 画面の全ステップが完了したときに発火する。
+        /// MainWindow はこのイベントを受け取ったときに次の画面へ遷移する。
+        /// </summary>
+        public event EventHandler? ScreenCompleted;
+
+        // 旧互換：LastStepFadeOutCompleted は ScreenCompleted の別名として残す
+        [Obsolete("ScreenCompleted を使用してください")]
+        public event EventHandler? LastStepFadeOutCompleted
+        {
+            add    => ScreenCompleted += value;
+            remove => ScreenCompleted -= value;
+        }
+        #endregion
+
         #region プロパティ
-        /// <summary>
-        /// DA_Master（競技会マスタ）
-        /// </summary>
-        public JsonNode? DA_Master
-        {
-            get => _daMaster;
-            set => _daMaster = value;
-        }
+        public JsonNode? DA_Master  { get => _daMaster;  set => _daMaster  = value; }
+        public JsonNode? DS_Status  { get => _dsStatus;  set => _dsStatus  = value; }
+        public JsonNode? DV_Result  { get => _dvResult;  set => _dvResult  = value; }
+        public string    区分番号   { get => _kbnNo;     set => _kbnNo     = value; }
+        public string    ラウンド番号{ get => _rndNo;     set => _rndNo     = value; }
+        public int       種目番号   { get => _dncNo;     set => _dncNo     = value; }
+        public int       ヒート番号 { get => _heatNo;    set => _heatNo    = value; }
 
-        /// <summary>
-        /// DS_Status（競技会進行状況）
-        /// </summary>
-        public JsonNode? DS_Status
-        {
-            get => _dsStatus;
-            set => _dsStatus = value;
-        }
-
-        /// <summary>
-        /// DV_Result（採点結果）
-        /// </summary>
-        public JsonNode? DV_Result
-        {
-            get => _dvResult;
-            set => _dvResult = value;
-        }
-
-        /// <summary>
-        /// 区分番号
-        /// </summary>
-        public string 区分番号
-        {
-            get => _kbnNo;
-            set => _kbnNo = value;
-        }
-
-        /// <summary>
-        /// ラウンド番号
-        /// </summary>
-        public string ラウンド番号
-        {
-            get => _rndNo;
-            set => _rndNo = value;
-        }
-
-        /// <summary>
-        /// 種目番号
-        /// </summary>
-        public int 種目番号
-        {
-            get => _dncNo;
-            set => _dncNo = value;
-        }
-
-        /// <summary>
-        /// ヒート番号
-        /// </summary>
-        public int ヒート番号
-        {
-            get => _heatNo;
-            set => _heatNo = value;
-        }
-
-        /// <summary>
-        /// デュエルヒート表の一覧表示モード。
-        /// true の場合、種目内の全ヒート選手一覧をヒート番号付きで表示する。
-        /// </summary>
-        public bool IsOverviewMode
-        {
-            get => _isOverviewMode;
-            set => _isOverviewMode = value;
-        }
+        /// <summary>デュエルヒート表の一覧表示モード。</summary>
+        public bool IsOverviewMode  { get => _isOverviewMode; set => _isOverviewMode = value; }
 
         /// <summary>
         /// クロマキーモードかどうか。
-        /// true の場合、DSP_GRP_001/002 で Step5（LST005フェードイン）後に自動進行せず停止する。
-        /// false の場合、Step5 完了後に Step6（LST005+LST006フェードアウト）を自動実行する。
+        /// DSP_GRP_001/002 で Step5（LST005フェードイン）後に自動進行せず停止する。
         /// </summary>
-        public bool ChromaKeyMode
-        {
-            get => _chromaKeyMode;
-            set => _chromaKeyMode = value;
-        }
+        public bool ChromaKeyMode   { get => _chromaKeyMode;  set => _chromaKeyMode  = value; }
 
-        /// <summary>
-        /// タイマー間隔（秒）- 派生クラスでオーバーライド可能
-        /// </summary>
+        /// <summary>種目内の最終ヒートかどうか。</summary>
+        public bool IsLastHeatInDance { get; set; } = false;
+
+        /// <summary>タイマー間隔（秒）- 派生クラスでオーバーライド可能</summary>
         protected virtual int TimerIntervalSeconds => 10;
 
-        /// <summary>
-        /// ステップ数 - 派生クラスでオーバーライド必須
-        /// </summary>
+        /// <summary>ステップ数 - 派生クラスでオーバーライド必須</summary>
         protected abstract int TotalSteps { get; }
+
+        // ── 旧互換プロパティ（MainWindow 移行後に除去予定） ──
+
+        /// <summary>
+        /// [旧互換] 最終ステップのフェードアウト完了後に ScreenCompleted を発火する画面では true。
+        /// 新設計では各画面が RaiseScreenCompleted() を適切なタイミングで呼ぶため不要。
+        /// </summary>
+        [Obsolete("新設計では各画面が RaiseScreenCompleted() を呼ぶため不要")]
+        public virtual bool WaitsForLastStepFadeOut => false;
+
+        /// <summary>
+        /// [旧互換] フェードアウト完了後に自動遷移せず停止する画面では true。
+        /// 新設計では HoldsAfterFadeOut=true の画面は Advance() を一度無視することで停止する。
+        /// </summary>
+        public virtual bool HoldsAfterFadeOut => false;
+
+        /// <summary>
+        /// HoldsAfterFadeOut=true でフェードアウト完了後の停止時に MainWindow から呼ばれる。
+        /// </summary>
+        public virtual void OnHoldsAfterFadeOut() { }
         #endregion
 
         #region コンストラクタ
         protected DSDspScreenBase()
         {
-            this.Loaded += DSDspScreenBase_Loaded;
+            this.Loaded   += DSDspScreenBase_Loaded;
             this.Unloaded += DSDspScreenBase_Unloaded;
         }
         #endregion
@@ -145,138 +124,104 @@ namespace DSDsp.画面
         #region イベントハンドラ
         private void DSDspScreenBase_Loaded(object sender, RoutedEventArgs e)
         {
-            // 画面読み込み時は自動実行しない（外部から制御）
-            // 初期化のみ実行
             EnsurePartsMainInitialized();
         }
 
         private void DSDspScreenBase_Unloaded(object sender, RoutedEventArgs e)
         {
-            // 画面アンロード時にリソースを解放
             Dispose();
         }
         #endregion
 
         #region パブリックメソッド
+
         /// <summary>
-        /// 指定間隔でステップを自動実行
+        /// 再生ボタンが押されたときに MainWindow から呼ばれる。
+        /// 内部で _currentStep を進めて ExecuteCurrentStep() を実行する。
+        /// 全ステップ完了かつフェードアウトがない画面は、ここで ScreenCompleted を発火する。
         /// </summary>
-        public void StartAutoExecution()
+        public void Advance()
         {
-            _currentStep = 0;
-
-            // 既存のタイマーがあれば停止
-            StopTimer();
-
-            // タイマーを設定
-            _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromSeconds(TimerIntervalSeconds);
-            _timer.Tick += Timer_Tick;
-
-            // 最初のステップを即座に実行
             ExecuteCurrentStep();
 
-            // タイマー開始
-            _timer.Start();
+            // フェードアウトを伴わない画面は最終ステップ実行後に自動完了
+            // フェードアウトがある画面（WaitsForLastStepFadeOut=true 相当）は
+            // 自分の Storyboard.Completed から RaiseScreenCompleted() を呼ぶ
+            if (!WaitsForLastStepFadeOut && _currentStep >= TotalSteps - 1)
+            {
+                RaiseScreenCompleted();
+            }
+
+            _currentStep++;
         }
 
         /// <summary>
-        /// タイマーを停止
+        /// 指定されたステップを実行（旧互換。MainWindow 移行後は Advance() に統一）。
         /// </summary>
-        public void StopAutoExecution()
-        {
-            StopTimer();
-        }
-
-        /// <summary>
-        /// 指定されたステップを実行（外部から制御する場合に使用）。
-        /// コールバック等で内部的に _currentStep が先に進んでいる場合は外部値で上書きしない。
-        /// </summary>
-        /// <param name="step">実行するステップ番号</param>
+        [Obsolete("Advance() を使用してください")]
         public void ExecuteStep(int step)
         {
-            // 内部カウンターが外部より進んでいる場合（コールバック自動実行済み）は上書きしない
             if (step > _currentStep)
                 _currentStep = step;
             ExecuteCurrentStep();
         }
 
-        /// <summary>
-        /// 現在のステップ番号を取得
-        /// </summary>
+        /// <summary>自動実行（タイマー）を開始する。</summary>
+        public void StartAutoExecution()
+        {
+            _currentStep = 0;
+            StopTimer();
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromSeconds(TimerIntervalSeconds);
+            _timer.Tick += Timer_Tick;
+            ExecuteCurrentStep();
+            _timer.Start();
+        }
+
+        /// <summary>自動実行を停止する。</summary>
+        public void StopAutoExecution() => StopTimer();
+
+        /// <summary>現在のステップ番号を取得。</summary>
         public int CurrentStep => _currentStep;
 
-        /// <summary>
-        /// 総ステップ数を取得
-        /// </summary>
+        /// <summary>総ステップ数を取得（旧互換）。</summary>
+        [Obsolete("外部からの参照は不要になりました")]
         public int GetTotalSteps() => TotalSteps;
-
-        /// <summary>
-        /// 最終ステップでフェードアウト完了まで次画面への遷移を待機するかどうか。
-        /// true にした画面では、最終Step の Storyboard.Completed で RaiseLastStepFadeOutCompleted() を呼ぶこと。
-        /// デフォルトは false（即時遷移）。
-        /// </summary>
-        public virtual bool WaitsForLastStepFadeOut => false;
-
-        /// <summary>
-        /// フェードアウト完了後に自動で次の画面へ遷移せず、一旦停止するかどうか。
-        /// true の場合、フェードアウト完了後に _currentAjsIndex を進めて _currentStep=0 で待機する。
-        /// 次の再生ボタン操作で次画面の Step0 が実行される。
-        /// WaitsForLastStepFadeOut と組み合わせて使用する（両方 true にすること）。
-        /// デフォルトは false（自動遷移）。
-        /// </summary>
-        public virtual bool HoldsAfterFadeOut => false;
-
-        /// <summary>
-        /// 種目内の最終ヒートかどうか。MainWindow が AjsProgressItem.IsLastHeatInDance をセットする。
-        /// HoldsAfterFadeOut=true の画面で、フェードアウト停止時に OnHoldsAfterFadeOut() が呼ばれる。
-        /// </summary>
-        public bool IsLastHeatInDance { get; set; } = false;
-
-        /// <summary>
-        /// HoldsAfterFadeOut=true でフェードアウト完了後の停止時に MainWindow から呼ばれる。
-        /// 派生クラスでオーバーライドし、最終ヒート時の後処理（COM002 クリア等）を実装する。
-        /// デフォルトは何もしない。
-        /// </summary>
-        public virtual void OnHoldsAfterFadeOut() { }
-
-        /// <summary>
-        /// 最終ステップのフェードアウトアニメーション完了を通知する。
-        /// 最終 Step の Storyboard.Completed コールバックから呼び出すこと。
-        /// </summary>
-        protected void RaiseLastStepFadeOutCompleted()
-        {
-            LastStepFadeOutCompleted?.Invoke(this, EventArgs.Empty);
-        }
         #endregion
 
         #region プロテクテッドメソッド
-        /// <summary>
-        /// タイマーティック処理
-        /// </summary>
-        private void Timer_Tick(object? sender, EventArgs e)
-        {
-            _currentStep++;
 
-            if (_currentStep < TotalSteps)
-            {
-                ExecuteCurrentStep();
-            }
-            else
-            {
-                // 全ステップ完了したらタイマー停止
-                StopTimer();
-            }
+        /// <summary>
+        /// 全ステップ完了を通知する。
+        /// フェードアウトアニメーション完了コールバックからこれを呼ぶ。
+        /// </summary>
+        protected void RaiseScreenCompleted()
+        {
+            ScreenCompleted?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
-        /// 現在のステップを実行 - 派生クラスでオーバーライド必須
+        /// [旧互換] RaiseScreenCompleted() の旧名。
+        /// </summary>
+        [Obsolete("RaiseScreenCompleted() を使用してください")]
+        protected void RaiseLastStepFadeOutCompleted() => RaiseScreenCompleted();
+
+        /// <summary>
+        /// 現在のステップを実行 - 派生クラスでオーバーライド必須。
+        /// _currentStep の値を見てステップごとの処理を実行する。
+        /// このメソッド内で _currentStep を変更してはならない（Advance() が管理する）。
         /// </summary>
         protected abstract void ExecuteCurrentStep();
 
-        /// <summary>
-        /// タイマーを停止
-        /// </summary>
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            _currentStep++;
+            if (_currentStep < TotalSteps)
+                ExecuteCurrentStep();
+            else
+                StopTimer();
+        }
+
         protected void StopTimer()
         {
             if (_timer != null)
@@ -287,25 +232,14 @@ namespace DSDsp.画面
             }
         }
 
-        /// <summary>
-        /// PartsMainの初期化を確認 - 派生クラスでオーバーライド可能
-        /// </summary>
         protected virtual void EnsurePartsMainInitialized()
         {
             if (_partsMain == null)
-            {
                 _partsMain = new パーツ.COM000_PartsMain();
-            }
         }
         #endregion
 
         #region 共通UIヘルパー
-        /// <summary>
-        /// COM001/COM002 の標準ヘッダ（競技会名・区分ラウンド名・種目情報）を設定する。
-        /// PartsCOM001/PartsCOM002 という名前のパーツを持つ派生クラスで呼び出すこと。
-        /// 採点方式IDが必要な場合は戻り値（string）として受け取れる。
-        /// </summary>
-        /// <returns>採点方式ID。データが不足している場合は空文字</returns>
         protected string SetCommonHeader(
             System.Windows.Controls.TextBlock tb左上1,
             System.Windows.Controls.TextBlock tb左上2,
@@ -330,13 +264,6 @@ namespace DSDsp.画面
             return DSDspDataHelper.Get採点方式ID(DA_Master, 区分番号, ラウンド番号);
         }
 
-        /// <summary>
-        /// UIElementをX軸方向にスライドインさせるアニメーションを開始する。
-        /// 全画面共通のスライド演出（左右から飛び込み）に使用。
-        /// </summary>
-        /// <param name="target">アニメーション対象のUI要素</param>
-        /// <param name="fromOffset">開始オフセット（負=左から、正=右から）</param>
-        /// <param name="durationSeconds">アニメーション時間（秒）。デフォルト1秒</param>
         protected void CreateAndStartSlideAnimation(UIElement target, double fromOffset, double durationSeconds = 1.0)
         {
             var storyboard = new Storyboard();
@@ -355,10 +282,7 @@ namespace DSDsp.画面
         }
         #endregion
 
-        #region IDisposable実装
-        /// <summary>
-        /// リソースの解放
-        /// </summary>
+        #region IDisposable
         public void Dispose()
         {
             Dispose(true);
@@ -368,14 +292,11 @@ namespace DSDsp.画面
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed) return;
-
             if (disposing)
             {
-                // マネージドリソースの解放
                 StopTimer();
                 _partsMain = null;
             }
-
             _disposed = true;
         }
 
@@ -386,5 +307,3 @@ namespace DSDsp.画面
         #endregion
     }
 }
-
-// Made with Bob

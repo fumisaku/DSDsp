@@ -479,7 +479,7 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, lb, sb, 0);
             }
 
-            sb.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            sb.Completed += (s, e) => RaiseScreenCompleted();
             sb.Begin();
         }
 

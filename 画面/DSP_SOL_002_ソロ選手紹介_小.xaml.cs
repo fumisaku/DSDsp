@@ -214,7 +214,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT005.LB_所属, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT005.IM_種目1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT005.IM_種目2, fadeOutStoryboard, 0);
-            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
 
             // 右上02に選手名を表示する。

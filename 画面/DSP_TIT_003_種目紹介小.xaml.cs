@@ -154,7 +154,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsTIT003.LB_種目紹介, sb, 0);
             _partsMain.フェードアウト(true, PartsTIT003.IM_種目1,    sb, 0);
             _partsMain.フェードアウト(true, PartsTIT003.IM_種目2,    sb, 0);
-            sb.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            sb.Completed += (s, e) => RaiseScreenCompleted();
             sb.Begin();
 
             // 右上01に種目情報を表示する

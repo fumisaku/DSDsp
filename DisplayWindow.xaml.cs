@@ -13,16 +13,20 @@ namespace DSDsp
     {
         private UserControl? _currentScreen;
         private UserControl? _currentSubScreen;
+        private object?      _currentScreenTag;
+        private object?      _currentSubScreenTag;
 
-        /// <summary>
-        /// 現在表示中のメイン画面
-        /// </summary>
+        /// <summary>現在表示中のメイン画面</summary>
         public UserControl? CurrentScreen => _currentScreen;
 
-        /// <summary>
-        /// 現在表示中のSUB画面
-        /// </summary>
+        /// <summary>現在表示中のSUB画面</summary>
         public UserControl? CurrentSubScreen => _currentSubScreen;
+
+        /// <summary>ShowScreen に渡した tag オブジェクト（画面の識別に使用）</summary>
+        public object? CurrentScreenTag => _currentScreenTag;
+
+        /// <summary>ShowSubScreen に渡した tag オブジェクト（画面の識別に使用）</summary>
+        public object? CurrentSubScreenTag => _currentSubScreenTag;
 
         /// <summary>
         /// VisualBrush ミラーモードを有効にする。
@@ -104,47 +108,33 @@ namespace DSDsp
         /// 指定されたメイン画面を表示
         /// </summary>
         /// <param name="screen">表示する画面（UserControl）</param>
-        public void ShowScreen(UserControl screen)
+        public void ShowScreen(UserControl screen, object? tag = null)
         {
-            // 既存の画面があれば削除
             if (_currentScreen != null)
             {
                 ContentGrid.Children.Remove(_currentScreen);
-                
-                // IDisposableを実装している場合は破棄
                 if (_currentScreen is IDisposable disposable)
-                {
                     disposable.Dispose();
-                }
             }
 
-            // 新しい画面を設定
-            _currentScreen = screen;
-            // ContentGrid のサイズに合わせてストレッチ表示
-            _currentScreen.Width = ContentGrid.Width;
+            _currentScreen    = screen;
+            _currentScreenTag = tag;
+            _currentScreen.Width  = ContentGrid.Width;
             _currentScreen.Height = ContentGrid.Height;
             ContentGrid.Children.Add(_currentScreen);
         }
 
-        /// <summary>
-        /// 指定されたSUB画面を表示（メインの上に透明背景で重ねて表示）
-        /// </summary>
-        /// <param name="screen">表示するSUB画面（UserControl）</param>
-        public void ShowSubScreen(UserControl screen)
+        public void ShowSubScreen(UserControl screen, object? tag = null)
         {
-            // 既存のSUB画面があれば削除
             if (_currentSubScreen != null)
             {
                 SubContentGrid.Children.Remove(_currentSubScreen);
-
                 if (_currentSubScreen is IDisposable disposable)
-                {
                     disposable.Dispose();
-                }
             }
 
-            // 新しいSUB画面を設定
-            _currentSubScreen = screen;
+            _currentSubScreen    = screen;
+            _currentSubScreenTag = tag;
             _currentSubScreen.Width  = SubContentGrid.Width;
             _currentSubScreen.Height = SubContentGrid.Height;
             SubContentGrid.Children.Add(_currentSubScreen);

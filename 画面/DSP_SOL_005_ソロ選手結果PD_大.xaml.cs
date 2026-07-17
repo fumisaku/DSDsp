@@ -586,7 +586,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsSOL003.LB_TES_2_RD, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsSOL003.LB_TES_3_RD, fadeOutStoryboard, 0);
 
-            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
         }
 

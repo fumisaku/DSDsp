@@ -589,7 +589,7 @@ namespace DSDsp.画面
 
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
-            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
         }
 

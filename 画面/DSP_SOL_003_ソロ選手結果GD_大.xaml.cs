@@ -480,7 +480,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsSOL001.LB_Total, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsSOL001.LB_Rank, fadeOutStoryboard, 0);
             
-            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
         }
 

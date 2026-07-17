@@ -98,31 +98,15 @@ namespace DSDsp.画面
 
         #region オーバーライドメソッド
         /// <summary>
-        /// 現在のステップを実行
+        /// Advance() から呼ばれる。_currentStep の値でステップを振り分ける。
+        /// 注意: このメソッド内で _currentStep を変更してはならない（Advance()が管理する）。
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
-            // ステップ割り当て（全ヒート数≥2 の場合）:
-            //   case 0           → Step1 + Step2 + Step3(p=0) 自動実行
-            //   case 1           → Step4(p=0)  ※1ページの場合、完了後Step5_LST005フェードインを自動実行
-            //   case 1+p*2       → Step3(p=1,2...) ※p≥1 の場合
-            //   case 2+p*2       → Step4(p=1,2...)  ※最終ページの場合、完了後Step5_LST005フェードインを自動実行
-            //   TotalSteps-2     → Step5: LST005フェードイン（全ヒート数≥2）
-            //   TotalSteps-1     → Step6: LST005+LST006フェードアウト
-            //
-            // 全ヒート数＜2 の場合:
-            //   TotalSteps-1     → Step5: タイトルフェードアウト（従来通り）
-            if (_currentStep == 0)
-            {
-                Step1();
-                Step2();
-                Step3(DV_Result, 0);
-                return;
-            }
-
-            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            int 基本ステップ数   = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
             int 最初のLSTステップ = 基本ステップ数;
 
+            // ── LST ステップ ──
             if (_全ヒート数 >= 2)
             {
                 if (_currentStep == 最初のLSTステップ)
@@ -130,7 +114,7 @@ namespace DSDsp.画面
                     if (ChromaKeyMode)
                         Step5_LST005フェードイン();
                     else
-                        Step6_フェードアウト();  // 全画面モード: LST005は表示せずStep6へ直行
+                        Step6_フェードアウト();
                     return;
                 }
                 if (_currentStep == 最初のLSTステップ + 1)
@@ -148,60 +132,59 @@ namespace DSDsp.画面
                 }
             }
 
-            int ブロック内 = _currentStep;
+            // ── 初回ステップ（表示） ──
+            if (_currentStep == 0)
+            {
+                Step1();
+                Step2();
+                Step3(DV_Result, 0);
+                return;
+            }
 
-            if (ブロック内 == 1)
+            // ── ページングステップ ──
+            if (_currentStep == 1)
             {
                 Step4(_ページ数 == 1 ? (Action)OnページングComplete : null);
                 return;
             }
 
-            int p = (ブロック内 - 2) / 2 + 1;
+            int ブロック内 = _currentStep;
+            int p   = (ブロック内 - 2) / 2 + 1;
             int pos = (ブロック内 - 2) % 2;
 
             if (p < _ページ数)
             {
                 if (pos == 0)
-                {
                     Step3(DV_Result, p * 8);
-                }
                 else
-                {
                     Step4(p == _ページ数 - 1 ? (Action)OnページングComplete : null);
-                }
                 return;
             }
 
-            // _currentStep が TotalSteps 以上の場合（完了済み）は何もしない
             if (_currentStep >= TotalSteps) return;
-
             OnページングComplete();
         }
 
-        /// <summary>
-        /// ページング（全Step4）完了後の処理。
-        /// </summary>
         private void OnページングComplete()
         {
             int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            _currentStep = 基本ステップ数;
+
             if (_全ヒート数 >= 2)
             {
                 if (ChromaKeyMode)
                 {
-                    // クロマキーモード: LST005フェードインして停止。次の再生ボタンでStep6へ
                     Step5_LST005フェードイン();
                     _currentStep = 基本ステップ数 + 1;
                 }
                 else
                 {
-                    // 全画面モード: LST005は表示しないでStep6（タイトル+LST006フェードアウト）へ直行
                     Step6_フェードアウト();
                 }
             }
             else
             {
                 Step5_タイトルフェードアウト();
-                _currentStep = 基本ステップ数 + 1;
             }
         }
         #endregion
@@ -710,19 +693,14 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
             }
 
-            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
         }
 
-        /// <summary>
-        /// Step5（全ヒート数＜2 の場合）: タイトルをフェードアウト（旧来の Step5 と同じ）。
-        /// </summary>
         private void Step5_タイトルフェードアウト()
         {
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
-            // 完了済みマーク: 以降の ExecuteStep が来ても再実行されないようにする
-            _currentStep = TotalSteps;
             var fadeOutStoryboard = new Storyboard();
             _partsMain.フェードアウト(true, PartsLST001.IM_タイトル1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.IM_タイトル2, fadeOutStoryboard, 0);
@@ -732,7 +710,7 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
-            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
         }
 
