@@ -236,9 +236,11 @@ namespace DSDsp.Handlers
                 var errorMsg = error?.Error ?? msg.MsgDetail;
 
                 // DV_Result未生成は採点前の通常状態のため警告のみ（ダイアログなし）
+                // 古いラウンドのデータが残らないよう DV_Result をクリアする
                 if (msg.Command == "DP_ASK_DV_RESULT_NG")
                 {
                     _log.LogAdd($"DV_Result未生成 [{msg.Command}]: {errorMsg}", _log.WARNING);
+                    _dataManager.ClearDV_Result();
                     return;
                 }
 

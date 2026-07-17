@@ -310,6 +310,15 @@ namespace DSDsp.Data
         }
 
         /// <summary>
+        /// DV_Result をクリアする（対象ラウンドのデータが存在しない場合に呼ぶ）。
+        /// </summary>
+        public void ClearDV_Result()
+        {
+            DV_Result = null;
+            _log.LogAdd("DV_Resultクリア", _log.INFO);
+        }
+
+        /// <summary>
         /// すべてのデータをクリア
         /// </summary>
         public void Clear()
