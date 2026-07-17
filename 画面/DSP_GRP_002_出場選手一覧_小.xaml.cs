@@ -37,9 +37,6 @@ namespace DSDsp.画面
         private int _ページ数    = 1;
         private int _全ヒート数  = 0;
 
-        // ページング自動進行のための内部ステップ管理
-        // ページング部分（Step4完了後の自動遷移）は画面クラスが自律して進める
-        private bool _ページング完了 = false;
         #endregion
 
         #region プロパティ

@@ -1,4 +1,4 @@
-using DSDsp.Data;
+﻿using DSDsp.Data;
 using DSDsp.Scenario;
 using DSDsp.画面;
 using Microsoft.Win32;
@@ -34,7 +34,6 @@ namespace DSDsp
         private int _currentAjsIndex = -1;
         private int _currentAjsSubIndex = -1;     // SUB画面進行の選択インデックス
         private int _currentAwardIndex = -1;
-        private int _currentSubStep = 0;           // SUB用ステップカウンター
         private int _selectedScreenIndex = -1;   // コンボボックスで選択されているスクリーン番号
         private int _activeScreenIndex = -1;     // 現在全画面表示中のスクリーン番号（-1=非表示）
         private bool _isTestDisplayActive = false;  // テスト表示が有効かどうか
@@ -501,7 +500,6 @@ namespace DSDsp
         {
             _offScreenWindow?.ClearScreen();
             _offScreenWindow?.ClearSubScreen();
-            _currentSubStep = 0;
             _log?.LogAdd("画面クリア（メイン＋SUB）", _log.INFO);
         }
 
@@ -528,7 +526,6 @@ namespace DSDsp
         /// </summary>
         private void BtnSubClear_Click(object sender, RoutedEventArgs e)
         {
-            _currentSubStep = 0;
             _offScreenWindow?.ClearSubScreen();
             _log?.LogAdd("SUB画面クリア", _log.INFO);
         }
@@ -701,7 +698,6 @@ namespace DSDsp
             _currentAjsSubProgressItems = null;
             LstAjsSubProgress.ItemsSource = null;
             _currentAjsSubIndex = -1;
-            _currentSubStep = 0;
 
             if (dm?.DS_Status != null && dm?.DA_Master != null)
             {
@@ -776,11 +772,9 @@ namespace DSDsp
 
         private void LstAjsSubProgress_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // プログラムによる変更（ステップ進行中の自動移動）のときは _currentSubStep をリセットしない
             if (_suppressAjsSubSelectionChanged) return;
 
             _currentAjsSubIndex = LstAjsSubProgress.SelectedIndex;
-            _currentSubStep = 0;
             _log?.LogAdd($"AJS SUB項目選択: {_currentAjsSubIndex}", _log.DEBUG);
         }
 
@@ -889,9 +883,10 @@ namespace DSDsp
 
             var item = _currentAjsProgressItems[_currentAjsIndex];
 
-            // 現在表示中の画面が既にこの item に対応するものかチェック
+            // 現在表示中の画面がこの item に対応するものかチェック
+            // tag（AjsProgressItem の参照）が一致しない場合は新しい画面を生成する
             var currentScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
-            bool isNewScreen = (currentScreen == null || currentScreen.CurrentStep == 0 && item != (_offScreenWindow?.CurrentScreenTag as AjsProgressItem));
+            bool isNewScreen = (currentScreen == null || _offScreenWindow?.CurrentScreenTag != (object)item);
 
             if (isNewScreen)
             {
@@ -993,7 +988,7 @@ namespace DSDsp
             var item = _currentAjsSubProgressItems[_currentAjsSubIndex];
 
             var currentSubScreen = _offScreenWindow?.CurrentSubScreen as DSDspScreenBase;
-            bool isNewScreen = (currentSubScreen == null || item != (_offScreenWindow?.CurrentSubScreenTag as AjsProgressItem));
+            bool isNewScreen = (currentSubScreen == null || _offScreenWindow?.CurrentSubScreenTag != (object)item);
 
             if (isNewScreen)
             {

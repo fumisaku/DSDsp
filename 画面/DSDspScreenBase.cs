@@ -143,16 +143,15 @@ namespace DSDsp.画面
         public void Advance()
         {
             ExecuteCurrentStep();
+            _currentStep++;
 
             // フェードアウトを伴わない画面は最終ステップ実行後に自動完了
             // フェードアウトがある画面（WaitsForLastStepFadeOut=true 相当）は
             // 自分の Storyboard.Completed から RaiseScreenCompleted() を呼ぶ
-            if (!WaitsForLastStepFadeOut && _currentStep >= TotalSteps - 1)
+            if (!WaitsForLastStepFadeOut && _currentStep >= TotalSteps)
             {
                 RaiseScreenCompleted();
             }
-
-            _currentStep++;
         }
 
         /// <summary>
