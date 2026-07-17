@@ -268,7 +268,10 @@ namespace DSDsp.画面
             string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
             PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
             PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
-            PartsLST001.LB_タイトル3.Content = "種目結果";
+            int 全ヒート数 = DSDspDataHelper.Getヒート数(DS_Status, 区分番号, ラウンド番号, 種目番号);
+            PartsLST001.LB_タイトル3.Content = 全ヒート数 >= 2
+                ? $"{ヒート番号}H結果"
+                : "種目結果";
 
             _partsMain.フォントサイズ自動調整(
                 label: PartsLST001.LB_タイトル1,
@@ -313,6 +316,47 @@ namespace DSDsp.画面
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル1, SLIDE_FROM_RIGHT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル2, SLIDE_FROM_LEFT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル3, SLIDE_FROM_RIGHT);
+
+            // LST006（次のヒート）を設定
+            SetLST006();
+        }
+
+        /// <summary>
+        /// LST006（次のヒートパーツ）を設定する。
+        /// 全ヒート数が2以上の場合のみ表示し、最後のヒートの場合は非表示にする。
+        /// </summary>
+        private void SetLST006()
+        {
+            int 全ヒート数 = DSDspDataHelper.Getヒート数(DS_Status, 区分番号, ラウンド番号, 種目番号);
+            if (全ヒート数 < 2)
+            {
+                PartsLST006.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var 次ヒート = DSDspDataHelper.Get次ヒート情報(
+                DS_Status, DA_Master, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+
+            if (次ヒート == null)
+            {
+                PartsLST006.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // タイトル: "Next {DncCd} {HeatNo}H"
+            PartsLST006.LB_タイトル1.Content = $"Next {次ヒート.Value.DncCd} {次ヒート.Value.HeatNo}H";
+
+            // 次ヒートの出場選手背番号をスペース区切りで表示
+            var 背番号リスト = DSDspDataHelper.Get背番号リストFromHeat(
+                DS_Status, 区分番号, ラウンド番号, 次ヒート.Value.DncNo, 次ヒート.Value.HeatNo);
+            PartsLST006.LB_明細1.Content = string.Join("  ", 背番号リスト);
+
+            // Visible にしてから Opacity=0 → フェードイン
+            PartsLST006.Visibility = Visibility.Visible;
+            PartsLST006.Opacity = 0;
+            var sb = new Storyboard();
+            _partsMain?.フェードイン(true, PartsLST006, sb, 0);
+            sb.Begin();
         }
 
 
@@ -447,6 +491,19 @@ namespace DSDsp.画面
                     fontFamilyName: FONT_FAMILY_NAME);
             }
 
+            // ---- フォントサイズ自動調整（所属）----
+            for (int i = 0; i < 表示件数; i++)
+            {
+                _partsMain.フォントサイズ自動調整(
+                    label: _所属LB[i],
+                    text: _所属LB[i].Content?.ToString() ?? "",
+                    maxWidth: 100,
+                    maxFontSize: 16,
+                    minFontSize: 6,
+                    fontFamilyName: FONT_FAMILY_NAME);
+            }
+
+
             // ---- IM_明細を順にフェードイン（1秒で 表示件数 枚）----
             // 間隔: 1000ms ÷ 表示件数（最低100ms）
             int 間隔ms = 表示件数 > 1 ? Math.Max(1000 / 表示件数, 100) : 0;
@@ -503,6 +560,10 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, _減点LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _得点LB[i], fadeOutStoryboard, 0);
             }
+
+            // LST006 が表示中であればフェードアウト
+            if (PartsLST006.Visibility == Visibility.Visible)
+                _partsMain.フェードアウト(true, PartsLST006, fadeOutStoryboard, 0);
 
             if (onCompleted != null)
                 fadeOutStoryboard.Completed += (s, e) => onCompleted();

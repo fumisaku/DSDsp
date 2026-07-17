@@ -36,6 +36,7 @@ namespace DSDsp
         private int _currentAwardIndex = -1;
         private int _currentStep = 0;
         private int _currentSubStep = 0;           // SUB用ステップカウンター
+        private bool _waitingForFadeOut = false;   // フェードアウト完了待ち中フラグ
         private int _selectedScreenIndex = -1;   // コンボボックスで選択されているスクリーン番号
         private int _activeScreenIndex = -1;     // 現在全画面表示中のスクリーン番号（-1=非表示）
         private bool _isTestDisplayActive = false;  // テスト表示が有効かどうか
@@ -245,6 +246,7 @@ namespace DSDsp
                 _client.ConnectionStateChanged += OnConnectionStateChanged;
                 _client.DA_MasterReceived += OnDA_MasterReceived;
                 _client.DS_StatusReceived += OnDS_StatusReceived;
+                _client.DV_ResultReceived += OnDV_ResultReceived;
                 _client.ErrorReceived += OnErrorReceived;
 
                 bool connected = await _client.ConnectAsync();
@@ -490,6 +492,13 @@ namespace DSDsp
         /// </summary>
         private void BtnPlay_Click(object sender, RoutedEventArgs e)
         {
+            // フェードアウト完了待ち中は再生ボタンを無視する
+            if (_waitingForFadeOut)
+            {
+                _log?.LogAdd("フェードアウト完了待ち中のため再生ボタンを無視", _log.DEBUG);
+                return;
+            }
+
             EnsureOffScreenWindowCreated();
 
             // ExecuteCurrentStep 内でステップがリセットされた場合は++ しない
@@ -726,6 +735,7 @@ namespace DSDsp
                 {
                     LstAjsProgress.ItemsSource = _currentAjsProgressItems;
                     _log?.LogAdd($"AJS画面進行一覧生成: {_currentAjsProgressItems.Count}件 (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
+                    UpdateResultReadyLabel();
                 }
                 else
                 {
@@ -784,6 +794,8 @@ namespace DSDsp
             _currentAjsIndex = LstAjsProgress.SelectedIndex;
             _currentStep = 0;
             _log?.LogAdd($"AJS項目選択: {_currentAjsIndex}", _log.DEBUG);
+
+            UpdateResultReadyLabel();
         }
 
         private void LstAjsSubProgress_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -977,6 +989,7 @@ namespace DSDsp
                 screen.ヒート番号     = item.HeatNo;
                 screen.IsOverviewMode  = item.IsOverviewMode;
                 screen.IsLastHeatInDance = item.IsLastHeatInDance;
+                screen.ChromaKeyMode   = _currentAjsScenario?.ChromaKeyMode ?? false;
 
                 // オフスクリーンに画面を表示（モニター・全画面ミラーに自動反映）
                 _offScreenWindow?.ShowScreen(screen);
@@ -996,44 +1009,59 @@ namespace DSDsp
             // 最終ステップに到達したら次の画面へ移動
             if (_currentStep >= currentScreen.GetTotalSteps() - 1)
             {
-                _currentAjsIndex++;
-                _currentStep = 0;
-
-                if (_currentAjsIndex < _currentAjsProgressItems.Count)
+                // HoldsAfterFadeOut=true の場合はフェードアウト完了後も自動遷移せず一旦停止する
+                if (currentScreen.HoldsAfterFadeOut)
                 {
-                    // HoldsAfterFadeOut=true の場合はフェードアウト完了後も自動遷移せず一旦停止する
-                    if (currentScreen.HoldsAfterFadeOut)
+                    _currentAjsIndex++;
+                    _currentStep = 0;
+                    if (_currentAjsIndex < _currentAjsProgressItems.Count)
                     {
                         // フェードアウトは既に実行中。インデックスだけ進めて停止。
                         // リストの選択を次の項目に移す
                         _suppressAjsSelectionChanged = true;
                         LstAjsProgress.SelectedIndex = _currentAjsIndex;
                         _suppressAjsSelectionChanged = false;
+                        UpdateResultReadyLabel();
                         // 最終ヒート後処理（COM002クリア等）を実行
                         currentScreen.OnHoldsAfterFadeOut();
                         _log?.LogAdd($"HoldsAfterFadeOut: 次の画面で停止 Index={_currentAjsIndex}", _log.INFO);
                     }
-                    // 最終StepにフェードアウトWait設定がある場合は完了イベントを待つ
-                    else if (currentScreen.WaitsForLastStepFadeOut)
-                    {
-                        // イベントが発火したときに次の画面遷移を実行
-                        void OnFadeOutCompleted(object? s, EventArgs e)
-                        {
-                            currentScreen.LastStepFadeOutCompleted -= OnFadeOutCompleted;
-                            // UIスレッドで実行（Storyboard.Completed はUIスレッドで呼ばれるが念のため）
-                            Dispatcher.Invoke(() => MoveToNextAjsScreen());
-                        }
-                        currentScreen.LastStepFadeOutCompleted += OnFadeOutCompleted;
-                    }
                     else
                     {
-                        // フェードアウト完了イベントなし → 即時遷移（従来動作）
-                        MoveToNextAjsScreen();
+                        _log?.LogAdd("すべての画面が完了しました", _log.INFO);
                     }
+                }
+                // 最終StepにフェードアウトWait設定がある場合は完了イベントを待つ
+                else if (currentScreen.WaitsForLastStepFadeOut)
+                {
+                    // フェードアウト完了まで再生ボタンをブロック
+                    _waitingForFadeOut = true;
+                    // イベントが発火したときに _currentAjsIndex を進めて次の画面へ移動
+                    void OnFadeOutCompleted(object? s, EventArgs e)
+                    {
+                        currentScreen.LastStepFadeOutCompleted -= OnFadeOutCompleted;
+                        Dispatcher.Invoke(() =>
+                        {
+                            _waitingForFadeOut = false;
+                            _currentAjsIndex++;
+                            _currentStep = 0;
+                            if (_currentAjsIndex < _currentAjsProgressItems!.Count)
+                                MoveToNextAjsScreen();
+                            else
+                                _log?.LogAdd("すべての画面が完了しました", _log.INFO);
+                        });
+                    }
+                    currentScreen.LastStepFadeOutCompleted += OnFadeOutCompleted;
                 }
                 else
                 {
-                    _log?.LogAdd("すべての画面が完了しました", _log.INFO);
+                    // フェードアウト完了イベントなし → 即時遷移（従来動作）
+                    _currentAjsIndex++;
+                    _currentStep = 0;
+                    if (_currentAjsIndex < _currentAjsProgressItems.Count)
+                        MoveToNextAjsScreen();
+                    else
+                        _log?.LogAdd("すべての画面が完了しました", _log.INFO);
                 }
 
                 return false;
@@ -1051,6 +1079,7 @@ namespace DSDsp
             _suppressAjsSelectionChanged = true;
             LstAjsProgress.SelectedIndex = _currentAjsIndex;
             _suppressAjsSelectionChanged = false;
+            UpdateResultReadyLabel();
             _log?.LogAdd($"次の画面へ移動: Index={_currentAjsIndex}", _log.INFO);
             bool nextStepDone = ExecuteAjsStep();
             // ExecuteAjsStep() で次の画面の Step0（Step1+Step2自動実行）が正常完了した場合、
@@ -1387,6 +1416,120 @@ namespace DSDsp
             _log?.LogAdd($"DS_Status受信: Version={version}", _log.INFO);
         }
 
+        private void OnDV_ResultReceived(object? sender, EventArgs e)
+        {
+            _log?.LogAdd("DV_Result受信: 結果状態ラベル更新", _log.DEBUG);
+            Dispatcher.Invoke(UpdateResultReadyLabel);
+        }
+
+        /// <summary>
+        /// 「次の表示予定画面」（_currentAjsIndex + 1）が結果画面の場合、
+        /// DV_Result に対象の種目・ヒートのデータが揃っているかをチェックし
+        /// TxtResultReady の表示を更新する。
+        /// </summary>
+        private void UpdateResultReadyLabel()
+        {
+            // 対象となる結果画面ID
+            var resultScreenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "DSP_DUE_003", "DSP_DUE_004",
+                "DSP_GRP_003", "DSP_GRP_004",
+                "DSP_SOL_003", "DSP_SOL_004", "DSP_SOL_005", "DSP_SOL_006",
+            };
+
+            // 次の画面アイテムを取得
+            var items = _currentAjsProgressItems;
+            int nextIndex = _currentAjsIndex + 1;
+            if (items == null || nextIndex < 0 || nextIndex >= items.Count)
+            {
+                TxtResultReady.Visibility = System.Windows.Visibility.Collapsed;
+                return;
+            }
+
+            var nextItem = items[nextIndex];
+            if (!resultScreenIds.Contains(nextItem.ScreenId))
+            {
+                TxtResultReady.Visibility = System.Windows.Visibility.Collapsed;
+                return;
+            }
+
+            // DV_Result を取得
+            var dvResult = _client?.DataManager.DV_Result
+                        ?? _testDataManager?.DV_Result;
+            if (dvResult == null)
+            {
+                ShowResultLabel("結果未受領", "#FFCC00", "#000000");
+                return;
+            }
+
+            bool ok = CheckDvResultReady(dvResult, nextItem.DanceCd, nextItem.HeatNo);
+            if (ok)
+                ShowResultLabel("結果OK", "#00BCD4", "#FFFFFF");
+            else
+                ShowResultLabel("結果未受領", "#FFCC00", "#000000");
+        }
+
+        /// <summary>
+        /// TxtResultReady の文字列・背景色・文字色を設定して表示する。
+        /// </summary>
+        private void ShowResultLabel(string text, string bgHex, string fgHex)
+        {
+            TxtResultReady.Text = text;
+            TxtResultReady.Background = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(bgHex));
+            TxtResultReady.Foreground = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(fgHex));
+            TxtResultReady.Visibility = System.Windows.Visibility.Visible;
+        }
+
+        /// <summary>
+        /// DV_Result に対象種目・ヒートの結果データが揃っているか確認する。
+        /// 揃っている条件: 該当ヒートの全選手の PCS 配列のうちいずれかの「PCS得点」が 0 以外。
+        /// </summary>
+        /// <param name="dvResult">DV_Result の JsonNode</param>
+        /// <param name="danceCd">種目記号（例: "WL"）</param>
+        /// <param name="heatNo">ヒート番号（0 の場合は全選手対象）</param>
+        private static bool CheckDvResultReady(
+            System.Text.Json.Nodes.JsonNode dvResult,
+            string danceCd,
+            int heatNo)
+        {
+            if (string.IsNullOrEmpty(danceCd)) return false;
+
+            var 種目結果List = dvResult["種目結果"]?.AsArray();
+            if (種目結果List == null) return false;
+
+            // 種目記号が一致する種目を探す
+            System.Text.Json.Nodes.JsonNode? target = null;
+            foreach (var 種目 in 種目結果List)
+            {
+                if (string.Equals(種目?["種目記号"]?.GetValue<string>(), danceCd, StringComparison.OrdinalIgnoreCase))
+                {
+                    target = 種目;
+                    break;
+                }
+            }
+            if (target == null) return false;
+
+            var 選手結果List = target["選手結果"]?.AsArray();
+            if (選手結果List == null || 選手結果List.Count == 0) return false;
+
+            // ヒート番号で絞り込み（heatNo == 0 の場合は全選手対象）
+            var 対象選手 = heatNo == 0
+                ? 選手結果List.Where(p => p != null).ToList()
+                : 選手結果List.Where(p => p?["ヒート番号"]?.GetValue<int>() == heatNo).ToList();
+
+            if (対象選手.Count == 0) return false;
+
+            // 全選手の PCS 配列にいずれかの PCS得点が 0 以外であれば OK
+            return 対象選手.All(p =>
+            {
+                var pcsArray = p?["PCS"]?.AsArray();
+                if (pcsArray == null || pcsArray.Count == 0) return false;
+                return pcsArray.Any(item => (item?["PCS得点"]?.GetValue<double>() ?? 0.0) != 0.0);
+            });
+        }
+
         private void OnErrorReceived(object? sender, Handlers.ErrorReceivedEventArgs e)
         {
             Dispatcher.Invoke(() =>
@@ -1534,6 +1677,7 @@ namespace DSDsp
                         .FindIndex(i => i.ScreenId == "DSP_SOL_007");
                     _currentAjsIndex = sol007Index >= 0 ? sol007Index : 0;
                     LstAjsProgress.SelectedIndex = _currentAjsIndex;
+                    UpdateResultReadyLabel();
                 }
             }
 

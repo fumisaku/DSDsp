@@ -53,14 +53,28 @@ namespace DSDsp.画面
         private int _総表示件数 = 0;
         // Step1 で確定したページ数（TotalSteps を一定に保つために使用）
         private int _ページ数 = 1;
+        // Step1 で確定した全ヒート数（LST005/LST006 表示可否の判定に使用）
+        private int _全ヒート数 = 0;
         #endregion
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数：Step1+Step2+Step3(1) + Step4(1) + [Step3+Step4] × (ページ数-1) + Step5(1)
+        /// 総ステップ数：
+        ///   基本: 1ページ=2, 複数ページ=ページ数×2+1
+        ///   全ヒート数≥2 かつ クロマキーモード: +2（Step5=LST005フェードイン+タイトルFO, Step6=LST005+LST006フェードアウト）
+        ///   全ヒート数≥2 かつ 全画面モード:     +1（Step6=タイトル+LST006フェードアウトのみ）
+        ///   全ヒート数＜2:                       +1（Step5=タイトルフェードアウトのみ）
         /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
         /// </summary>
-        protected override int TotalSteps => _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+        protected override int TotalSteps
+        {
+            get
+            {
+                int 基本 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+                int 追加 = (_全ヒート数 >= 2 && ChromaKeyMode) ? 2 : 1;
+                return 基本 + 追加;
+            }
+        }
         public override bool WaitsForLastStepFadeOut => true;
         public override bool HoldsAfterFadeOut => true;
         #endregion
@@ -88,35 +102,62 @@ namespace DSDsp.画面
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
-            // ステップ割り当て:
-            //   case 0       → Step1 + Step2 + Step3(p=0) 自動実行
-            //   case 1       → Step4(p=0)
-            //   case 1+p*2   → Step3(p=1,2...) ※p≥1 の場合
-            //   case 2+p*2   → Step4(p=1,2...)
-            //   最後          → Step5
+            // ステップ割り当て（全ヒート数≥2 の場合）:
+            //   case 0           → Step1 + Step2 + Step3(p=0) 自動実行
+            //   case 1           → Step4(p=0)  ※1ページの場合、完了後Step5_LST005フェードインを自動実行
+            //   case 1+p*2       → Step3(p=1,2...) ※p≥1 の場合
+            //   case 2+p*2       → Step4(p=1,2...)  ※最終ページの場合、完了後Step5_LST005フェードインを自動実行
+            //   TotalSteps-2     → Step5: LST005フェードイン（全ヒート数≥2）
+            //   TotalSteps-1     → Step6: LST005+LST006フェードアウト
+            //
+            // 全ヒート数＜2 の場合:
+            //   TotalSteps-1     → Step5: タイトルフェードアウト（従来通り）
             if (_currentStep == 0)
             {
                 Step1();
                 Step2();
-                // Step1+Step2の直後に1ページ目のStep3を自動実行
                 Step3(DV_Result, 0);
                 return;
             }
 
-            // _currentStep=1 以降: Step4(p=0), Step3(p=1), Step4(p=1), ...
-            int ブロック内 = _currentStep;   // 1→Step4(p=0), 2→Step3(p=1), 3→Step4(p=1)...
+            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            int 最初のLSTステップ = 基本ステップ数;
 
-            // p=0 のStep4 (ブロック内=1)
+            if (_全ヒート数 >= 2)
+            {
+                if (_currentStep == 最初のLSTステップ)
+                {
+                    if (ChromaKeyMode)
+                        Step5_LST005フェードイン();
+                    else
+                        Step6_フェードアウト();  // 全画面モード: LST005は表示せずStep6へ直行
+                    return;
+                }
+                if (_currentStep == 最初のLSTステップ + 1)
+                {
+                    Step6_フェードアウト();
+                    return;
+                }
+            }
+            else
+            {
+                if (_currentStep == 最初のLSTステップ)
+                {
+                    Step5_タイトルフェードアウト();
+                    return;
+                }
+            }
+
+            int ブロック内 = _currentStep;
+
             if (ブロック内 == 1)
             {
-                // 1ページのみの場合はStep4完了後にStep5を自動実行
-                Step4(_ページ数 == 1 ? (Action)Step5 : null);
+                Step4(_ページ数 == 1 ? (Action)OnページングComplete : null);
                 return;
             }
 
-            // p≥1 のStep3/Step4 (ブロック内≥2, 2ステップずつ)
-            int p = (ブロック内 - 2) / 2 + 1;     // ページ番号（1始まり）
-            int pos = (ブロック内 - 2) % 2;        // 0=Step3, 1=Step4
+            int p = (ブロック内 - 2) / 2 + 1;
+            int pos = (ブロック内 - 2) % 2;
 
             if (p < _ページ数)
             {
@@ -126,14 +167,42 @@ namespace DSDsp.画面
                 }
                 else
                 {
-                    // 最終ページのStep4完了後はStep5を自動実行
-                    Step4(p == _ページ数 - 1 ? (Action)Step5 : null);
+                    Step4(p == _ページ数 - 1 ? (Action)OnページングComplete : null);
                 }
                 return;
             }
 
-            // 全ページ終了後 → Step5
-            Step5();
+            // _currentStep が TotalSteps 以上の場合（完了済み）は何もしない
+            if (_currentStep >= TotalSteps) return;
+
+            OnページングComplete();
+        }
+
+        /// <summary>
+        /// ページング（全Step4）完了後の処理。
+        /// </summary>
+        private void OnページングComplete()
+        {
+            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            if (_全ヒート数 >= 2)
+            {
+                if (ChromaKeyMode)
+                {
+                    // クロマキーモード: LST005フェードインして停止。次の再生ボタンでStep6へ
+                    Step5_LST005フェードイン();
+                    _currentStep = 基本ステップ数 + 1;
+                }
+                else
+                {
+                    // 全画面モード: LST005は表示しないでStep6（タイトル+LST006フェードアウト）へ直行
+                    Step6_フェードアウト();
+                }
+            }
+            else
+            {
+                Step5_タイトルフェードアウト();
+                _currentStep = 基本ステップ数 + 1;
+            }
         }
         #endregion
 
@@ -233,6 +302,9 @@ namespace DSDsp.画面
             _採点方式ID = SetCommonHeader(PartsCOM001.TB_左上1, PartsCOM001.TB_左上2, PartsCOM002.LB_右上);
             if (DA_Master == null) return;
 
+            // 全ヒート数をキャッシュ（LST005/LST006 表示可否の判定に使用）
+            _全ヒート数 = DSDspDataHelper.Getヒート数(DS_Status, 区分番号, ラウンド番号, 種目番号);
+
             // 表示件数を計算してキャッシュ（TotalSteps / ページ数 の算出に使用）
             if (IsOverviewMode)
             {
@@ -271,7 +343,10 @@ namespace DSDsp.画面
             string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
             PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
             PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
-            PartsLST001.LB_タイトル3.Content = "出場選手一覧";
+            int 全ヒート数 = DSDspDataHelper.Getヒート数(DS_Status, 区分番号, ラウンド番号, 種目番号);
+            PartsLST001.LB_タイトル3.Content = 全ヒート数 >= 2
+                ? $"{ヒート番号}H出場選手一覧"
+                : "出場選手一覧";
 
             _partsMain.フォントサイズ自動調整(
                 label: PartsLST001.LB_タイトル1,
@@ -313,6 +388,78 @@ namespace DSDsp.画面
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル1, SLIDE_FROM_RIGHT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル2, SLIDE_FROM_LEFT);
             CreateAndStartSlideAnimation(PartsLST001.IM_タイトル3, SLIDE_FROM_RIGHT);
+
+            // LST005（現在のヒート）を設定（Collapsed で待機）
+            SetLST005();
+            // LST006（次のヒート）を設定
+            SetLST006();
+        }
+
+        /// <summary>
+        /// LST005（現在のヒートパーツ）を設定する。
+        /// 全ヒート数が2以上の場合のみ表示する。
+        /// </summary>
+        private void SetLST005()
+        {
+            if (_全ヒート数 < 2)
+            {
+                PartsLST005.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            string dncCd = string.Empty;
+            if (DA_Master != null)
+            {
+                var dance = DSDspDataHelper.Get種目(DA_Master, 区分番号, ラウンド番号, 種目番号);
+                dncCd = dance?["DE_DncCd"]?.ToString() ?? string.Empty;
+            }
+
+            PartsLST005.LB_タイトル1.Content = $"現在 {dncCd} {ヒート番号}H";
+
+            var 背番号リスト = DSDspDataHelper.Get背番号リストFromHeat(
+                DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+            PartsLST005.LB_明細1.Content = string.Join("  ", 背番号リスト);
+
+            PartsLST005.Visibility = Visibility.Collapsed;
+            PartsLST005.Opacity = 0;
+        }
+
+        /// <summary>
+        /// LST006（次のヒートパーツ）を設定する。
+        /// 全ヒート数が2以上の場合のみ表示し、最後のヒートの場合は非表示にする。
+        /// </summary>
+        private void SetLST006()
+        {
+            int 全ヒート数 = DSDspDataHelper.Getヒート数(DS_Status, 区分番号, ラウンド番号, 種目番号);
+            if (全ヒート数 < 2)
+            {
+                PartsLST006.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var 次ヒート = DSDspDataHelper.Get次ヒート情報(
+                DS_Status, DA_Master, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+
+            if (次ヒート == null)
+            {
+                PartsLST006.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // タイトル: "Next {DncCd} {HeatNo}H"
+            PartsLST006.LB_タイトル1.Content = $"Next {次ヒート.Value.DncCd} {次ヒート.Value.HeatNo}H";
+
+            // 次ヒートの出場選手背番号をスペース区切りで表示
+            var 背番号リスト = DSDspDataHelper.Get背番号リストFromHeat(
+                DS_Status, 区分番号, ラウンド番号, 次ヒート.Value.DncNo, 次ヒート.Value.HeatNo);
+            PartsLST006.LB_明細1.Content = string.Join("  ", 背番号リスト);
+
+            // Visible にしてから Opacity=0 → フェードイン
+            PartsLST006.Visibility = Visibility.Visible;
+            PartsLST006.Opacity = 0;
+            var sb = new Storyboard();
+            _partsMain?.フェードイン(true, PartsLST006, sb, 0);
+            sb.Begin();
         }
 
 
@@ -348,7 +495,7 @@ namespace DSDsp.画面
                 var 全背番号リスト = DSDspDataHelper.Get背番号リストFromHeat(
                     DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
                 表示データリスト = 全背番号リスト
-                    .Select((no, idx) => ((開始インデックス + idx + 1).ToString(), no))
+                    .Select((no, idx) => (string.Empty, no))
                     .ToList();
             }
 
@@ -399,6 +546,15 @@ namespace DSDsp.画面
                 _得点LB[i].Opacity = 0;
             }
 
+            // _得点LB[i]のWidthを変更し、Canvas.Left を 422 → 322 に変更
+            foreach (var lb in _得点LB)
+            {
+                lb.Width = 130;
+                Canvas.SetLeft(lb, 372);
+            }
+            
+
+
             // ---- フォントサイズ自動調整（選手名）----
             for (int i = 0; i < 表示件数; i++)
             {
@@ -415,11 +571,11 @@ namespace DSDsp.画面
             for (int i = 0; i < 表示件数; i++)
             {
                 _partsMain.フォントサイズ自動調整(
-                    label: _所属LB[i],
-                    text: _所属LB[i].Content?.ToString() ?? "",
-                    maxWidth: 140,
+                    label: _得点LB[i],
+                    text: _得点LB[i].Content?.ToString() ?? "",
+                    maxWidth: 120,
                     maxFontSize: 16,
-                    minFontSize: 8,
+                    minFontSize: 6,
                     fontFamilyName: FONT_FAMILY_NAME);
             }
 
@@ -458,6 +614,7 @@ namespace DSDsp.画面
         /// <summary>
         /// Step4: 直前の Step3 で表示した行だけフェードアウト。
         /// 表示していない行（Opacity=0）には触れず、一瞬見えてしまう現象を防ぐ。
+        /// LST006 の非表示は Step6 に移動したため、ここでは行わない。
         /// </summary>
         /// <param name="onCompleted">フェードアウト完了後に呼び出すコールバック（省略可）</param>
         public void Step4(Action? onCompleted = null)
@@ -487,21 +644,92 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// Step5: タイトルをフェードアウト
+        /// Step5（全ヒート数≥2・クロマキーモード）:
+        /// LST005フェードイン と タイトルフェードアウト を同時実行して停止する。
+        /// 次の再生ボタンで Step6（LST005+LST006フェードアウト）を実行する。
         /// </summary>
-        public void Step5()
+        private void Step5_LST005フェードイン()
         {
             EnsurePartsMainInitialized();
             if (_partsMain == null) return;
+
+            // LST005 をフェードイン
+            PartsLST005.Visibility = Visibility.Visible;
+            PartsLST005.Opacity = 0;
+            var sbIn = new Storyboard();
+            _partsMain.フェードイン(true, PartsLST005, sbIn, 0);
+            sbIn.Begin();
+
+            // タイトルを同時にフェードアウト
+            var sbOut = new Storyboard();
+            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル1, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル2, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.IM_タイトル3, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル1, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル2, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, sbOut, 0);
+            _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, sbOut, 0);
+            sbOut.Begin();
+        }
+
+        /// <summary>
+        /// Step6（全ヒート数≥2）:
+        ///   クロマキーモード: LST005+LST006 をフェードアウト（タイトルはStep5で消去済み）。
+        ///   全画面モード:     LST006+タイトル をフェードアウト（LST005は非表示のまま）。
+        /// </summary>
+        private void Step6_フェードアウト()
+        {
+            EnsurePartsMainInitialized();
+            if (_partsMain == null) return;
+            // 完了済みマーク: 以降の ExecuteStep が来ても再実行されないようにする
+            _currentStep = TotalSteps;
+
             var fadeOutStoryboard = new Storyboard();
-            // PartsLST001のタイトル画像・ラベルをフェードアウト
+
+            if (ChromaKeyMode)
+            {
+                // クロマキー: LST005+LST006 を消す（タイトルはStep5で消去済み）
+                if (PartsLST005.Visibility == Visibility.Visible)
+                    _partsMain.フェードアウト(true, PartsLST005, fadeOutStoryboard, 0);
+                if (PartsLST006.Visibility == Visibility.Visible)
+                    _partsMain.フェードアウト(true, PartsLST006, fadeOutStoryboard, 0);
+            }
+            else
+            {
+                // 全画面: LST006+タイトルを消す（LST005は元々表示していない）
+                if (PartsLST006.Visibility == Visibility.Visible)
+                    _partsMain.フェードアウト(true, PartsLST006, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.IM_タイトル1, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.IM_タイトル2, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.IM_タイトル3, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.LB_タイトル1, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.LB_タイトル2, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
+                _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
+            }
+
+            fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();
+            fadeOutStoryboard.Begin();
+        }
+
+        /// <summary>
+        /// Step5（全ヒート数＜2 の場合）: タイトルをフェードアウト（旧来の Step5 と同じ）。
+        /// </summary>
+        private void Step5_タイトルフェードアウト()
+        {
+            EnsurePartsMainInitialized();
+            if (_partsMain == null) return;
+            // 完了済みマーク: 以降の ExecuteStep が来ても再実行されないようにする
+            _currentStep = TotalSteps;
+            var fadeOutStoryboard = new Storyboard();
             _partsMain.フェードアウト(true, PartsLST001.IM_タイトル1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.IM_タイトル2, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.IM_タイトル3, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル2, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, fadeOutStoryboard, 0);
-
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
             fadeOutStoryboard.Completed += (s, e) => RaiseLastStepFadeOutCompleted();

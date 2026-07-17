@@ -333,15 +333,23 @@
                                      BorderBrush="#DDDDDD"
                                      FontSize="12"/>
 
-                            <!-- メイン 操作ボタン（再生 / クリア） -->
+                            <!-- メイン 操作ボタン（結果状態 / 再生 / クリア） -->
                             <Grid Grid.Row="4">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="5"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="5"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="TxtResultReady"
+                                           Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Padding="6,0"
+                                           Visibility="Collapsed"/>
                                 <Button x:Name="BtnMainPlay"
-                                        Grid.Column="0"
+                                        Grid.Column="2"
                                         Content="▶ メイン再生"
                                         Click="BtnPlay_Click"
                                         Height="30"
@@ -351,7 +359,7 @@
                                         FontWeight="Bold"
                                         Cursor="Hand"/>
                                 <Button x:Name="BtnMainClear"
-                                        Grid.Column="2"
+                                        Grid.Column="4"
                                         Content="✕ メインクリア"
                                         Click="BtnMainClear_Click"
                                         Height="30"

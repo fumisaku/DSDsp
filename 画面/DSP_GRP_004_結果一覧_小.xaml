@@ -43,5 +43,13 @@
                    VerticalAlignment="Top"
                    Margin="0,0,0,0"/>
 
+        <!-- 次のヒートパーツ -->
+        <parts:LST006_右下_小リストヒート x:Name="PartsLST006"
+                   Grid.ColumnSpan="2"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Margin="0,40,0,0"
+                   Visibility="Collapsed"/>
+
     </Grid>
 </local:DSDspScreenBase>

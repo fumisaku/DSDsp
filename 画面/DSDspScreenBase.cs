@@ -35,6 +35,7 @@ namespace DSDsp.画面
         private int _dncNo = 0;
         private int _heatNo = 0;
         private bool _isOverviewMode = false;
+        private bool _chromaKeyMode = false;
         #endregion
 
         #region プロパティ
@@ -112,6 +113,17 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// クロマキーモードかどうか。
+        /// true の場合、DSP_GRP_001/002 で Step5（LST005フェードイン）後に自動進行せず停止する。
+        /// false の場合、Step5 完了後に Step6（LST005+LST006フェードアウト）を自動実行する。
+        /// </summary>
+        public bool ChromaKeyMode
+        {
+            get => _chromaKeyMode;
+            set => _chromaKeyMode = value;
+        }
+
+        /// <summary>
         /// タイマー間隔（秒）- 派生クラスでオーバーライド可能
         /// </summary>
         protected virtual int TimerIntervalSeconds => 10;
@@ -177,12 +189,15 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// 指定されたステップを実行（外部から制御する場合に使用）
+        /// 指定されたステップを実行（外部から制御する場合に使用）。
+        /// コールバック等で内部的に _currentStep が先に進んでいる場合は外部値で上書きしない。
         /// </summary>
         /// <param name="step">実行するステップ番号</param>
         public void ExecuteStep(int step)
         {
-            _currentStep = step;
+            // 内部カウンターが外部より進んでいる場合（コールバック自動実行済み）は上書きしない
+            if (step > _currentStep)
+                _currentStep = step;
             ExecuteCurrentStep();
         }
 

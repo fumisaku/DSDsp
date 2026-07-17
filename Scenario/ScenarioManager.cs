@@ -283,8 +283,8 @@ namespace DSDsp.Scenario
                 var resolvedScreens = scenario.Screens.ResolveByRoundName(roundName);
                 _log.LogAdd($"使用する画面セクション解決: ラウンド名='{roundName}', Final={(scenario.Screens.Final != null ? "あり" : "なし")}, SemiFinal={(scenario.Screens.SemiFinal != null ? "あり" : "なし")}", _log.DEBUG);
 
-                // DA_Master から種目情報（DE_DncSG）マップを取得
-                // キー: DS_DncNo（DS_Status上の種目順）→ DE_DncSG 値
+                // DA_Master から種目情報（DE_DncSG / DE_DncCd）マップを取得
+                // キー: DS_DncNo（DS_Status上の種目順）→ (DE_DncSG, DE_DncCd)
                 var dncSgMap = BuildDncSgMap(daMaster, kbnNo, roundNo);
 
                 // DS_Status から種目リストを取得
@@ -305,19 +305,21 @@ namespace DSDsp.Scenario
                 var result = new List<AjsProgressItem>();
 
                 // 1. TIT_001（最初に1回）
-                AddIfEnabled(result, resolvedScreens.Common, "DSP_TIT_001", 0, 0, "区分ラウンド紹介");
+                AddIfEnabled(result, resolvedScreens.Common, "DSP_TIT_001", 0, 0, "", "区分ラウンド紹介");
 
                 for (int danceIdx = 0; danceIdx < sortedDances.Count; danceIdx++)
                 {
                     var dance = sortedDances[danceIdx]!;
                     int danceNo = dance["DS_DncNo"]?.GetValue<int>() ?? 0;
 
-                    // 種目の SG 種別を取得
-                    if (!dncSgMap.TryGetValue(danceNo, out var dncSg) || string.IsNullOrEmpty(dncSg))
+                    // 種目の SG 種別・種目記号を取得
+                    if (!dncSgMap.TryGetValue(danceNo, out var dncInfo) || string.IsNullOrEmpty(dncInfo.sg))
                     {
                         _log.LogAdd($"種目{danceNo}の DE_DncSG が取得できません", _log.ERR);
                         return null;
                     }
+                    var dncSg = dncInfo.sg;
+                    var dncCd = dncInfo.cd;
 
                     var groupScreens = dncSg switch
                     {
@@ -335,7 +337,7 @@ namespace DSDsp.Scenario
 
                     // 3. 種目先頭で種目紹介（TIT_002 or TIT_003）
                     AddFirstEnabled(result, groupScreens,
-                        new[] { "DSP_TIT_002", "DSP_TIT_003" }, danceNo, 0, "種目紹介");
+                        new[] { "DSP_TIT_002", "DSP_TIT_003" }, danceNo, 0, dncCd, "種目紹介");
 
                     // デュエル競技の場合、種目先頭に全ヒート選手一覧（ヒート表）を1回表示
                     if (dncSg is "D" or "Duel")
@@ -345,7 +347,7 @@ namespace DSDsp.Scenario
                         if (previewHeats != null && previewHeats.Count > 0)
                         {
                             AddFirstEnabledOverview(result, groupScreens,
-                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, "デュエルヒート表");
+                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, dncCd, "デュエルヒート表");
                         }
                     }
 
@@ -373,17 +375,17 @@ namespace DSDsp.Scenario
                         {
                             // ソロ競技
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_SOL_001", "DSP_SOL_002" }, danceNo, heatNo, "ソロ選手紹介");
+                                new[] { "DSP_SOL_001", "DSP_SOL_002" }, danceNo, heatNo, dncCd, "ソロ選手紹介");
 
                             if (isGd)
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_SOL_003", "DSP_SOL_004" }, danceNo, heatNo, "ソロ選手結果GD");
+                                    new[] { "DSP_SOL_003", "DSP_SOL_004" }, danceNo, heatNo, dncCd, "ソロ選手結果GD");
                             else if (isPd)
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_SOL_005", "DSP_SOL_006" }, danceNo, heatNo, "ソロ選手結果PD");
+                                    new[] { "DSP_SOL_005", "DSP_SOL_006" }, danceNo, heatNo, dncCd, "ソロ選手結果PD");
 
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, "ソロ途中結果");
+                                new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, dncCd, "ソロ途中結果");
 
                             // 最終ヒートの DSP_SOL_007/008 に IsLastHeatInDance フラグを立てる
                             if (isLastHeat)
@@ -398,10 +400,10 @@ namespace DSDsp.Scenario
                         {
                             // グループ競技
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, "グループ出場選手");
+                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, dncCd, "グループ出場選手");
 
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, "グループ結果");
+                                new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, dncCd, "グループ結果");
                         }
                         else // "D"
                         {
@@ -411,23 +413,23 @@ namespace DSDsp.Scenario
                             {
                                 // 3組以上：グループ用画面で表示
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, "デュエル選手紹介（3組以上）");
+                                    new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, dncCd, "デュエル選手紹介（3組以上）");
 
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, "デュエル選手結果（3組以上）");
+                                    new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, dncCd, "デュエル選手結果（3組以上）");
                             }
                             else
                             {
                                 // 2組以下：デュエル専用画面で表示
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_DUE_001", "DSP_DUE_002" }, danceNo, heatNo, "デュエル選手紹介");
+                                    new[] { "DSP_DUE_001", "DSP_DUE_002" }, danceNo, heatNo, dncCd, "デュエル選手紹介");
 
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_DUE_003", "DSP_DUE_004" }, danceNo, heatNo, "デュエル選手結果");
+                                    new[] { "DSP_DUE_003", "DSP_DUE_004" }, danceNo, heatNo, dncCd, "デュエル選手結果");
                             }
 
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, "途中結果");
+                                new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, dncCd, "途中結果");
                         }
                     }
 
@@ -439,7 +441,7 @@ namespace DSDsp.Scenario
                     if (!isFirst && !isLast)
                     {
                         AddFirstEnabled(result, resolvedScreens.Common,
-                            new[] { "DSP_COM_001", "DSP_COM_002" }, danceNo, 0, "途中総合結果");
+                            new[] { "DSP_COM_001", "DSP_COM_002" }, danceNo, 0, dncCd, "途中総合結果");
                     }
                 }
 
@@ -543,12 +545,12 @@ namespace DSDsp.Scenario
         }
 
         /// <summary>
-        /// DA_Master から指定の区分・ラウンドの種目順 → DE_DncSG マップを構築する。
+        /// DA_Master から指定の区分・ラウンドの種目順 → (DE_DncSG, DE_DncCd) マップを構築する。
         /// DS_Status の DS_DncNo（1,2,3…）は DA_Master の DE_DncNo（種目グループ内の連番）と対応する。
         /// </summary>
-        private Dictionary<int, string> BuildDncSgMap(JsonNode daMaster, string kbnNo, string roundNo)
+        private Dictionary<int, (string sg, string cd)> BuildDncSgMap(JsonNode daMaster, string kbnNo, string roundNo)
         {
-            var map = new Dictionary<int, string>();
+            var map = new Dictionary<int, (string sg, string cd)>();
 
             var kubuns = daMaster["DB_KUBUNs"]?.AsArray();
             if (kubuns == null) return map;
@@ -576,8 +578,9 @@ namespace DSDsp.Scenario
                         {
                             int dncNo = dance?["DE_DncNo"]?.GetValue<int>() ?? 0;
                             string sg  = dance?["DE_DncSG"]?.GetValue<string>() ?? string.Empty;
+                            string cd  = dance?["DE_DncCd"]?.GetValue<string>() ?? string.Empty;
                             if (dncNo > 0)
-                                map[dncNo] = sg;
+                                map[dncNo] = (sg, cd);
                         }
                     }
                 }
@@ -595,6 +598,7 @@ namespace DSDsp.Scenario
             string screenId,
             int danceNo,
             int heatNo,
+            string danceCd,
             string description)
         {
             if (group.TryGetValue(screenId, out var entry) && entry.Enabled)
@@ -604,6 +608,7 @@ namespace DSDsp.Scenario
                     ScreenId    = screenId,
                     DanceNo     = danceNo,
                     HeatNo      = heatNo,
+                    DanceCd     = danceCd,
                     Description = description,
                 });
             }
@@ -618,6 +623,7 @@ namespace DSDsp.Scenario
             string[] candidates,
             int danceNo,
             int heatNo,
+            string danceCd,
             string description)
         {
             foreach (var screenId in candidates)
@@ -629,6 +635,7 @@ namespace DSDsp.Scenario
                         ScreenId    = screenId,
                         DanceNo     = danceNo,
                         HeatNo      = heatNo,
+                        DanceCd     = danceCd,
                         Description = description,
                     });
                     return; // 最初の1件だけ追加
@@ -645,6 +652,7 @@ namespace DSDsp.Scenario
             Dictionary<string, AjsScreenEntry> group,
             string[] candidates,
             int danceNo,
+            string danceCd,
             string description)
         {
             foreach (var screenId in candidates)
@@ -656,6 +664,7 @@ namespace DSDsp.Scenario
                         ScreenId       = screenId,
                         DanceNo        = danceNo,
                         HeatNo         = 0,
+                        DanceCd        = danceCd,
                         Description    = description,
                         IsOverviewMode = true,
                     });

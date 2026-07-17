@@ -397,6 +397,41 @@ namespace DSDsp.画面
             return result;
         }
         /// <summary>
+        /// DS_Statusから指定種目の全ヒート数を取得する。
+        /// ヒート情報が存在しない場合は 0 を返す。
+        /// </summary>
+        public static int Getヒート数(JsonNode? dsStatus, string kbnNo, string rndNo, int dncNo)
+        {
+            if (dsStatus == null) return 0;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return 0;
+
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+
+                    var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
+                    if (prgDances == null) continue;
+
+                    foreach (var prgDance in prgDances)
+                    {
+                        if (prgDance?["DS_DncNo"]?.GetValue<int>() != dncNo) continue;
+
+                        return prgDance?["DS_PRGHEATs"]?.AsArray()?.Count ?? 0;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>
         /// DS_Statusから指定種目の全ヒート選手一覧を取得する（デュエルヒート表用）。
         /// 戻り値: (ヒート番号, 背番号) のリスト。ヒート番号昇順にソート済み。
         /// 同一ヒートに複数選手がいる場合、それぞれ個別エントリで返す。
@@ -480,6 +515,84 @@ namespace DSDsp.画面
                 }
             }
             return result;
+        }
+        /// <summary>
+        /// DA_Master から指定種目の種目記号（DE_DncCd）を取得する。
+        /// </summary>
+        public static string Get種目記号(JsonNode? daMaster, string kbnNo, string rndNo, int dncNo)
+        {
+            var dance = Get種目(daMaster, kbnNo, rndNo, dncNo);
+            if (dance == null) return string.Empty;
+            return dance["DE_DncCd"]?.ToString() ?? string.Empty;
+        }
+
+        /// <summary>
+        /// DS_Status から指定の区分・ラウンドの種目番号リストを昇順で返す。
+        /// </summary>
+        public static List<int> Get種目番号リスト(JsonNode? dsStatus, string kbnNo, string rndNo)
+        {
+            var result = new List<int>();
+            if (dsStatus == null) return result;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return result;
+
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+
+                    var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
+                    if (prgDances == null) return result;
+
+                    foreach (var d in prgDances)
+                    {
+                        var no = d?["DS_DncNo"]?.GetValue<int>() ?? 0;
+                        if (no > 0) result.Add(no);
+                    }
+                    result.Sort();
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 「次のヒート」情報を返す。
+        /// 現在の種目・ヒートの次ヒートを同一種目内で探し、なければ次の種目の1Hを返す。
+        /// その区分・ラウンドの最後のヒートの場合は null を返す。
+        /// 戻り値: (次種目番号, 次ヒート番号, 次種目記号) のタプル、または null。
+        /// </summary>
+        public static (int DncNo, int HeatNo, string DncCd)? Get次ヒート情報(
+            JsonNode? dsStatus, JsonNode? daMaster, string kbnNo, string rndNo, int currentDncNo, int currentHeatNo)
+        {
+            // 現在種目の全ヒート数
+            int currentHeatCount = Getヒート数(dsStatus, kbnNo, rndNo, currentDncNo);
+
+            if (currentHeatNo < currentHeatCount)
+            {
+                // 同一種目内の次ヒート
+                string cd = Get種目記号(daMaster, kbnNo, rndNo, currentDncNo);
+                return (currentDncNo, currentHeatNo + 1, cd);
+            }
+
+            // 次の種目を探す
+            var dncList = Get種目番号リスト(dsStatus, kbnNo, rndNo);
+            int idx = dncList.IndexOf(currentDncNo);
+            if (idx < 0 || idx + 1 >= dncList.Count)
+            {
+                // 区分・ラウンドの最後のヒート → null
+                return null;
+            }
+
+            int nextDncNo = dncList[idx + 1];
+            string nextCd = Get種目記号(daMaster, kbnNo, rndNo, nextDncNo);
+            return (nextDncNo, 1, nextCd);
         }
     }
 }

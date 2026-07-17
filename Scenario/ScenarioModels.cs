@@ -270,6 +270,15 @@ namespace DSDsp.Scenario
         /// </summary>
         [JsonPropertyName("SubScenario")]
         public AjsSubScenarioDefinition? SubScenario { get; set; }
+
+        /// <summary>
+        /// クロマキーモードかどうか。
+        /// true の場合、DSP_GRP_001/002 の Step4→Step5 で停止し、
+        /// 次の再生ボタンで Step6（LST005+LST006フェードアウト）を実行する。
+        /// false（デフォルト）の場合、Step4→Step5→Step6 を自動で進める（全画面モード）。
+        /// </summary>
+        [JsonPropertyName("ChromaKeyMode")]
+        public bool ChromaKeyMode { get; set; } = false;
     }
 
     // -------------------------------------------------------------------------
@@ -290,6 +299,9 @@ namespace DSDsp.Scenario
         /// <summary>ヒート番号（DS_HeatNo）</summary>
         public int HeatNo { get; set; }
 
+        /// <summary>種目記号（DA_Master の DE_DncCd。例: "WL", "TG"）</summary>
+        public string DanceCd { get; set; } = string.Empty;
+
         /// <summary>説明（表示用）</summary>
         public string Description { get; set; } = string.Empty;
 
@@ -308,11 +320,11 @@ namespace DSDsp.Scenario
 
         public override string ToString()
         {
-            if (DanceNo == 0 && HeatNo == 0)
-                return $"{ScreenId}  {Description}";
-            if (HeatNo == 0)
-                return $"{ScreenId}  種目{DanceNo}  {Description}";
-            return $"{ScreenId}  種目{DanceNo}  ヒート{HeatNo}  {Description}";
+            var dncLabel = DanceNo == 0 ? "" : string.IsNullOrEmpty(DanceCd)
+                ? $"  種目{DanceNo}"
+                : $"  種目{DanceNo}({DanceCd})";
+            var heatLabel = HeatNo == 0 ? "" : $"  ヒート{HeatNo}";
+            return $"{ScreenId}{dncLabel}{heatLabel}  {Description}";
         }
     }
 
