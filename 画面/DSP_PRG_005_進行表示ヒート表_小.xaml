@@ -1,0 +1,46 @@
+﻿<local:DSDspScreenBase x:Class="DSDsp.画面.DSP_PRG_005_進行表示ヒート表_小"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:DSDsp.画面"
+             xmlns:parts="clr-namespace:DSDsp.パーツ"
+             xmlns:frame="clr-namespace:DSDsp.フレーム"
+             mc:Ignorable="d"
+        Height="387" Width="641"
+        HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="379*"/>
+            <ColumnDefinition Width="262*"/>
+        </Grid.ColumnDefinitions>
+        <!-- フレーム16対9背景 -->
+        <frame:フレーム16対9_UC x:Name="FrameBackground" Grid.ColumnSpan="2"/>
+
+        <!-- 左上パーツ: JDSFロゴと競技会名 -->
+        <parts:COM001_左上 x:Name="PartsCOM001"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Margin="0,0,0,0"/>
+
+        <!-- 右上パーツ: 種目名 -->
+        <parts:COM002_右上01 x:Name="PartsCOM002"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Margin="0,0,0,0"/>
+
+        <!-- 右上パーツ: ヒート番号 -->
+        <parts:COM003_右上02 x:Name="PartsCOM003"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Margin="0,0,0,0"/>
+
+        <!-- 進行表示ヒート表（小）パーツ -->
+        <parts:PRG005_ヒート表示_小 x:Name="PartsPRG005"
+                   Grid.ColumnSpan="2"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Margin="0,0,0,0"/>
+
+    </Grid>
+</local:DSDspScreenBase>

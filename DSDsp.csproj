@@ -23,6 +23,33 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="画面\DSP_PRG_001_進行表示1面_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_002_進行表示1面_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_003_進行表示2面_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_004_進行表示ヒート表_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_005_進行表示ヒート表_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_006_決勝進出者_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_007_決勝進出者_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_008_決勝結果_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="画面\DSP_PRG_009_決勝結果_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="画面\DSP_GRP_002_出場選手一覧_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

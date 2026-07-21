@@ -1,0 +1,37 @@
+﻿<UserControl x:Class="DSDsp.パーツ.PRG005_ヒート表示_小"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DSDsp.パーツ"
+             mc:Ignorable="d" 
+                         d:DesignHeight="387" d:DesignWidth="641">
+    <Grid>
+        <Canvas x:Name="CV_内部" Margin="7,70,445,60" Background="Transparent"  RenderTransformOrigin="0.5,0.5">
+            <Canvas.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform AngleY="0.003"/>
+                    <RotateTransform/>
+                    <TranslateTransform Y="0.476"/>
+                </TransformGroup>
+            </Canvas.RenderTransform>
+            <Image x:Name="IM_現" Height="21" Source="..\イメージ\CHR169_結果緑_タイトル2.png" Stretch="Fill" Width="184" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Top="235" RenderTransformOrigin="0.5,0.5"/>
+            <Label x:Name="LB_現" Content="現在  W 2H" HorizontalContentAlignment="Left" Canvas.Left="4" Canvas.Top="233" Width="175" Height="22" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="11"/>
+            <Image x:Name="IM_明細_現1" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="208" Canvas.Left="4" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="255"/>
+            <Label x:Name="LB_明細_現1" Content="999  999  999  999  999  999  999  999" HorizontalContentAlignment="Left" Canvas.Top="254" Width="222" Height="24" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" Canvas.Left="2" FontSize="11"/>
+            <Image x:Name="IM_明細_現2" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="208" Canvas.Left="4" HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Top="276"/>
+            <Label x:Name="LB_明細_現2" Content="999  999  999  999  999  999  999  999" HorizontalContentAlignment="Left" Canvas.Top="274" Width="222" Height="24" Foreground="DarkBlue" HorizontalAlignment="Center" VerticalAlignment="Top" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" Canvas.Left="2" FontSize="11"/>
+
+            <Image x:Name="IM_次" Height="21" Source="..\イメージ\CHR169_結果緑_タイトル2.png" Stretch="Fill" Width="184" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="235" RenderTransformOrigin="0.5,0.5" Canvas.Left="423"/>
+            <Label x:Name="LB_次" Content="次の競技  W 2H" HorizontalContentAlignment="Left" Canvas.Left="424" Canvas.Top="233" Width="175" Height="22" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="11"/>
+            <Image x:Name="IM_明細_次1" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="208" Canvas.Left="423" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="255"/>
+            <Label x:Name="LB_明細_次1" Content="999  999  999  999  999  999  999  999" HorizontalContentAlignment="Left" Canvas.Top="254" Width="222" Height="24" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" Canvas.Left="421" FontSize="11"/>
+            <Image x:Name="IM_明細_次2" Height="25" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="208" Canvas.Left="423" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="276"/>
+            <Label x:Name="LB_明細_次2" Content="999  999  999  999  999  999  999  999" HorizontalContentAlignment="Left" Canvas.Top="274" Width="222" Height="24" Foreground="DarkBlue" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" Canvas.Left="421" FontSize="11"/>
+
+
+        </Canvas>
+
+    </Grid>
+</UserControl>
