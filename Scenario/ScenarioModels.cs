@@ -57,6 +57,8 @@ namespace DSDsp.Scenario
         Image,
         /// <summary>RGB色指定</summary>
         Color,
+        /// <summary>AppSettings.ChromaKeySettings.BackgroundColor を使用するクロマキ背景</summary>
+        ChromaKey,
     }
 
     /// <summary>
@@ -66,7 +68,8 @@ namespace DSDsp.Scenario
     public class AjsBackground
     {
         /// <summary>
-        /// 背景タイプ。"None" / "Image" / "Color" のいずれかを指定する。
+        /// 背景タイプ。"None" / "Image" / "Color" / "ChromaKey" のいずれかを指定する。
+        /// "ChromaKey" を指定すると DSDsp.json の ChromaKeySettings.BackgroundColor が使われる。
         /// </summary>
         [JsonPropertyName("Type")]
         public string Type { get; set; } = "None";
@@ -98,9 +101,10 @@ namespace DSDsp.Scenario
         {
             return Type.ToUpperInvariant() switch
             {
-                "IMAGE" => AjsBackgroundType.Image,
-                "COLOR" => AjsBackgroundType.Color,
-                _       => AjsBackgroundType.None,
+                "IMAGE"    => AjsBackgroundType.Image,
+                "COLOR"    => AjsBackgroundType.Color,
+                "CHROMAKEY" => AjsBackgroundType.ChromaKey,
+                _          => AjsBackgroundType.None,
             };
         }
     }

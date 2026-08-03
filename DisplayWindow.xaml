@@ -8,6 +8,11 @@
         Title="表示ウィンドウ(モニター用)" Height="450" Width="800"
         Background="Black">
     <Grid x:Name="RootGrid" Background="Black">
+        <!-- ミラーモード時の余白（黒帯）部分の背景色レイヤー。SetBackgroundColor() で色を変更する。 -->
+        <Rectangle x:Name="BackgroundRect"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"
+                   Fill="Black"/>
         <Viewbox Stretch="Uniform"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center">

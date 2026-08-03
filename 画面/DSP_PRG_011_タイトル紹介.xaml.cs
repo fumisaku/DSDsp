@@ -7,9 +7,9 @@ using System.Windows.Media.Imaging;
 namespace DSDsp.画面
 {
     /// <summary>
-    /// DSP_TIT_001_区分ラウンド紹介.xaml の相互作用ロジック
+    /// DSP_PRG_011_タイトル紹介.xaml の相互作用ロジック
     /// </summary>
-    public partial class DSP_TIT_001_区分ラウンド紹介 : DSDspScreenBase
+    public partial class DSP_PRG_011_タイトル紹介 : DSDspScreenBase
     {
         #region 定数定義
         private const int ANIMATION_DURATION_SECONDS = 1;
@@ -49,7 +49,7 @@ namespace DSDsp.画面
         #endregion
 
         #region コンストラクタ
-        public DSP_TIT_001_区分ラウンド紹介()
+        public DSP_PRG_011_タイトル紹介()
         {
             InitializeComponent();
         }
@@ -163,7 +163,11 @@ namespace DSDsp.画面
             // タイトルテキストの設定とフォントサイズの自動調整
             PartsTIT001.LB_Title1.Content = title1Text;
             PartsTIT001.LB_Title2.Content = title2Text;
-            
+
+            //PartsTIT001.LB_Title1のCanvas.Topを39にセットして中央に配置
+            PartsTIT001.LB_Title1.Margin = new Thickness(0, 10, 0, 0);
+
+
             // COM000_PartsMainの共通機能を使用してフォントサイズを自動調整
             _partsMain.フォントサイズ自動調整(
                 label: PartsTIT001.LB_Title1,

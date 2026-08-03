@@ -16,7 +16,7 @@
                 </TextBlock.Effect>
             </TextBlock>
             <TextBlock x:Name ="TB_左上2"
-            FontSize="12"  Foreground="Gold"  Text="全日本選手権スタンダード　決勝" FontWeight="Bold" HorizontalAlignment="Left" Width="306" Canvas.Left="36" Canvas.Top="26" VerticalAlignment="Center">
+            FontSize="12"  Foreground="Gold"  Text="全日本選手権スタンダード　決勝" FontWeight="Bold" HorizontalAlignment="Left" Width="406" Canvas.Left="36" Canvas.Top="26" VerticalAlignment="Center">
                 <TextBlock.Effect>
                     <BlurEffect KernelType="Box" Radius="0.5" />
                 </TextBlock.Effect>

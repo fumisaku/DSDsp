@@ -5,10 +5,13 @@
 
   "_BackgroundExamples": {
     "Description": "背景設定の例（実際に使用するものを 'Background' キーとして定義する）",
-    "None":  { "Type": "None" },
-    "Image": { "Type": "Image", "ImageFile": "CHR169_タイトル1.png" },
-    "Color": { "Type": "Color", "R": 0, "G": 30, "B": 60 }
+    "None":     { "Type": "None" },
+    "Image":    { "Type": "Image", "ImageFile": "CHR169_タイトル1.png" },
+    "Color":    { "Type": "Color", "R": 0, "G": 30, "B": 60 },
+    "ChromaKey": { "Type": "ChromaKey" }
   },
+
+  "_ChromaKeyNote": "Type=ChromaKey を指定すると DSDsp.json の ChromaKeySettings.BackgroundColor が背景色として使われます。色の変更は DSDsp.json の1箇所で完結します。",
 
   "Background": {
     "Type": "None"

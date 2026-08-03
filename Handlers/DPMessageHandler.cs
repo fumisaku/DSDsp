@@ -22,6 +22,9 @@ namespace DSDsp.Handlers
         public event EventHandler? DV_ResultReceived;
         public event EventHandler<ErrorReceivedEventArgs>? ErrorReceived;
 
+        private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions =
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
         public DPMessageHandler(LOG_C log, DataManager dataManager, WebSocketClient wsClient)
         {
             _log = log;
@@ -118,7 +121,7 @@ namespace DSDsp.Handlers
         {
             try
             {
-                var cmpList = JsonSerializer.Deserialize<DP_ANS_CMP_LIST>(msg.MsgDetail);
+                var cmpList = JsonSerializer.Deserialize<DP_ANS_CMP_LIST>(msg.MsgDetail, _jsonOptions);
                 if (cmpList != null)
                 {
                     _log.LogAdd($"競技会リスト受信: {cmpList.Competitions.Count}件", _log.INFO);
@@ -157,11 +160,12 @@ namespace DSDsp.Handlers
         {
             try
             {
-                var update = JsonSerializer.Deserialize<DP_UPD_DS>(msg.MsgDetail);
+                var update = JsonSerializer.Deserialize<DP_UPD_DS>(msg.MsgDetail, _jsonOptions);
                 if (update != null)
                 {
                     _dataManager.UpdateDS_Status(update.Version, update.Updates);
                     _log.LogAdd($"DS_Status差分更新: Version={update.Version}, 更新数={update.Updates.Count}", _log.INFO);
+                    DS_StatusReceived?.Invoke(this, EventArgs.Empty);
                 }
             }
             catch (Exception ex)
@@ -232,7 +236,7 @@ namespace DSDsp.Handlers
         {
             try
             {
-                var error = JsonSerializer.Deserialize<ErrorResponse>(msg.MsgDetail);
+                var error = JsonSerializer.Deserialize<ErrorResponse>(msg.MsgDetail, _jsonOptions);
                 var errorMsg = error?.Error ?? msg.MsgDetail;
 
                 // DV_Result未生成は採点前の通常状態のため警告のみ（ダイアログなし）

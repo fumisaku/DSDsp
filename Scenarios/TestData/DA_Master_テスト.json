@@ -165,5 +165,62 @@
         }
       ]
     }
+  ],
+  "DJ_JUDGEs": [
+    {
+      "DJ_No": 1,
+      "DJ_JdgCd": "A",
+      "DJ_JdgName": "佐々木 一郎",
+      "DJ_JdgDispName": "佐々木 一郎",
+      "DJ_JdgKana": "ササキ イチロウ",
+      "DJ_JdgMemNo": "J001",
+      "DJ_JdgCtry": "東京ダンスクラブ",
+      "DJ_JdgLang": "ja",
+      "DJ_JdgGrps": [{ "DJ_JdgGrp": "GRP1", "DJ_JdgTyp": "J", "DJ2_JdgTypeName": "ジャッジ" }]
+    },
+    {
+      "DJ_No": 2,
+      "DJ_JdgCd": "B",
+      "DJ_JdgName": "田村 花子",
+      "DJ_JdgDispName": "田村 花子",
+      "DJ_JdgKana": "タムラ ハナコ",
+      "DJ_JdgMemNo": "J002",
+      "DJ_JdgCtry": "大阪スポーツダンス",
+      "DJ_JdgLang": "ja",
+      "DJ_JdgGrps": [{ "DJ_JdgGrp": "GRP1", "DJ_JdgTyp": "J", "DJ2_JdgTypeName": "ジャッジ" }]
+    },
+    {
+      "DJ_No": 3,
+      "DJ_JdgCd": "C",
+      "DJ_JdgName": "中野 剛",
+      "DJ_JdgDispName": "中野 剛",
+      "DJ_JdgKana": "ナカノ ツヨシ",
+      "DJ_JdgMemNo": "J003",
+      "DJ_JdgCtry": "名古屋ダンスアカデミー",
+      "DJ_JdgLang": "ja",
+      "DJ_JdgGrps": [{ "DJ_JdgGrp": "GRP1", "DJ_JdgTyp": "J", "DJ2_JdgTypeName": "ジャッジ" }]
+    },
+    {
+      "DJ_No": 4,
+      "DJ_JdgCd": "D",
+      "DJ_JdgName": "吉田 美咲",
+      "DJ_JdgDispName": "吉田 美咲",
+      "DJ_JdgKana": "ヨシダ ミサキ",
+      "DJ_JdgMemNo": "J004",
+      "DJ_JdgCtry": "横浜ボールルーム",
+      "DJ_JdgLang": "ja",
+      "DJ_JdgGrps": [{ "DJ_JdgGrp": "GRP2", "DJ_JdgTyp": "J", "DJ2_JdgTypeName": "ジャッジ" }]
+    },
+    {
+      "DJ_No": 5,
+      "DJ_JdgCd": "E",
+      "DJ_JdgName": "山本 健二",
+      "DJ_JdgDispName": "山本 健二",
+      "DJ_JdgKana": "ヤマモト ケンジ",
+      "DJ_JdgMemNo": "J005",
+      "DJ_JdgCtry": "福岡ダンスクラブ",
+      "DJ_JdgLang": "ja",
+      "DJ_JdgGrps": [{ "DJ_JdgGrp": "GRP2", "DJ_JdgTyp": "J", "DJ2_JdgTypeName": "ジャッジ" }]
+    }
   ]
 }

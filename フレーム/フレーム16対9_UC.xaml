@@ -10,29 +10,29 @@
         <!-- Frame コントロールは Loaded 時にナビゲーション遷移フェードインを実行するため
              VisualBrush でミラー表示するとスクリーン側で背景がフェードインしてしまう。
              ナビゲーション機能が不要なため Frame を Border に置き換えて問題を解消する。 -->
-        <Border x:Name="Frame_背景"  Width="641" Background="Transparent"/>
-        <Border x:Name="Frame_左上"  Width="641"/>
-        <Border x:Name="Frame_右上"  Width="641"/>
-        <Border x:Name="Frame_右上2" Width="641"/>
-        <Border x:Name="Frame_下中央" Width="641"/>
+        <Border x:Name="Frame_背景"  Background="Transparent"/>
+        <Border x:Name="Frame_左上"/>
+        <Border x:Name="Frame_右上"/>
+        <Border x:Name="Frame_右上2"/>
+        <Border x:Name="Frame_下中央"/>
 
-        <Border x:Name="Frame_1" Width="641"/>
-        <Border x:Name="Frame_2" Width="641"/>
-        <Border x:Name="Frame_3" Width="641"/>
-        <Border x:Name="Frame_4" Width="641"/>
-        <Border x:Name="Frame_5" Width="641"/>
+        <Border x:Name="Frame_1"/>
+        <Border x:Name="Frame_2"/>
+        <Border x:Name="Frame_3"/>
+        <Border x:Name="Frame_4"/>
+        <Border x:Name="Frame_5"/>
 
-        <Rectangle x:Name="Layer_1" Stroke="Transparent" Width="641">
+        <Rectangle x:Name="Layer_1" Stroke="Transparent">
             <Rectangle.Fill>
                 <VisualBrush Stretch="Fill" Visual="{Binding}"/>
             </Rectangle.Fill>
         </Rectangle>
-        <Rectangle x:Name="Layer_2" Stroke="Transparent" Width="641">
+        <Rectangle x:Name="Layer_2" Stroke="Transparent">
             <Rectangle.Fill>
                 <VisualBrush Stretch="Fill" Visual="{Binding}"/>
             </Rectangle.Fill>
         </Rectangle>
-        <Rectangle x:Name="Layer_3" Stroke="Transparent" Width="641">
+        <Rectangle x:Name="Layer_3" Stroke="Transparent">
             <Rectangle.Fill>
                 <VisualBrush Stretch="Fill" Visual="{Binding}"/>
             </Rectangle.Fill>

@@ -47,6 +47,12 @@ namespace DSDsp
         public event EventHandler<ErrorReceivedEventArgs>? ErrorReceived;
 
         /// <summary>
+        /// 複数競技会リストを受信したときに呼ばれるコールバック。
+        /// 選択された CmpNo を返す。キャンセル時は null を返す。
+        /// </summary>
+        public Func<System.Collections.Generic.List<Messages.CompetitionInfo>, System.Threading.Tasks.Task<string?>>? CompetitionSelector { get; set; }
+
+        /// <summary>
         /// コンストラクタ
         /// </summary>
         public DSDspClient()
@@ -128,8 +134,8 @@ namespace DSDsp
                 return false;
             }
 
-            // DA_Master受信を待つ（タイムアウト付き）
-            var waitTask = WaitForDA_MasterAsync();
+            // DA_Master または CmpList のどちらかを待つ（タイムアウト付き）
+            var waitTask = WaitForDA_MasterOrCmpListAsync();
             var timeoutTask = Task.Delay(AppSettings.Instance.WebSocketSettings.ConnectionTimeout);
             var completedTask = await Task.WhenAny(waitTask, timeoutTask);
 
@@ -137,6 +143,46 @@ namespace DSDsp
             {
                 _log.LogAdd("DA_Master受信タイムアウト", _log.ERR);
                 return false;
+            }
+
+            var waitResult = await waitTask;
+
+            // --- 複数競技会リストを受信した場合 ---
+            if (waitResult.CmpList != null)
+            {
+                _log.LogAdd($"複数競技会リスト受信: {waitResult.CmpList.Count}件 — 競技会選択を要求", _log.INFO);
+
+                if (CompetitionSelector == null)
+                {
+                    _log.LogAdd("CompetitionSelector が未設定のため選択不可", _log.ERR);
+                    return false;
+                }
+
+                var selectedCmpNo = await CompetitionSelector(waitResult.CmpList);
+                if (string.IsNullOrEmpty(selectedCmpNo))
+                {
+                    _log.LogAdd("競技会選択がキャンセルされました", _log.WARNING);
+                    return false;
+                }
+
+                _log.LogAdd($"競技会選択: CmpNo={selectedCmpNo}", _log.INFO);
+
+                // DP_SEL_CMP 送信
+                success = await _messageHandler.SelectCompetitionAsync(settings.OrgCd, selectedCmpNo);
+                if (!success)
+                {
+                    _log.LogAdd("DP_SEL_CMP 送信失敗", _log.ERR);
+                    return false;
+                }
+
+                // 選択後の DA_Master 受信を待つ
+                var waitDaTask = WaitForDA_MasterAsync();
+                var toTask = Task.Delay(AppSettings.Instance.WebSocketSettings.ConnectionTimeout);
+                if (await Task.WhenAny(waitDaTask, toTask) == toTask)
+                {
+                    _log.LogAdd("競技会選択後の DA_Master 受信タイムアウト", _log.ERR);
+                    return false;
+                }
             }
 
             // 競技会番号が設定されているか確認
@@ -158,6 +204,36 @@ namespace DSDsp
 
             _log.LogAdd("初期化シーケンス完了", _log.INFO);
             return true;
+        }
+
+        /// <summary>
+        /// DA_Master または CmpList のどちらかを受信するまで待つ。
+        /// </summary>
+        private Task<(bool DaMasterReceived, System.Collections.Generic.List<Messages.CompetitionInfo>? CmpList)>
+            WaitForDA_MasterOrCmpListAsync()
+        {
+            var tcs = new TaskCompletionSource<(bool, System.Collections.Generic.List<Messages.CompetitionInfo>?)>();
+
+            EventHandler? daHandler = null;
+            EventHandler<CompetitionListReceivedEventArgs>? cmpHandler = null;
+
+            daHandler = (s, e) =>
+            {
+                _messageHandler.DA_MasterReceived -= daHandler;
+                _messageHandler.CompetitionListReceived -= cmpHandler;
+                if (!tcs.Task.IsCompleted) tcs.SetResult((true, null));
+            };
+
+            cmpHandler = (s, e) =>
+            {
+                _messageHandler.DA_MasterReceived -= daHandler;
+                _messageHandler.CompetitionListReceived -= cmpHandler;
+                if (!tcs.Task.IsCompleted) tcs.SetResult((false, e.Competitions));
+            };
+
+            _messageHandler.DA_MasterReceived += daHandler;
+            _messageHandler.CompetitionListReceived += cmpHandler;
+            return tcs.Task;
         }
 
         /// <summary>

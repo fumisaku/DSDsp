@@ -34,6 +34,7 @@ namespace DSDsp.画面
         #region フィールド
         protected パーツ.COM000_PartsMain? _partsMain;
         protected DispatcherTimer? _timer;
+        private   DispatcherTimer? _clockTimer;
         protected int _currentStep = 0;
         protected bool _disposed = false;
 
@@ -73,6 +74,12 @@ namespace DSDsp.画面
         public string    ラウンド番号{ get => _rndNo;     set => _rndNo     = value; }
         public int       種目番号   { get => _dncNo;     set => _dncNo     = value; }
         public int       ヒート番号 { get => _heatNo;    set => _heatNo    = value; }
+
+        /// <summary>
+        /// 画面ID（例: "DSP_GRP_001"）。MainWindow が設定する。
+        /// 自動表示ロジックでの画面判定に使用する。
+        /// </summary>
+        public string ScreenId { get; set; } = string.Empty;
 
         /// <summary>デュエルヒート表の一覧表示モード。</summary>
         public bool IsOverviewMode  { get => _isOverviewMode; set => _isOverviewMode = value; }
@@ -183,6 +190,12 @@ namespace DSDsp.画面
         /// <summary>現在のステップ番号を取得。</summary>
         public int CurrentStep => _currentStep;
 
+        /// <summary>
+        /// ステップカウンターを 0 にリセットする。
+        /// クロマキ_個別モードで同一画面インスタンスを次選手に再利用する際に使用。
+        /// </summary>
+        public void ResetSteps() => _currentStep = 0;
+
         /// <summary>総ステップ数を取得（旧互換）。</summary>
         [Obsolete("外部からの参照は不要になりました")]
         public int GetTotalSteps() => TotalSteps;
@@ -231,11 +244,55 @@ namespace DSDsp.画面
             }
         }
 
+        /// <summary>
+        /// COM002（右上）の現在時刻表示を30秒ごとに自動更新するタイマーを開始する。
+        /// 各画面で COM002 に時刻をセットした直後に呼ぶ。
+        /// 画面が Unload（Dispose）されると自動停止する。
+        /// </summary>
+        protected void StartClock()
+        {
+            StopClock();
+            _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _clockTimer.Tick += ClockTimer_Tick;
+            _clockTimer.Start();
+        }
+
+        /// <summary>時刻自動更新タイマーを停止する。</summary>
+        protected void StopClock()
+        {
+            if (_clockTimer != null)
+            {
+                _clockTimer.Stop();
+                _clockTimer.Tick -= ClockTimer_Tick;
+                _clockTimer = null;
+            }
+        }
+
+        private void ClockTimer_Tick(object? sender, EventArgs e)
+        {
+            UpdateClock();
+        }
+
+        /// <summary>COM002 の LB_右上 を現在時刻で更新する。</summary>
+        private void UpdateClock()
+        {
+            if (this.FindName("PartsCOM002") is not FrameworkElement com002) return;
+            if (com002.FindName("LB_右上") is Label lb)
+                lb.Content = $"現在時刻　{DateTime.Now:HH:mm}";
+        }
+
         protected virtual void EnsurePartsMainInitialized()
         {
             if (_partsMain == null)
                 _partsMain = new パーツ.COM000_PartsMain();
         }
+
+        /// <summary>外部から PartsMain の初期化を呼び出すためのパブリックラッパー。</summary>
+        public void EnsurePartsInitialized() => EnsurePartsMainInitialized();
+
+        /// <summary>PartsMain インスタンスへのパブリックアクセサー（フォントサイズ調整などに使用）。</summary>
+        public パーツ.COM000_PartsMain? PartsMainInstance => _partsMain;
+
         #endregion
 
         #region 共通UIヘルパー
@@ -294,6 +351,7 @@ namespace DSDsp.画面
             if (disposing)
             {
                 StopTimer();
+                StopClock();
                 _partsMain = null;
             }
             _disposed = true;

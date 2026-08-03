@@ -191,23 +191,11 @@ namespace DSDsp
         {
             if (_scenarioManager == null) return;
 
-            // 進行シナリオ
-            var progressFiles = _scenarioManager.GetScenarioFiles(ScenarioType.Progress);
-            CmbProgressScenario.ItemsSource = progressFiles;
-            if (progressFiles.Count > 0)
-                CmbProgressScenario.SelectedIndex = 0;
-
             // AJSシナリオ
             var ajsFiles = _scenarioManager.GetScenarioFiles(ScenarioType.AJS);
             CmbAjsScenario.ItemsSource = ajsFiles;
             if (ajsFiles.Count > 0)
                 CmbAjsScenario.SelectedIndex = 0;
-
-            // 表彰式シナリオ
-            var awardFiles = _scenarioManager.GetScenarioFiles(ScenarioType.Award);
-            CmbAwardScenario.ItemsSource = awardFiles;
-            if (awardFiles.Count > 0)
-                CmbAwardScenario.SelectedIndex = 0;
         }
 
         #endregion
@@ -245,6 +233,7 @@ namespace DSDsp
                 _client.DS_StatusReceived += OnDS_StatusReceived;
                 _client.DV_ResultReceived += OnDV_ResultReceived;
                 _client.ErrorReceived += OnErrorReceived;
+                _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                 bool connected = await _client.ConnectAsync();
                 
@@ -389,6 +378,20 @@ namespace DSDsp
             _fullScreenWindow.Top    = screen.Bounds.Top    / dpiScaleY;
             _fullScreenWindow.Width  = screen.Bounds.Width  / dpiScaleX;
             _fullScreenWindow.Height = screen.Bounds.Height / dpiScaleY;
+
+            // 表彰式タブのクロマキモードが有効な場合、全画面ウィンドウの背景も合わせる
+            bool awardIsChroma = (_awardDisplay == AwardDisplayMode.ChromaList)
+                              || (_awardDisplay == AwardDisplayMode.ChromaIndividual);
+            if (awardIsChroma)
+            {
+                try
+                {
+                    var colorStr = AppSettings.Instance.ChromaKeySettings.BackgroundColor;
+                    var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorStr);
+                    _fullScreenWindow.SetBackgroundColor(color.R, color.G, color.B);
+                }
+                catch { _fullScreenWindow.ClearBackground(); }
+            }
 
             _fullScreenWindow.Visibility = Visibility.Visible;
             _activeScreenIndex = screenIndex;
@@ -571,6 +574,21 @@ namespace DSDsp
                         _log?.LogAdd($"背景色を設定: RGB({bg.R},{bg.G},{bg.B})", _log.INFO);
                         break;
 
+                    case Scenario.AjsBackgroundType.ChromaKey:
+                        try
+                        {
+                            var colorStr = AppSettings.Instance.ChromaKeySettings.BackgroundColor;
+                            var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorStr);
+                            window.SetBackgroundColor(color.R, color.G, color.B);
+                            _log?.LogAdd($"クロマキ背景色を設定: {colorStr}", _log.INFO);
+                        }
+                        catch (Exception ex)
+                        {
+                            _log?.LogAdd($"クロマキ背景色の設定に失敗: {ex.Message}", _log.ERR);
+                            window.ClearBackground();
+                        }
+                        break;
+
                     default: // None
                         window.ClearBackground();
                         break;
@@ -582,30 +600,258 @@ namespace DSDsp
             Apply(_fullScreenWindow);
         }
 
+        /// <summary>
+        /// 複数競技会リスト受信時に呼ばれるコールバック。
+        /// UIスレッドでダイアログを表示して選択された CmpNo を返す。
+        /// </summary>
+        private System.Threading.Tasks.Task<string?> OnSelectCompetitionAsync(
+            System.Collections.Generic.List<Messages.CompetitionInfo> competitions)
+        {
+            var tcs = new System.Threading.Tasks.TaskCompletionSource<string?>();
+
+            Dispatcher.Invoke(() =>
+            {
+                var dialog = new CompetitionSelectDialog(competitions) { Owner = this };
+
+                if (dialog.ShowDialog() == true)
+                    tcs.SetResult(dialog.SelectedCmpNo);
+                else
+                    tcs.SetResult(null);
+            });
+
+            return tcs.Task;
+        }
+
         #endregion
 
         #region 進行タブ
 
-        private void CmbProgressScenario_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // ---- enum / フィールド ----
+
+        private enum ProgressDisplayMode { ProgressOnly, Heat, Final }
+        private enum ProgressSize        { Large, Small }
+
+        private ProgressDisplayMode _progressMode = ProgressDisplayMode.ProgressOnly;
+        private ProgressSize        _progressSize = ProgressSize.Large;
+        private bool                _autoProgress = true;
+
+        private 画面.DSDspScreenBase? _currentProgressScreen = null;
+        private string _currentProgressScreenId = string.Empty;
+
+        // ---- データクラス ----
+
+        private class ProgressListItem
         {
-            if (CmbProgressScenario.SelectedItem == null || _scenarioManager == null) return;
-
-            var fileName = CmbProgressScenario.SelectedItem.ToString();
-            if (string.IsNullOrEmpty(fileName)) return;
-
-            _currentProgressScenario = _scenarioManager.LoadProgressScenario(fileName);
-            
-            if (_currentProgressScenario != null)
-            {
-                LstProgressItems.ItemsSource = _currentProgressScenario.Items;
-                _currentProgressIndex = -1;
-            }
+            public string PrgNo   { get; set; } = string.Empty;
+            public string KbnNo   { get; set; } = string.Empty;
+            public string RndNo   { get; set; } = string.Empty;
+            public string KbnName { get; set; } = string.Empty;
+            public string RndName { get; set; } = string.Empty;
+            public override string ToString() => $"{PrgNo}  {KbnName}　{RndName}";
         }
+
+        // ---- UIイベント ----
 
         private void LstProgressItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             _currentProgressIndex = LstProgressItems.SelectedIndex;
             _log?.LogAdd($"進行項目選択: {_currentProgressIndex}", _log.DEBUG);
+            UpdateProgressScreenIdLabel();
+        }
+
+        private void RbProgressSize_Changed(object sender, RoutedEventArgs e)
+        {
+            _progressSize = (RbSmall?.IsChecked == true) ? ProgressSize.Small : ProgressSize.Large;
+            _currentProgressScreen = null;
+            _currentProgressScreenId = string.Empty;
+            UpdateProgressScreenIdLabel();
+        }
+
+        private void RbProgressMode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (RbModeHeat?.IsChecked == true)
+                _progressMode = ProgressDisplayMode.Heat;
+            else if (RbModeFinal?.IsChecked == true)
+                _progressMode = ProgressDisplayMode.Final;
+            else
+                _progressMode = ProgressDisplayMode.ProgressOnly;
+            _currentProgressScreen = null;
+            _currentProgressScreenId = string.Empty;
+            UpdateProgressScreenIdLabel();
+        }
+
+        private void BtnLoadProgressList_Click(object sender, RoutedEventArgs e)
+            => LoadProgressList();
+
+        private void TglAutoProgress_Click(object sender, RoutedEventArgs e)
+        {
+            _autoProgress = TglAutoProgress?.IsChecked == true;
+            if (TglAutoProgress != null)
+            {
+                TglAutoProgress.Content    = _autoProgress ? "⟳ 自動更新 ON" : "⟳ 自動更新 OFF";
+                TglAutoProgress.Background = new System.Windows.Media.SolidColorBrush(
+                    _autoProgress
+                        ? (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#388E3C")
+                        : (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#9E9E9E"));
+            }
+        }
+
+        private void CmbProgressDance_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+        private void CmbProgressHeat_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+
+        private void BtnIntervalInterrupt_Click(object sender, RoutedEventArgs e)
+        {
+            // インターバル割り込み（DSP_MSG_001 が存在すれば使う、なければ簡易メッセージ）
+            ShowProgressInterrupt("インターバル");
+        }
+
+        private void BtnAdjustInterrupt_Click(object sender, RoutedEventArgs e)
+        {
+            ShowProgressInterrupt("調整中\nお待ちください");
+        }
+
+        private void BtnCustomInterrupt_Click(object sender, RoutedEventArgs e)
+        {
+            var text = Microsoft.VisualBasic.Interaction.InputBox(
+                "表示するメッセージを入力してください", "任意メッセージ", "");
+            if (!string.IsNullOrWhiteSpace(text))
+                ShowProgressInterrupt(text);
+        }
+
+        private void TglAutoGroupDisplay_Click(object sender, RoutedEventArgs e) { }
+
+        // ---- 進行一覧の構築 ----
+
+        private void LoadProgressList()
+        {
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+            var dsStatus = dm?.DS_Status;
+            var daMaster = dm?.DA_Master;
+
+            if (dsStatus == null)
+            {
+                LstProgressItems.ItemsSource = new[] { "（DS_Status 未受信）" };
+                TxtProgressCurrentPrg.Text = "";
+                return;
+            }
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null || floors.Count == 0)
+            {
+                LstProgressItems.ItemsSource = new[] { "（DS_FLOORs データなし）" };
+                TxtProgressCurrentPrg.Text = "";
+                return;
+            }
+
+            // 全フロアの PRGRS を SortOrder 昇順で収集（区分・ラウンド単位で重複排除）
+            var seen  = new System.Collections.Generic.HashSet<string>();
+            var items = new System.Collections.Generic.List<ProgressListItem>();
+
+            var allPrgrs = new System.Collections.Generic.List<(int SortOrder, string PrgNo, string KbnNo, string RndNo)>();
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+                foreach (var prg in prgrs)
+                {
+                    var sortOrder = prg?["DS_SortOrder"]?.GetValue<int>() ?? 0;
+                    var prgNo     = prg?["DS_PrgNo"]?.ToString() ?? "";
+                    var kbnNo     = prg?["DS_KbnNo"]?.ToString() ?? "";
+                    var rndNo     = prg?["DS_RndNo"]?.ToString() ?? "";
+                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo));
+                }
+            }
+            allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
+
+            foreach (var (_, prgNo, kbnNo, rndNo) in allPrgrs)
+            {
+                var key = $"{kbnNo}-{rndNo}";
+                if (!seen.Add(key)) continue;   // 同一区分・ラウンドは最初の1件のみ
+
+                var kbnName = daMaster != null ? 画面.DSDspDataHelper.Get区分名(daMaster, kbnNo) : kbnNo;
+                var rndName = daMaster != null ? 画面.DSDspDataHelper.Getラウンド名(daMaster, kbnNo, rndNo) : rndNo;
+
+                items.Add(new ProgressListItem
+                {
+                    PrgNo   = prgNo,
+                    KbnNo   = kbnNo,
+                    RndNo   = rndNo,
+                    KbnName = kbnName,
+                    RndName = rndName,
+                });
+            }
+
+            LstProgressItems.ItemsSource = items;
+            TxtProgressCurrentPrg.Text   = items.Count > 0 ? $"（{items.Count} 件）" : "";
+
+            if (items.Count > 0 && LstProgressItems.SelectedIndex < 0)
+            {
+                LstProgressItems.SelectedIndex = 0;
+                _currentProgressIndex = 0;
+            }
+
+            UpdateProgressScreenIdLabel();
+            _log?.LogAdd($"進行一覧構築: {items.Count} 件", _log.INFO);
+        }
+
+        /// <summary>TxtProgressScreenId に現在の画面ID と選択情報を反映する。</summary>
+        private void UpdateProgressScreenIdLabel()
+        {
+            if (TxtProgressScreenId == null) return;
+            var screenId = GetProgressScreenId();
+            TxtProgressScreenId.Text = $"画面: {screenId}";
+        }
+
+        /// <summary>大/小 × モードから使用する画面ID を返す。</summary>
+        private string GetProgressScreenId()
+        {
+            bool isSmall = (_progressSize == ProgressSize.Small);
+            return _progressMode switch
+            {
+                ProgressDisplayMode.Heat  when !isSmall => "DSP_PRG_004",
+                ProgressDisplayMode.Heat  when isSmall  => "DSP_PRG_005",
+                ProgressDisplayMode.Final when !isSmall => "DSP_PRG_006",
+                ProgressDisplayMode.Final when isSmall  => "DSP_PRG_007",
+                _                         when !isSmall => "DSP_PRG_001",
+                _                                       => "DSP_PRG_002",
+            };
+        }
+
+        // ---- 割り込みメッセージ ----
+
+        private void ShowProgressInterrupt(string message)
+        {
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+            // DSP_MSG_001 が実装済みなら利用（現在はメッセージボックスで代替）
+            _log?.LogAdd($"割り込みメッセージ: {message}", _log.INFO);
+            MessageBox.Show(message, "割り込み", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // ---- ScreenCompleted ----
+
+        private void OnProgressScreenCompleted(object? sender, EventArgs e)
+        {
+            if (sender is 画面.DSDspScreenBase s)
+                s.ScreenCompleted -= OnProgressScreenCompleted;
+            _currentProgressScreen = null;
+
+            // 自動更新ON の場合、次の進行に選択を移す
+            if (_autoProgress)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+                    if (items == null) return;
+                    int nextIdx = _currentProgressIndex + 1;
+                    if (nextIdx < items.Count)
+                    {
+                        _currentProgressIndex = nextIdx;
+                        LstProgressItems.SelectedIndex = nextIdx;
+                        _log?.LogAdd($"進行: 次の項目へ自動遷移 Index={nextIdx}", _log.INFO);
+                    }
+                });
+            }
         }
 
         #endregion
@@ -782,45 +1028,593 @@ namespace DSDsp
 
         #region 表彰式タブ
 
-        private void CmbAwardScenario_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // ---- enum / フィールド ----
+
+        private enum AwardDisplayMode { Full, ChromaList, ChromaIndividual }
+        private enum AwardOrderMode { Page, Asc, Desc }
+
+        private AwardDisplayMode _awardDisplay = AwardDisplayMode.Full;
+        private AwardOrderMode   _awardOrder   = AwardOrderMode.Asc;
+
+        private (string KbnNo, string RndNo, string KbnName, string Display)? _awardSelectedCategory = null;
+        private bool _awardSelectedIsAwardTitle = false;
+        private bool _awardSelectedIsAwardEnd   = false;
+        private 画面.DSDspScreenBase? _currentAwardScreen = null;
+
+        // ---- データクラス ----
+
+        private class AwardCategoryItem
         {
-            if (CmbAwardScenario.SelectedItem == null || _scenarioManager == null) return;
+            public string KbnNo   { get; set; } = string.Empty;
+            public string RndNo   { get; set; } = string.Empty;
+            public string KbnName { get; set; } = string.Empty;
+            public string Display { get; set; } = string.Empty;
+            public bool IsAwardTitle { get; set; } = false;
+            public bool IsAwardEnd   { get; set; } = false;
+            public override string ToString() => Display;
+        }
 
-            var fileName = CmbAwardScenario.SelectedItem.ToString();
-            if (string.IsNullOrEmpty(fileName)) return;
+        private class AwardPreviewItem
+        {
+            public string 順位   { get; set; } = string.Empty;
+            public string 背番号 { get; set; } = string.Empty;
+            public string 選手名 { get; set; } = string.Empty;
+            public string 所属   { get; set; } = string.Empty;
+            public string 得点   { get; set; } = string.Empty;
+            public override string ToString() => $"{順位}  {背番号}  {選手名}";
+        }
 
-            _currentAwardScenario = _scenarioManager.LoadScreenScenario(fileName);
-            
-            if (_currentAwardScenario != null)
+        // ---- UIイベント ----
+
+        private void RbAwardDisplay_Changed(object sender, RoutedEventArgs e)
+        {
+            if (RbAwardChromaList?.IsChecked == true)
+                _awardDisplay = AwardDisplayMode.ChromaList;
+            else if (RbAwardChromaIndividual?.IsChecked == true)
+                _awardDisplay = AwardDisplayMode.ChromaIndividual;
+            else
+                _awardDisplay = AwardDisplayMode.Full;
+            _currentAwardScreen = null;
+        }
+
+        private void RbAwardOrder_Changed(object sender, RoutedEventArgs e)
+        {
+            if (RbAwardPage?.IsChecked == true)
+                _awardOrder = AwardOrderMode.Page;
+            else if (RbAwardDesc?.IsChecked == true)
+                _awardOrder = AwardOrderMode.Desc;
+            else
+                _awardOrder = AwardOrderMode.Asc;
+            _currentAwardScreen = null;
+        }
+
+        private void BtnAwardRefresh_Click(object sender, RoutedEventArgs e)
+            => LoadAwardCategoryList();
+
+        private async void LstAwardCategories_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstAwardCategories.SelectedItem is not AwardCategoryItem item) return;
+
+            _awardSelectedIsAwardTitle = item.IsAwardTitle;
+            _awardSelectedIsAwardEnd   = item.IsAwardEnd;
+            _currentAwardScreen = null;
+
+            if (item.IsAwardTitle)
             {
-                var categories = _scenarioManager.GetCategories(_currentAwardScenario);
-                CmbAwardCategory.ItemsSource = categories;
-                if (categories.Count > 0)
-                    CmbAwardCategory.SelectedIndex = 0;
+                _awardSelectedCategory = null;
+                AwardPreviewList.ItemsSource = null;
+                UpdateAwardStatus("表彰式タイトル選択済み — 再生ボタンで表示");
+            }
+            else if (item.IsAwardEnd)
+            {
+                _awardSelectedCategory = null;
+                AwardPreviewList.ItemsSource = null;
+                UpdateAwardStatus("終了選択済み — 再生ボタンで表示");
+            }
+            else
+            {
+                _awardSelectedCategory = (item.KbnNo, item.RndNo, item.KbnName, item.Display);
+                UpdateAwardStatus($"DV_Result 要求中: {item.Display} ...");
+
+                // サーバーに DV_Result を要求（テストデータ使用時はスキップ）
+                if (_testDataManager == null && _client != null && _client.IsConnected)
+                {
+                    _log?.LogAdd($"表彰式 DP_ASK_DV_RESULT送信: 区分={item.KbnNo}, ラウンド={item.RndNo}", _log.INFO);
+                    bool ok = await _client.RequestDV_ResultAsync(item.KbnNo, item.RndNo);
+                    if (!ok)
+                        _log?.LogAdd("表彰式 DP_ASK_DV_RESULT送信失敗", _log.WARNING);
+                }
+                else
+                {
+                    // テストデータ使用時はキャッシュを即時参照
+                    UpdateAwardStatus("区分選択済み — 再生ボタンで表示");
+                    UpdateAwardPreview(item.KbnNo, item.RndNo);
+                }
             }
         }
 
-        private void CmbAwardCategory_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // ---- リスト読み込み ----
+
+        private void LoadAwardCategoryList()
         {
-            if (CmbAwardCategory.SelectedItem == null || _currentAwardScenario == null || _scenarioManager == null) 
+            var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
+
+            var items = new List<AwardCategoryItem>();
+            items.Add(new AwardCategoryItem { IsAwardTitle = true, Display = "（表彰式タイトル）" });
+
+            if (daMaster != null)
+            {
+                var kubuns = daMaster["DB_KUBUNs"]?.AsArray();
+                if (kubuns != null)
+                {
+                    foreach (var kubun in kubuns)
+                    {
+                        if (kubun == null) continue;
+                        var kbnNo   = kubun["DB_KbnNo"]?.ToString()   ?? string.Empty;
+                        var kbnName = kubun["DB_KbnName"]?.ToString() ?? string.Empty;
+
+                        var rounds = kubun["DC_ROUNDs"]?.AsArray();
+                        if (rounds == null) continue;
+
+                        foreach (var round in rounds)
+                        {
+                            if (round == null) continue;
+                            var rndNo = round["DC_RndNo"]?.ToString() ?? string.Empty;
+                            if (rndNo != "300" && rndNo != "400") continue;
+
+                            if (items.Any(x => !x.IsAwardTitle && x.KbnNo == kbnNo && x.RndNo == rndNo)) continue;
+
+                            items.Add(new AwardCategoryItem
+                            {
+                                KbnNo   = kbnNo,
+                                RndNo   = rndNo,
+                                KbnName = kbnName,
+                                Display = $"{kbnNo}  {kbnName}",
+                            });
+                        }
+                    }
+                }
+            }
+
+            items.Add(new AwardCategoryItem { IsAwardEnd = true, Display = "（終了）" });
+
+            LstAwardCategories.ItemsSource = items;
+            if (items.Count > 0) LstAwardCategories.SelectedIndex = 0;
+            int count = items.Count - 2; // タイトルと終了を除いた区分件数
+            UpdateAwardStatus(count > 0
+                ? $"{count} 件の区分を表示（区分を選択すると結果を取得します）"
+                : (daMaster == null ? "DA_Master 未受信" : "決勝ラウンド（300/400）を持つ区分がありません"));
+        }
+
+        #endregion
+
+        #region ジャッジ紹介タブ
+
+        // ---- enum / フィールド ----
+
+        private enum JudgeDisplayMode { Full, ChromaList, ChromaIndividual }
+        private JudgeDisplayMode _judgeDisplay = JudgeDisplayMode.Full;
+
+        // 現在選択中のジャッジグループID（null=全員）
+        private string? _currentJudgeGroupId = null;
+
+        // 現在の画面インスタンス
+        private 画面.DSDspScreenBase? _currentJudgeScreen = null;
+
+        // 現在選択中のジャッジ（クロマキ個別用）
+        private JudgeListItem? _selectedJudge = null;
+
+        // 「終了」行が選択されているか
+        private bool _judgeSelectedIsEnd = false;
+
+        // ---- データクラス ----
+
+        private class JudgeListItem
+        {
+            public string JdgCd       { get; set; } = string.Empty;
+            public string JdgDispName { get; set; } = string.Empty;
+            public string JdgCtry     { get; set; } = string.Empty;
+            public bool   IsEnd       { get; set; } = false;
+            public override string ToString() => IsEnd ? "（終了）" : $"{JdgCd}  {JdgDispName}";
+        }
+
+        // ---- UIイベント ----
+
+        private void RbJudgeDisplay_Changed(object sender, RoutedEventArgs e)
+        {
+            if (RbJudgeChromaList?.IsChecked == true)
+                _judgeDisplay = JudgeDisplayMode.ChromaList;
+            else if (RbJudgeChromaIndividual?.IsChecked == true)
+                _judgeDisplay = JudgeDisplayMode.ChromaIndividual;
+            else
+                _judgeDisplay = JudgeDisplayMode.Full;
+            _currentJudgeScreen = null;
+        }
+
+        private void BtnJudgeRefresh_Click(object sender, RoutedEventArgs e)
+            => LoadJudgeGroupTabs();
+
+        private void TabJudgeGroups_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (TabJudgeGroups.SelectedItem is TabItem tab)
+            {
+                // タグに null が入っている場合は「全員」タブ
+                _currentJudgeGroupId = tab.Tag as string;
+                UpdateJudgeList();
+                _currentJudgeScreen = null;
+                UpdateJudgeStatus("グループ変更 — 再生ボタンで表示");
+            }
+        }
+
+        private void LstJudgeItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstJudgeItems.SelectedItem is JudgeListItem item)
+            {
+                _judgeSelectedIsEnd = item.IsEnd;
+                _currentJudgeScreen = null;
+                if (item.IsEnd)
+                {
+                    _selectedJudge = null;
+                    UpdateJudgeStatus("終了選択済み — 再生ボタンで画面をクリア");
+                }
+                else
+                {
+                    _selectedJudge = item;
+                    UpdateJudgeStatus($"選択: {item.JdgCd}  {item.JdgDispName}");
+                }
+            }
+        }
+
+        // ---- リスト読み込み ----
+
+        private void LoadJudgeGroupTabs()
+        {
+            var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
+
+            TabJudgeGroups.SelectionChanged -= TabJudgeGroups_SelectionChanged;
+            TabJudgeGroups.Items.Clear();
+
+            // 「全員」タブを先頭に追加（Tag=null）
+            var allTab = new TabItem { Header = "全員", Tag = null };
+            TabJudgeGroups.Items.Add(allTab);
+
+            if (daMaster != null)
+            {
+                var grpList = 画面.DSDspDataHelper.Getジャッジグループリスト(daMaster);
+                foreach (var grp in grpList)
+                {
+                    var tabItem = new TabItem { Header = grp, Tag = grp };
+                    TabJudgeGroups.Items.Add(tabItem);
+                }
+            }
+
+            TabJudgeGroups.SelectedIndex = 0;
+            TabJudgeGroups.SelectionChanged += TabJudgeGroups_SelectionChanged;
+
+            // 初期表示
+            _currentJudgeGroupId = null;
+            UpdateJudgeList();
+            _currentJudgeScreen = null;
+
+            int cnt = DSDspDataHelper.Getジャッジリスト(daMaster).Count;
+            UpdateJudgeStatus(cnt > 0
+                ? $"{cnt} 件のジャッジを表示"
+                : (daMaster == null ? "DA_Master 未受信" : "ジャッジが登録されていません"));
+        }
+
+        private void UpdateJudgeList()
+        {
+            var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
+            var items = 画面.DSDspDataHelper.Getジャッジリスト_ByGroup(daMaster, _currentJudgeGroupId)
+                .Select(j => new JudgeListItem
+                {
+                    JdgCd       = j.JdgCd,
+                    JdgDispName = j.JdgDispName,
+                    JdgCtry     = j.JdgCtry,
+                })
+                .ToList();
+            // 末尾に「終了」行を追加
+            items.Add(new JudgeListItem { IsEnd = true });
+            LstJudgeItems.ItemsSource = items;
+            _judgeSelectedIsEnd = false;
+            if (items.Count > 0)
+                LstJudgeItems.SelectedIndex = 0;
+        }
+
+        // ---- ステップ実行 ----
+
+        private void ExecuteJudgeStep()
+        {
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+
+            // 終了
+            if (_judgeSelectedIsEnd)
+            {
+                ExecuteJudgeEndScreen(dm);
                 return;
-
-            var category = CmbAwardCategory.SelectedItem.ToString();
-            if (string.IsNullOrEmpty(category)) return;
-
-            var parts = category.Split('-');
-            if (parts.Length == 2)
-            {
-                var items = _scenarioManager.GetScreenItems(_currentAwardScenario, parts[0], parts[1]);
-                LstAwardProgress.ItemsSource = items;
-                _currentAwardIndex = -1;
             }
+
+            // クロマキ個別
+            if (_judgeDisplay == JudgeDisplayMode.ChromaIndividual)
+            {
+                ExecuteJudgeIndividualStep(dm);
+                return;
+            }
+
+            // 全画面 / クロマキリスト
+            var judgeList = DSDspDataHelper.Getジャッジリスト_ByGroup(dm?.DA_Master, _currentJudgeGroupId);
+            int count = judgeList.Count;
+
+            // 使用する画面ID を決定
+            string screenId;
+            if (_judgeDisplay == JudgeDisplayMode.ChromaList)
+                screenId = "DSP_PRG_014";
+            else
+                screenId = (count <= 10) ? "DSP_PRG_012" : "DSP_PRG_013";
+
+            // クロマキ背景を適用
+            bool isChroma = (_judgeDisplay == JudgeDisplayMode.ChromaList);
+            ApplyJudgeWindowBackground(isChroma);
+
+            // 同じ画面・同じグループなら継続
+            bool isSameScreen = _currentJudgeScreen != null
+                && _currentJudgeScreen.ScreenId == screenId
+                && (_currentJudgeScreen is 画面.DSP_PRG_012_ジャッジ紹介10_大 s12 && s12.JudgeGroupId == _currentJudgeGroupId
+                 || _currentJudgeScreen is 画面.DSP_PRG_013_ジャッジ紹介20_大 s13 && s13.JudgeGroupId == _currentJudgeGroupId
+                 || _currentJudgeScreen is 画面.DSP_PRG_014_ジャッジ紹介10_小 s14 && s14.JudgeGroupId == _currentJudgeGroupId);
+
+            if (!isSameScreen)
+            {
+                if (_currentJudgeScreen != null)
+                    _currentJudgeScreen.ScreenCompleted -= OnJudgeScreenCompleted;
+
+                画面.DSDspScreenBase? newScreen = screenId switch
+                {
+                    "DSP_PRG_012" => new 画面.DSP_PRG_012_ジャッジ紹介10_大 { JudgeGroupId = _currentJudgeGroupId },
+                    "DSP_PRG_013" => new 画面.DSP_PRG_013_ジャッジ紹介20_大 { JudgeGroupId = _currentJudgeGroupId },
+                    "DSP_PRG_014" => new 画面.DSP_PRG_014_ジャッジ紹介10_小 { JudgeGroupId = _currentJudgeGroupId },
+                    _ => null
+                };
+
+                if (newScreen == null) return;
+
+                newScreen.ScreenId  = screenId;
+                newScreen.DA_Master = dm?.DA_Master;
+                newScreen.DS_Status = dm?.DS_Status;
+                newScreen.DV_Result = dm?.DV_Result;
+                newScreen.ScreenCompleted += OnJudgeScreenCompleted;
+
+                _currentJudgeScreen = newScreen;
+                _offScreenWindow.ShowScreen(newScreen, screenId);
+                _log?.LogAdd($"ジャッジ紹介画面表示: {screenId}", _log.INFO);
+            }
+
+            var screenForStatus = _currentJudgeScreen;
+            screenForStatus!.Advance();
+            UpdateJudgeStatus(_currentJudgeScreen != null
+                ? $"表示中  Step={_currentJudgeScreen.CurrentStep}"
+                : "画面終了");
         }
 
-        private void LstAwardProgress_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ExecuteJudgeIndividualStep(Data.DataManager? dm)
         {
-            _currentAwardIndex = LstAwardProgress.SelectedIndex;
-            _log?.LogAdd($"表彰式項目選択: {_currentAwardIndex}", _log.DEBUG);
+            if (_selectedJudge == null)
+            {
+                MessageBox.Show("ジャッジを選択してください", "ジャッジ紹介", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            const string screenId = "DSP_PRG_010";
+            ApplyJudgeWindowBackground(true);
+
+            bool isSameScreen = _currentJudgeScreen?.ScreenId == screenId
+                && _currentJudgeScreen is 画面.DSP_PRG_010_選手紹介_小 s10prev
+                && s10prev.HonorBango == _selectedJudge.JdgCd;
+
+            if (!isSameScreen)
+            {
+                if (_currentJudgeScreen != null)
+                    _currentJudgeScreen.ScreenCompleted -= OnJudgeScreenCompleted;
+
+                var s010 = new 画面.DSP_PRG_010_選手紹介_小();
+                s010.ScreenId          = screenId;
+                s010.DA_Master         = dm?.DA_Master;
+                s010.DS_Status         = dm?.DS_Status;
+                s010.DV_Result         = dm?.DV_Result;
+                s010.HonorMode         = true;
+                s010.HonorBango        = _selectedJudge.JdgCd;
+                s010.HonorAffiliation  = _selectedJudge.JdgCtry;
+                // COM002テキストのオーバーライド: "表彰式" → "ジャッジ紹介"
+                s010.COM002TextOverride    = "ジャッジ紹介";
+                // HonorMode 時: LB_区分名=ブランク、LB_選手名=ジャッジ表記名
+                s010.HonorLB区分名Override = string.Empty;
+                s010.HonorLB選手名Override = _selectedJudge.JdgDispName;
+                // LB_順位=ジャッジ記号（HonorBango）、LB_所属=ジャッジ所属（HonorAffiliation）
+
+                s010.ScreenCompleted += OnJudgeScreenCompleted;
+                _currentJudgeScreen  = s010;
+                _offScreenWindow!.ShowScreen(s010, screenId);
+                _log?.LogAdd($"ジャッジ紹介個別表示: {_selectedJudge.JdgCd}  {_selectedJudge.JdgDispName}", _log.INFO);
+            }
+
+            var screenForStatus2 = _currentJudgeScreen;
+            screenForStatus2!.Advance();
+            UpdateJudgeStatus(_currentJudgeScreen != null
+                ? $"個別表示  {_selectedJudge.JdgCd}  Step={_currentJudgeScreen.CurrentStep}"
+                : "画面終了");
+        }
+
+        /// <summary>ジャッジ紹介 終了: COM001マーク+競技会名のみ残す。</summary>
+        private void ExecuteJudgeEndScreen(Data.DataManager? dm)
+        {
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+
+            string 競技会名 = 画面.DSDspDataHelper.Get競技会名(dm?.DA_Master);
+
+            // 現在の表示モードに合わせてクロマキ/全画面を選択
+            bool isChroma = (_judgeDisplay == JudgeDisplayMode.ChromaList
+                          || _judgeDisplay == JudgeDisplayMode.ChromaIndividual);
+            ApplyJudgeWindowBackground(isChroma);
+
+            string screenId = isChroma ? "DSP_PRG_010" : "DSP_PRG_012";
+
+            bool canReuse = _currentJudgeScreen != null
+                && (_currentJudgeScreen.ScreenId == "DSP_PRG_010"
+                    || _currentJudgeScreen.ScreenId == "DSP_PRG_012");
+
+            if (!canReuse)
+            {
+                if (_currentJudgeScreen != null)
+                    _currentJudgeScreen.ScreenCompleted -= OnJudgeScreenCompleted;
+
+                if (isChroma)
+                {
+                    var s = new 画面.DSP_PRG_010_選手紹介_小();
+                    s.ScreenId   = screenId;
+                    s.DA_Master  = dm?.DA_Master;
+                    s.DS_Status  = dm?.DS_Status;
+                    s.DV_Result  = dm?.DV_Result;
+                    s.ScreenCompleted += OnJudgeScreenCompleted;
+                    _currentJudgeScreen = s;
+                    _offScreenWindow.ShowScreen(s, screenId);
+                    s.EnsurePartsInitialized();
+                    s.PartsCOM001.IM_JDSFマーク.Source =
+                        new System.Windows.Media.Imaging.BitmapImage(
+                            new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
+                    s.PartsCOM001.TB_左上1.Text = 競技会名;
+                    s.PartsCOM001.TB_左上2.Text = string.Empty;
+                    // COM002/COM003/PRG006 を非表示
+                    s.PartsCOM002.LB_右上.Visibility   = Visibility.Collapsed;
+                    s.PartsCOM003.LB_右上.Visibility   = Visibility.Collapsed;
+                    s.PartsPRG006.LB_区分名.Visibility = Visibility.Collapsed;
+                    s.PartsPRG006.LB_順位.Visibility   = Visibility.Collapsed;
+                    s.PartsPRG006.LB_選手名.Visibility = Visibility.Collapsed;
+                    s.PartsPRG006.LB_所属.Visibility   = Visibility.Collapsed;
+                    s.PartsPRG006.LB_得点.Visibility   = Visibility.Collapsed;
+                    s.PartsPRG006.IM_種目1.Visibility  = Visibility.Collapsed;
+                    s.PartsPRG006.IM_種目2.Visibility  = Visibility.Collapsed;
+                }
+                else
+                {
+                    var s = new 画面.DSP_PRG_012_ジャッジ紹介10_大();
+                    s.ScreenId   = screenId;
+                    s.DA_Master  = dm?.DA_Master;
+                    s.DS_Status  = dm?.DS_Status;
+                    s.DV_Result  = dm?.DV_Result;
+                    s.ScreenCompleted += OnJudgeScreenCompleted;
+                    _currentJudgeScreen = s;
+                    _offScreenWindow.ShowScreen(s, screenId);
+                    s.EnsurePartsInitialized();
+                    if (s.PartsCOM001.FindName("IM_JDSFマーク") is System.Windows.Controls.Image im)
+                        im.Source = new System.Windows.Media.Imaging.BitmapImage(
+                            new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
+                    if (s.PartsCOM001.FindName("TB_左上1") is System.Windows.Controls.TextBlock tb1)
+                        tb1.Text = 競技会名;
+                    if (s.PartsCOM001.FindName("TB_左上2") is System.Windows.Controls.TextBlock tb2)
+                        tb2.Text = string.Empty;
+                    // LST002 / COM002 / COM003 を非表示
+                    if (s.PartsCOM002.FindName("LB_右上") is System.Windows.Controls.Label lb002)
+                        lb002.Visibility = Visibility.Collapsed;
+                    if (s.PartsCOM003.FindName("LB_右上") is System.Windows.Controls.Label lb003)
+                        lb003.Visibility = Visibility.Collapsed;
+                    s.PartsLST002.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                // 画面を再利用する場合も、COM001以外を確実に非表示にする
+                if (_currentJudgeScreen is 画面.DSP_PRG_010_選手紹介_小 s010)
+                {
+                    s010.PartsCOM002.LB_右上.Visibility   = Visibility.Collapsed;
+                    s010.PartsCOM003.LB_右上.Visibility   = Visibility.Collapsed;
+                    s010.PartsPRG006.LB_区分名.Visibility = Visibility.Collapsed;
+                    s010.PartsPRG006.LB_順位.Visibility   = Visibility.Collapsed;
+                    s010.PartsPRG006.LB_選手名.Visibility = Visibility.Collapsed;
+                    s010.PartsPRG006.LB_所属.Visibility   = Visibility.Collapsed;
+                    s010.PartsPRG006.LB_得点.Visibility   = Visibility.Collapsed;
+                    s010.PartsPRG006.IM_種目1.Visibility  = Visibility.Collapsed;
+                    s010.PartsPRG006.IM_種目2.Visibility  = Visibility.Collapsed;
+                }
+                else if (_currentJudgeScreen is 画面.DSP_PRG_012_ジャッジ紹介10_大 s012)
+                {
+                    if (s012.PartsCOM002.FindName("LB_右上") is System.Windows.Controls.Label lb002)
+                        lb002.Visibility = Visibility.Collapsed;
+                    if (s012.PartsCOM003.FindName("LB_右上") is System.Windows.Controls.Label lb003)
+                        lb003.Visibility = Visibility.Collapsed;
+                    s012.PartsLST002.Visibility = Visibility.Collapsed;
+                }
+            }
+
+            UpdateJudgeStatus("終了 — COM001のみ表示中");
+            _log?.LogAdd("ジャッジ紹介 終了画面", _log.INFO);
+        }
+
+        private void OnJudgeScreenCompleted(object? sender, EventArgs e)
+        {
+            if (sender is 画面.DSDspScreenBase s)
+                s.ScreenCompleted -= OnJudgeScreenCompleted;
+            _currentJudgeScreen = null;
+
+            Dispatcher.Invoke(() =>
+            {
+                // クロマキ個別モードの場合、リスト選択を次のジャッジへ自動移動
+                if (_judgeDisplay == JudgeDisplayMode.ChromaIndividual)
+                {
+                    int cur = LstJudgeItems.SelectedIndex;
+                    int next = cur + 1;
+                    if (next < LstJudgeItems.Items.Count)
+                    {
+                        // SelectionChanged イベントで _currentJudgeScreen がリセットされるが、
+                        // ここでは既に null になっているので問題なし
+                        LstJudgeItems.SelectedIndex = next;
+                        LstJudgeItems.ScrollIntoView(LstJudgeItems.SelectedItem);
+                        UpdateJudgeStatus($"次のジャッジに移動: {_selectedJudge?.JdgCd}  {_selectedJudge?.JdgDispName}");
+                    }
+                    else
+                    {
+                        UpdateJudgeStatus("最後のジャッジを表示しました");
+                    }
+                }
+                else
+                {
+                    UpdateJudgeStatus("画面終了");
+                }
+            });
+        }
+
+        private void UpdateJudgeStatus(string text)
+        {
+            if (TxtJudgeStatus != null)
+                TxtJudgeStatus.Text = text;
+        }
+
+        private void ApplyJudgeWindowBackground(bool isChroma)
+        {
+            void Apply(DisplayWindow? window)
+            {
+                if (window == null) return;
+                if (isChroma)
+                {
+                    try
+                    {
+                        var colorStr = AppSettings.Instance.ChromaKeySettings.BackgroundColor;
+                        var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorStr);
+                        window.SetBackgroundColor(color.R, color.G, color.B);
+                    }
+                    catch { window.ClearBackground(); }
+                }
+                else
+                {
+                    window.ClearBackground();
+                }
+            }
+            Apply(_offScreenWindow);
+            Apply(_displayWindow);
+            Apply(_fullScreenWindow);
         }
 
         #endregion
@@ -836,6 +1630,10 @@ namespace DSDsp
                 ExecuteAjsStep();
             else if (TabControl.SelectedIndex == 2) // 表彰式タブ
                 ExecuteAwardStep();
+            else if (TabControl.SelectedIndex == 3) // オナーダンスタブ
+                ExecuteHonorStep();
+            else if (TabControl.SelectedIndex == 4) // ジャッジ紹介タブ
+                ExecuteJudgeStep();
             else                                    // 進行タブ
                 ExecuteProgressStep();
         }
@@ -845,16 +1643,57 @@ namespace DSDsp
         /// </summary>
         private void ExecuteProgressStep()
         {
-            if (_currentProgressScenario == null || _currentProgressIndex < 0 ||
-                _currentProgressIndex >= _currentProgressScenario.Items.Count)
+            var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+            if (items == null || _currentProgressIndex < 0 || _currentProgressIndex >= items.Count)
             {
                 _log?.LogAdd("進行項目が選択されていません", _log.WARNING);
                 return;
             }
 
-            var item = _currentProgressScenario.Items[_currentProgressIndex];
-            _log?.LogAdd($"進行ステップ実行: {item}", _log.INFO);
-            MessageBox.Show($"進行: {item}", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+
+            var item     = items[_currentProgressIndex];
+            var screenId = GetProgressScreenId();
+            var dm       = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+
+            // 画面の切り替え判定
+            bool isSameScreen = _currentProgressScreen != null
+                && _currentProgressScreenId == screenId
+                && _currentProgressScreen.区分番号  == item.KbnNo
+                && _currentProgressScreen.ラウンド番号 == item.RndNo;
+
+            if (!isSameScreen)
+            {
+                if (_currentProgressScreen != null)
+                    _currentProgressScreen.ScreenCompleted -= OnProgressScreenCompleted;
+
+                画面.DSDspScreenBase? newScreen = screenId switch
+                {
+                    "DSP_PRG_002" => new 画面.DSP_PRG_002_進行表示1面_小(),
+                    "DSP_PRG_004" => new 画面.DSP_PRG_004_進行表示ヒート表_大(),
+                    "DSP_PRG_005" => new 画面.DSP_PRG_005_進行表示ヒート表_小(),
+                    "DSP_PRG_006" => new 画面.DSP_PRG_006_決勝進出者_大(),
+                    "DSP_PRG_007" => new 画面.DSP_PRG_007_決勝進出者_小(),
+                    _             => new 画面.DSP_PRG_001_進行表示1面_大(),
+                };
+
+                newScreen.ScreenId     = screenId;
+                newScreen.DA_Master    = dm?.DA_Master;
+                newScreen.DS_Status    = dm?.DS_Status;
+                newScreen.DV_Result    = dm?.DV_Result;
+                newScreen.区分番号     = item.KbnNo;
+                newScreen.ラウンド番号  = item.RndNo;
+                newScreen.ScreenCompleted += OnProgressScreenCompleted;
+
+                _currentProgressScreen   = newScreen;
+                _currentProgressScreenId = screenId;
+                _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
+                _log?.LogAdd($"進行画面表示: {screenId}  KbnNo={item.KbnNo} RndNo={item.RndNo}", _log.INFO);
+            }
+
+            _currentProgressScreen!.Advance();
+            _log?.LogAdd($"進行 Advance: {screenId}  Step={_currentProgressScreen.CurrentStep}", _log.INFO);
         }
 
         /// <summary>
@@ -1084,27 +1923,267 @@ namespace DSDsp
             _ => null
         };
 
-        /// <summary>
-        /// 表彰式タブのステップを実行
-        /// </summary>
+        /// <summary>表彰式タブのステップを実行</summary>
         private void ExecuteAwardStep()
         {
-            if (_currentAwardScenario == null || LstAwardProgress.ItemsSource == null)
+            if (_awardSelectedCategory == null && !_awardSelectedIsAwardTitle && !_awardSelectedIsAwardEnd)
             {
-                _log?.LogAdd("表彰式シナリオが選択されていません", _log.WARNING);
+                MessageBox.Show("区分を選択してください", "表彰式", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var items = LstAwardProgress.ItemsSource as List<ScreenScenarioItem>;
-            if (items == null || _currentAwardIndex < 0 || _currentAwardIndex >= items.Count)
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+
+            // 終了画面
+            if (_awardSelectedIsAwardEnd)
             {
-                _log?.LogAdd("表彰式項目が選択されていません", _log.WARNING);
+                const string endScreenId = "DSP_TIT_999";
+                bool isSameEndScreen = _currentAwardScreen?.ScreenId == endScreenId;
+
+                if (!isSameEndScreen)
+                {
+                    if (_currentAwardScreen != null)
+                        _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
+
+                    var endScreen = new 画面.DSP_TIT_999_終了();
+                    endScreen.ScreenId  = endScreenId;
+                    endScreen.DA_Master = dm?.DA_Master;
+                    endScreen.DS_Status = dm?.DS_Status;
+                    _currentAwardScreen = endScreen;
+                    _offScreenWindow.ShowScreen(endScreen, endScreenId);
+                    _log?.LogAdd($"表彰式終了画面表示: {endScreenId}", _log.INFO);
+                }
+
+                _currentAwardScreen!.Advance();
+                UpdateAwardStatus($"表彰式終了  Step={_currentAwardScreen.CurrentStep}");
                 return;
             }
 
-            var item = items[_currentAwardIndex];
-            _log?.LogAdd($"表彰式ステップ実行: {item}", _log.INFO);
-            MessageBox.Show($"表彰式: {item}", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+            // タイトル画面
+            if (_awardSelectedIsAwardTitle)
+            {
+                const string titleScreenId = "DSP_PRG_011";
+                bool isSameTitleScreen = _currentAwardScreen?.ScreenId == titleScreenId;
+
+                if (!isSameTitleScreen)
+                {
+                    if (_currentAwardScreen != null)
+                        _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
+
+                    var titleScreen = new 画面.DSP_PRG_011_タイトル紹介();
+                    titleScreen.ScreenId       = titleScreenId;
+                    titleScreen.DA_Master      = dm?.DA_Master;
+                    titleScreen.DS_Status      = dm?.DS_Status;
+                    titleScreen.Title1Override = "表彰式";
+                    titleScreen.Title2Override = string.Empty;
+                    titleScreen.ScreenCompleted += OnAwardScreenCompleted;
+                    _currentAwardScreen = titleScreen;
+                    _offScreenWindow.ShowScreen(titleScreen, titleScreenId);
+                    _log?.LogAdd($"表彰式タイトル画面表示: {titleScreenId}", _log.INFO);
+                }
+
+                _currentAwardScreen!.Advance();
+                UpdateAwardStatus($"表彰式タイトル  Step={_currentAwardScreen.CurrentStep}");
+                return;
+            }
+
+            if (_awardSelectedCategory == null) return;
+    
+                var (kbnNo, rndNo, _, _) = _awardSelectedCategory.Value;
+                var dvResult = GetDvResultFor(kbnNo, rndNo);
+    
+                // 画面IDを決定
+                // 全画面 → DSP_PRG_008
+                // クロマキ_リスト → DSP_PRG_009
+                // クロマキ_個別（昇順/降順） → DSP_PRG_010
+                // クロマキ_個別（一括） → DSP_PRG_008（クロマキ背景）
+                bool isChromaIndividualPage = (_awardDisplay == AwardDisplayMode.ChromaIndividual
+                                               && _awardOrder == AwardOrderMode.Page);
+                string screenId;
+                if (_awardDisplay == AwardDisplayMode.ChromaList)
+                    screenId = "DSP_PRG_009";
+                else if (_awardDisplay == AwardDisplayMode.ChromaIndividual && !isChromaIndividualPage)
+                    screenId = "DSP_PRG_010";
+                else
+                    screenId = "DSP_PRG_008";
+
+                bool isSameScreen = _currentAwardScreen?.ScreenId == screenId
+                    && _currentAwardScreen?.区分番号 == kbnNo
+                    && _currentAwardScreen?.ラウンド番号 == rndNo;
+
+                // クロマキ表示かどうか（DisplayWindow の背景色に反映）
+                bool isChromaMode = (_awardDisplay == AwardDisplayMode.ChromaList)
+                                 || (_awardDisplay == AwardDisplayMode.ChromaIndividual);
+                ApplyAwardWindowBackground(isChromaMode);
+
+                if (!isSameScreen)
+                {
+                    if (_currentAwardScreen != null)
+                        _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
+
+                    画面.DSDspScreenBase? newScreen = screenId switch
+                    {
+                        "DSP_PRG_009" => new 画面.DSP_PRG_009_決勝結果_小(),
+                        "DSP_PRG_010" => new 画面.DSP_PRG_010_選手紹介_小(),
+                        _ => new 画面.DSP_PRG_008_決勝結果_大()
+                    };
+
+                    newScreen.ScreenId    = screenId;
+                    newScreen.DA_Master   = dm?.DA_Master;
+                    newScreen.DS_Status   = dm?.DS_Status;
+                    newScreen.DV_Result   = dvResult;
+                    newScreen.区分番号    = kbnNo;
+                    newScreen.ラウンド番号 = rndNo;
+
+                    if (newScreen is 画面.DSP_PRG_008_決勝結果_大 s008)
+                    {
+                        s008.昇順表示  = (_awardOrder != AwardOrderMode.Desc);
+                        s008.IsPageMode = (_awardOrder == AwardOrderMode.Page);
+                        // クロマキ個別_一括: DSP_PRG_008にクロマキ背景を設定
+                        if (isChromaIndividualPage)
+                        {
+                            try
+                            {
+                                var colorStr = AppSettings.Instance.ChromaKeySettings.BackgroundColor;
+                                var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorStr);
+                                s008.Background = new System.Windows.Media.SolidColorBrush(color);
+                            }
+                            catch { }
+                        }
+                    }
+                    else if (newScreen is 画面.DSP_PRG_009_決勝結果_小 s009)
+                    {
+                        s009.IsPageMode = (_awardOrder == AwardOrderMode.Page);
+                        s009.昇順表示  = (_awardOrder != AwardOrderMode.Desc);
+                    }
+                    else if (newScreen is 画面.DSP_PRG_010_選手紹介_小 s010)
+                    {
+                        s010.順位番号 = (_awardOrder == AwardOrderMode.Desc) ? GetMaxRank(dvResult) : 1;
+                    }
+
+                    newScreen.ScreenCompleted += OnAwardScreenCompleted;
+                    _currentAwardScreen = newScreen;
+                    _offScreenWindow.ShowScreen(newScreen, screenId);
+                    _log?.LogAdd($"表彰式画面表示: {screenId}  KbnNo={kbnNo}", _log.INFO);
+                }
+    
+                var screenForAdvance = _currentAwardScreen;
+                screenForAdvance!.Advance();
+                UpdateAwardStatus(_currentAwardScreen != null
+                    ? $"表示中  Step={_currentAwardScreen.CurrentStep}"
+                    : "画面終了");
+        }
+
+        private void OnAwardScreenCompleted(object? sender, EventArgs e)
+        {
+            if (sender is 画面.DSDspScreenBase s)
+                s.ScreenCompleted -= OnAwardScreenCompleted;
+
+            // クロマキ個別（DSP_PRG_010）: 次の選手に進む
+            if (sender is 画面.DSP_PRG_010_選手紹介_小 s010 && _awardSelectedCategory != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    bool isAsc = (_awardOrder != AwardOrderMode.Desc);
+                    int nextRank = isAsc ? s010.順位番号 + 1 : s010.順位番号 - 1;
+                    var dvResult = GetDvResultFor(_awardSelectedCategory.Value.KbnNo, _awardSelectedCategory.Value.RndNo);
+                    int maxRank = GetMaxRank(dvResult);
+                    bool hasNext = isAsc ? nextRank <= maxRank : nextRank >= 1;
+
+                    if (hasNext && _offScreenWindow != null)
+                    {
+                        var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+                        var newS010 = new 画面.DSP_PRG_010_選手紹介_小();
+                        newS010.ScreenId    = "DSP_PRG_010";
+                        newS010.DA_Master   = dm?.DA_Master;
+                        newS010.DS_Status   = dm?.DS_Status;
+                        newS010.DV_Result   = dvResult;
+                        newS010.区分番号    = _awardSelectedCategory.Value.KbnNo;
+                        newS010.ラウンド番号 = _awardSelectedCategory.Value.RndNo;
+                        newS010.順位番号    = nextRank;
+                        newS010.ScreenCompleted += OnAwardScreenCompleted;
+                        _currentAwardScreen = newS010;
+                        _offScreenWindow.ShowScreen(newS010, "DSP_PRG_010");
+                        newS010.Advance();
+                        _log?.LogAdd($"クロマキ個別 次選手表示: 順位={nextRank}", _log.INFO);
+                        UpdateAwardStatus($"クロマキ個別  順位={nextRank}");
+                    }
+                    else
+                    {
+                        _currentAwardScreen = null;
+                        UpdateAwardStatus("画面終了");
+                    }
+                });
+                return;
+            }
+
+            _currentAwardScreen = null;
+            Dispatcher.Invoke(() => UpdateAwardStatus("画面終了"));
+        }
+
+        /// <summary>DV_Result から最大順位番号を返す</summary>
+        private static int GetMaxRank(System.Text.Json.Nodes.JsonNode? dvResult)
+        {
+            if (dvResult == null) return 1;
+            var 結果リスト = 画面.DSDspDataHelper.Get総合結果リスト(dvResult);
+            return 結果リスト.Count > 0 ? 結果リスト.Max(r => r.順位番号) : 1;
+        }
+
+        private System.Text.Json.Nodes.JsonNode? GetDvResultFor(string kbnNo, string rndNo)
+        {
+            var dvResult = _testDataManager?.DV_Result ?? _client?.DataManager.DV_Result;
+            if (dvResult == null) return null;
+
+            if (dvResult is System.Text.Json.Nodes.JsonArray arr)
+            {
+                foreach (var el in arr)
+                {
+                    if (el?["区分番号"]?.ToString() == kbnNo &&
+                        el?["ラウンド番号"]?.ToString() == rndNo)
+                        return el;
+                }
+                return null;
+            }
+            return dvResult;
+        }
+
+        private void UpdateAwardStatus(string text)
+        {
+            if (TxtAwardStatus != null)
+                TxtAwardStatus.Text = text;
+        }
+
+        /// <summary>
+        /// 表彰式タブのクロマキ表示モード切替に合わせて、すべての DisplayWindow の背景色を設定する。
+        /// クロマキ時は ChromaKeySettings の色、全画面時は黒（デフォルト）に戻す。
+        /// </summary>
+        private void ApplyAwardWindowBackground(bool isChromaMode)
+        {
+            void Apply(DisplayWindow? window)
+            {
+                if (window == null) return;
+                if (isChromaMode)
+                {
+                    try
+                    {
+                        var colorStr = AppSettings.Instance.ChromaKeySettings.BackgroundColor;
+                        var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorStr);
+                        window.SetBackgroundColor(color.R, color.G, color.B);
+                    }
+                    catch { window.ClearBackground(); }
+                }
+                else
+                {
+                    window.ClearBackground();
+                }
+            }
+
+            Apply(_offScreenWindow);
+            Apply(_displayWindow);
+            Apply(_fullScreenWindow);
         }
 
         #endregion
@@ -1256,7 +2335,62 @@ namespace DSDsp
         private void OnDV_ResultReceived(object? sender, EventArgs e)
         {
             _log?.LogAdd("DV_Result受信: 結果状態ラベル更新", _log.DEBUG);
-            Dispatcher.Invoke(UpdateResultReadyLabel);
+            Dispatcher.Invoke(() =>
+            {
+                UpdateResultReadyLabel();
+
+                // 表彰式タブが選択中であれば、区分選択済みステータスを更新してプレビューを表示
+                if (TabControl.SelectedIndex == 2 && _awardSelectedCategory != null)
+                {
+                    UpdateAwardStatus("区分選択済み — 再生ボタンで表示");
+                    UpdateAwardPreview(_awardSelectedCategory.Value.KbnNo, _awardSelectedCategory.Value.RndNo);
+                }
+
+                // オナーダンスタブが選択中であれば、入賞者リストを更新する
+                if (TabControl.SelectedIndex == 3 && _honorSelectedCategory != null)  // ← オナーダンスは index=3
+                {
+                    UpdateHonorStatus("区分選択済み — 入賞者を選択してください");
+                    LoadHonorPlayerList(_honorSelectedCategory.Value.KbnNo, _honorSelectedCategory.Value.RndNo);
+                }
+            });
+        }
+
+        /// <summary>結果プレビューリストを更新する</summary>
+        private void UpdateAwardPreview(string kbnNo, string rndNo)
+        {
+            var dvResult = GetDvResultFor(kbnNo, rndNo);
+            var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
+
+            if (dvResult == null || daMaster == null)
+            {
+                AwardPreviewList.ItemsSource = null;
+                return;
+            }
+
+            var 総合リスト = 画面.DSDspDataHelper.Get総合結果リスト(dvResult);
+            var items = new List<AwardPreviewItem>();
+
+            foreach (var (rankNo, bango, score, rankStr) in 総合リスト)
+            {
+                var 選手情報 = 画面.DSDspDataHelper.Get選手情報(daMaster, bango, kbnNo);
+                string 選手名L = 画面.DSDspDataHelper.Get選手名L(選手情報);
+                string 選手名P = 画面.DSDspDataHelper.Get選手名P(選手情報);
+                string 選手名  = string.IsNullOrEmpty(選手名P) ? 選手名L : $"{選手名L}・{選手名P}";
+                string 所属   = 画面.DSDspDataHelper.Get所属(選手情報);
+                string 順位   = 画面.DSDspDataHelper.Format順位テキスト(rankNo, rankStr);
+
+                items.Add(new AwardPreviewItem
+                {
+                    順位   = 順位,
+                    背番号 = bango,
+                    選手名 = 選手名,
+                    所属   = 所属,
+                    得点   = score > 0 ? score.ToString("F3") : string.Empty,
+                });
+            }
+
+            AwardPreviewList.ItemsSource = items;
+            _log?.LogAdd($"結果プレビュー更新: {items.Count}件", _log.DEBUG);
         }
 
         /// <summary>
@@ -1522,6 +2656,522 @@ namespace DSDsp
             TabControl.SelectedIndex = 1;
 
             _log?.LogAdd($"テスト用AJSセットアップ完了: index={_currentAjsIndex}", _log.INFO);
+        }
+
+        #endregion
+
+        // ════════════════════════════════════════════════════════════════
+        #region オナーダンスタブ
+        // ════════════════════════════════════════════════════════════════
+
+        // ---- フィールド ----
+
+        private enum HonorDisplayMode { Full, Chroma }
+        private HonorDisplayMode _honorDisplay = HonorDisplayMode.Full;
+
+        private enum HonorAffiliationMode { Couple, Split }
+        private HonorAffiliationMode _honorAffiliation = HonorAffiliationMode.Couple;
+
+        /// <summary>現在選択中の区分エントリ</summary>
+        private (string KbnNo, string RndNo, string KbnName)? _honorSelectedCategory = null;
+
+        /// <summary>現在選択中の選手エントリ（順位番号, 背番号, 順位表示）</summary>
+        private (int RankNo, string Bango, string RankStr)? _honorSelectedPlayer = null;
+
+        /// <summary>現在選択中の区分エントリのタイトルフラグ</summary>
+        private bool _honorSelectedIsTitle = false;
+
+        /// <summary>現在選択中の区分エントリの終了フラグ</summary>
+        private bool _honorSelectedIsEnd = false;
+
+        /// <summary>現在表示中のオナーダンス画面</summary>
+        private 画面.DSDspScreenBase? _currentHonorScreen = null;
+
+        // ---- データクラス ----
+        private class HonorCategoryItem
+        {
+            public string KbnNo   { get; set; } = string.Empty;
+            public string RndNo   { get; set; } = string.Empty;
+            public string KbnName { get; set; } = string.Empty;
+            public string Display { get; set; } = string.Empty;
+            public bool IsTitle  { get; set; } = false;
+            public bool IsEnd    { get; set; } = false;
+            public override string ToString() => Display;
+        }
+
+        private class HonorPlayerItem
+        {
+            public int    RankNo   { get; set; }
+            public string 順位表示 { get; set; } = string.Empty;
+            public string 背番号  { get; set; } = string.Empty;
+            public string 選手名  { get; set; } = string.Empty;
+            public string 所属    { get; set; } = string.Empty;
+            public string RankStr { get; set; } = string.Empty;
+            public override string ToString() => $"{順位表示}  {背番号}  {選手名}";
+        }
+
+        // ---- UIイベント ----
+
+        private void RbHonorDisplay_Changed(object sender, RoutedEventArgs e)
+        {
+            _honorDisplay = (RbHonorChroma?.IsChecked == true)
+                ? HonorDisplayMode.Chroma
+                : HonorDisplayMode.Full;
+            _currentHonorScreen = null;
+        }
+
+        private void RbHonorAffiliation_Changed(object sender, RoutedEventArgs e)
+        {
+            _honorAffiliation = (RbHonorAffSplit?.IsChecked == true)
+                ? HonorAffiliationMode.Split
+                : HonorAffiliationMode.Couple;
+        }
+
+        private void BtnHonorRefresh_Click(object sender, RoutedEventArgs e)
+            => LoadHonorCategoryList();
+
+        private async void LstHonorCategories_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstHonorCategories.SelectedItem is not HonorCategoryItem item) return;
+
+            _honorSelectedIsTitle = item.IsTitle;
+            _honorSelectedIsEnd   = item.IsEnd;
+            _currentHonorScreen   = null;
+
+            if (!item.IsTitle && !item.IsEnd)
+            {
+                _honorSelectedCategory = (item.KbnNo, item.RndNo, item.KbnName);
+                LstHonorPlayers.ItemsSource = null;
+                UpdateHonorStatus($"DV_Result 要求中: {item.Display} ...");
+
+                // サーバーに DV_Result を要求（テストデータ使用時はスキップ）
+                if (_testDataManager == null && _client != null && _client.IsConnected)
+                {
+                    _log?.LogAdd($"オナーダンス DP_ASK_DV_RESULT送信: 区分={item.KbnNo}, ラウンド={item.RndNo}", _log.INFO);
+                    bool ok = await _client.RequestDV_ResultAsync(item.KbnNo, item.RndNo);
+                    if (!ok)
+                        _log?.LogAdd("オナーダンス DP_ASK_DV_RESULT送信失敗", _log.WARNING);
+                }
+                else
+                {
+                    // テストデータ使用時はキャッシュを即時参照
+                    UpdateHonorStatus("区分選択済み — 入賞者を選択してください");
+                    LoadHonorPlayerList(item.KbnNo, item.RndNo);
+                }
+            }
+            else if (item.IsTitle)
+            {
+                _honorSelectedCategory = null;
+                LstHonorPlayers.ItemsSource = null;
+                UpdateHonorStatus("オナーダンスタイトル選択済み — 再生ボタンでタイトル表示");
+            }
+            else // IsEnd
+            {
+                _honorSelectedCategory = null;
+                LstHonorPlayers.ItemsSource = null;
+                UpdateHonorStatus("終了 — 再生ボタンで切り替え表示");
+            }
+        }
+
+        private void LstHonorPlayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstHonorPlayers.SelectedItem is not HonorPlayerItem item) return;
+            _honorSelectedPlayer = (item.RankNo, item.背番号, item.RankStr);
+            _currentHonorScreen  = null;
+            UpdateHonorStatus($"{item.順位表示}  {item.選手名} — 再生ボタンで開始");
+        }
+
+        // ---- リスト読み込み ----
+
+        /// <summary>DV_Result から決勝結果のある区分を LstHonorCategories に一覧表示する。</summary>
+        private void LoadHonorCategoryList()
+        {
+            var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
+
+            var items = new List<HonorCategoryItem>();
+
+            // 先頭: オナーダンスタイトル
+            items.Add(new HonorCategoryItem { IsTitle = true, Display = "（オナーダンスタイトル）" });
+
+            if (daMaster != null)
+            {
+                var kubuns = daMaster["DB_KUBUNs"]?.AsArray();
+                if (kubuns != null)
+                {
+                    foreach (var kubun in kubuns)
+                    {
+                        if (kubun == null) continue;
+                        var kbnNo   = kubun["DB_KbnNo"]?.ToString()   ?? string.Empty;
+                        var kbnName = kubun["DB_KbnName"]?.ToString() ?? string.Empty;
+
+                        var rounds = kubun["DC_ROUNDs"]?.AsArray();
+                        if (rounds == null) continue;
+
+                        foreach (var round in rounds)
+                        {
+                            if (round == null) continue;
+                            var rndNo = round["DC_RndNo"]?.ToString() ?? string.Empty;
+                            if (rndNo != "300" && rndNo != "400") continue;
+
+                            if (items.Any(x => !x.IsTitle && x.KbnNo == kbnNo && x.RndNo == rndNo)) continue;
+
+                            items.Add(new HonorCategoryItem
+                            {
+                                KbnNo   = kbnNo,
+                                RndNo   = rndNo,
+                                KbnName = kbnName,
+                                Display = $"{kbnNo}  {kbnName}",
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 末尾: 終了エントリ
+            items.Add(new HonorCategoryItem { IsEnd = true, Display = "（終了）" });
+
+            LstHonorCategories.ItemsSource = items;
+            if (items.Count > 0) LstHonorCategories.SelectedIndex = 0;
+            int count = items.Count - 2;
+            UpdateHonorStatus(count > 0
+                ? $"{count} 件の区分を表示"
+                : (daMaster == null ? "DA_Master 未受信" : "決勝ラウンド（300/400）を持つ区分がありません"));
+        }
+
+        /// <summary>指定区分の入賞者リストを LstHonorPlayers に表示する。</summary>
+        private void LoadHonorPlayerList(string kbnNo, string rndNo)
+        {
+            LstHonorPlayers.ItemsSource = null;
+
+            var dvResult = GetDvResultFor(kbnNo, rndNo);
+            var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
+            if (dvResult == null) return;
+
+            var 結果リスト = 画面.DSDspDataHelper.Get総合結果リスト(dvResult);
+
+            var items = new List<HonorPlayerItem>();
+            foreach (var (rankNo, bango, _, rankStr) in 結果リスト)
+            {
+                var 選手情報 = daMaster != null
+                    ? 画面.DSDspDataHelper.Get選手情報(daMaster, bango, kbnNo)
+                    : null;
+                string lName = 画面.DSDspDataHelper.Get選手名L(選手情報);
+                string pName = 画面.DSDspDataHelper.Get選手名P(選手情報);
+                string 選手名 = string.IsNullOrEmpty(pName) ? lName : $"{lName}・{pName}";
+                string 所属  = GetHonorAffiliation(選手情報);
+
+                string honorRankStr = rankNo switch
+                {
+                    1 => "チャンピオン",
+                    2 => "準優勝",
+                    _ => $"第{rankNo}位"
+                };
+
+                items.Add(new HonorPlayerItem
+                {
+                    RankNo  = rankNo,
+                    順位表示 = honorRankStr,
+                    背番号  = bango,
+                    選手名  = 選手名,
+                    所属    = 所属,
+                    RankStr = honorRankStr,
+                });
+            }
+
+            LstHonorPlayers.ItemsSource = items;
+        }
+
+        /// <summary>所属表示モードに応じた所属文字列を返す。</summary>
+        private string GetHonorAffiliation(System.Text.Json.Nodes.JsonNode? 選手情報)
+        {
+            if (_honorAffiliation == HonorAffiliationMode.Couple)
+                return 画面.DSDspDataHelper.Get所属(選手情報);
+
+            // Split: L所属 + "/" + P所属
+            string lCtry = 選手情報?["DM_Ctry"]?.ToString()  ?? string.Empty;
+            string pCtry = 選手情報?["DM_PCtry"]?.ToString() ?? string.Empty;
+            return string.IsNullOrEmpty(pCtry) ? lCtry : $"{lCtry}/{pCtry}";
+        }
+
+        // ---- ステップ実行 ----
+
+        private void ExecuteHonorStep()
+        {
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+
+            // --- (A) タイトル画面 ---
+            if (_honorSelectedIsTitle)
+            {
+                const string titleId = "DSP_PRG_011";
+                bool isSame = _currentHonorScreen?.ScreenId == titleId;
+
+                if (!isSame)
+                {
+                    if (_currentHonorScreen != null)
+                        _currentHonorScreen.ScreenCompleted -= OnHonorScreenCompleted;
+
+                    var ts = new 画面.DSP_PRG_011_タイトル紹介();
+                    ts.ScreenId       = titleId;
+                    ts.DA_Master      = dm?.DA_Master;
+                    ts.DS_Status      = dm?.DS_Status;
+                    ts.Title1Override = "オナーダンス";
+                    ts.Title2Override = string.Empty;
+                    ts.ScreenCompleted += OnHonorScreenCompleted;
+                    _currentHonorScreen = ts;
+                    _offScreenWindow.ShowScreen(ts, titleId);
+                    _log?.LogAdd($"オナーダンス タイトル表示: {titleId}", _log.INFO);
+                }
+
+                _currentHonorScreen!.Advance();
+                UpdateHonorStatus($"タイトル  Step={_currentHonorScreen.CurrentStep}");
+                return;
+            }
+
+            // --- (B) 終了画面 ---
+            if (_honorSelectedIsEnd)
+            {
+                ExecuteHonorEndScreen(dm);
+                return;
+            }
+
+            // --- (C) 選手表示 ---
+            if (_honorSelectedPlayer == null)
+            {
+                MessageBox.Show("入賞者リストから選手を選択してください", "オナーダンス",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_honorSelectedCategory == null) return;
+
+            var (kbnNo, rndNo, kbnName) = _honorSelectedCategory.Value;
+            var (rankNo, bango, rankStr) = _honorSelectedPlayer.Value;
+            var dvResult = GetDvResultFor(kbnNo, rndNo);
+
+            // 演技順テキスト: 区分名 + "  " + 順位
+            string rankSuffix = rankNo switch
+            {
+                1 => "チャンピオン",
+                2 => "準優勝",
+                _ => $"第{rankNo}位"
+            };
+            string orderText = $"{kbnName}  {rankSuffix}";
+
+            // 選手情報取得
+            var 選手情報 = dm?.DA_Master != null
+                ? 画面.DSDspDataHelper.Get選手情報(dm.DA_Master, bango, kbnNo)
+                : null;
+            string lName = 画面.DSDspDataHelper.Get選手名L(選手情報);
+            string pName = 画面.DSDspDataHelper.Get選手名P(選手情報);
+            string 所属  = GetHonorAffiliation(選手情報);
+            string 競技会名 = 画面.DSDspDataHelper.Get競技会名(dm?.DA_Master);
+
+            string screenId  = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_010" : "DSP_SOL_001";
+            string com003Text = $"{rankSuffix}  {lName}・{pName}";
+
+            bool isSameScreen = _currentHonorScreen?.ScreenId == screenId
+                && _currentHonorScreen?.区分番号 == kbnNo
+                && _currentHonorScreen?.ラウンド番号 == rndNo;
+
+            if (!isSameScreen)
+            {
+                if (_currentHonorScreen != null)
+                    _currentHonorScreen.ScreenCompleted -= OnHonorScreenCompleted;
+
+                if (_honorDisplay == HonorDisplayMode.Full)
+                {
+                    var sol001 = new 画面.DSP_SOL_001_ソロ選手紹介_大();
+                    sol001.ScreenId    = screenId;
+                    sol001.DA_Master   = dm?.DA_Master;
+                    sol001.DS_Status   = dm?.DS_Status;
+                    sol001.DV_Result   = dvResult;
+                    sol001.区分番号    = kbnNo;
+                    sol001.ラウンド番号 = rndNo;
+                    sol001.ScreenCompleted += OnHonorScreenCompleted;
+                    _currentHonorScreen = sol001;
+                    _offScreenWindow.ShowScreen(sol001, screenId);
+
+                    // COM001/COM002/COM003 の初期設定（Advance前に確定する静的テキスト）
+                    sol001.EnsurePartsInitialized();
+                    sol001.PartsCOM001.IM_JDSFマーク.Source =
+                        new System.Windows.Media.Imaging.BitmapImage(
+                            new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
+                    sol001.PartsCOM001.TB_左上1.Text          = 競技会名;
+                    sol001.PartsCOM001.TB_左上2.Text          = kbnName;
+                    sol001.PartsCOM003.LB_右上.Content        = string.Empty;
+                    sol001.PartsCOM003.LB_右上.Visibility     = Visibility.Collapsed;
+
+                    // Advance()（Step1+Step2）を実行してから TIT004 を上書き
+                    sol001.Advance();
+                    sol001.PartsCOM002.LB_右上.Content        = "オナーダンス";
+                    sol001.PartsTIT004.LB_演技順.Content      = orderText;
+                    sol001.PartsTIT004.LB_背番号.Visibility   = Visibility.Collapsed;
+                    sol001.PartsTIT004.LB_選手名L.Content     = lName;
+                    sol001.PartsTIT004.LB_選手名P.Content     = pName;
+                    sol001.PartsTIT004.LB_所属.Content        = 所属;
+                    ApplyHonorFontAdjustments(sol001);
+                    _log?.LogAdd($"オナーダンス 全画面生成: {kbnName} #{bango} {orderText}", _log.INFO);
+                }
+                else // クロマキ: DSP_PRG_010
+                {
+                    var prg010 = new 画面.DSP_PRG_010_選手紹介_小();
+                    prg010.ScreenId        = screenId;
+                    prg010.DA_Master       = dm?.DA_Master;
+                    prg010.DS_Status       = dm?.DS_Status;
+                    prg010.DV_Result       = dvResult;
+                    prg010.区分番号        = kbnNo;
+                    prg010.ラウンド番号    = rndNo;
+                    prg010.順位番号        = rankNo;
+                    prg010.HonorMode       = true;
+                    prg010.HonorBango      = bango;
+                    prg010.HonorAffiliation = 所属;
+                    prg010.ScreenCompleted += OnHonorScreenCompleted;
+                    _currentHonorScreen = prg010;
+                    _offScreenWindow.ShowScreen(prg010, screenId);
+
+                    // STEP1: COM001/COM002 初期化 → COM002 を「オナーダンス」に上書き
+                    prg010.Advance();
+                    prg010.PartsCOM002.LB_右上.Content = "オナーダンス";
+
+                    // STEP2: LB_区分名 に orderText を事前セット（Step2() 内の HonorMode 分岐で参照する）
+                    prg010.PartsPRG006.LB_区分名.Content = orderText;
+                    prg010.Advance();
+                    _log?.LogAdd($"オナーダンス クロマキ生成: {kbnName} #{bango} {orderText}", _log.INFO);
+                }
+            }
+            else
+            {
+                // 同じ画面で Step が 1 のとき（フェードアウト後）→ COM003 に表示
+                if (_currentHonorScreen?.CurrentStep == 1)
+                {
+                    if (_honorDisplay == HonorDisplayMode.Full
+                        && _currentHonorScreen is 画面.DSP_SOL_001_ソロ選手紹介_大 s001)
+                    {
+                        s001.PartsCOM003.LB_右上.Content    = com003Text;
+                        s001.PartsCOM003.LB_右上.Visibility = Visibility.Visible;
+                    }
+                }
+                _currentHonorScreen!.Advance();
+            }
+
+            // クロマキモードのとき DisplayWindow の背景色をクロマキ色に設定する
+            if (_honorDisplay == HonorDisplayMode.Chroma)
+                ApplyAwardWindowBackground(true);
+
+            if (_currentHonorScreen != null)
+                UpdateHonorStatus($"表示中  Step={_currentHonorScreen.CurrentStep}  {kbnName} #{bango}");
+            _log?.LogAdd($"オナーダンス Advance: step={_currentHonorScreen?.CurrentStep}", _log.INFO);
+        }
+
+        /// <summary>オナーダンス 終了: COM001マーク+競技会名のみ残す。</summary>
+        private void ExecuteHonorEndScreen(Data.DataManager? dm)
+        {
+            EnsureOffScreenWindowCreated();
+            if (_offScreenWindow == null) return;
+
+            string screenId = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_010" : "DSP_SOL_001";
+            string 競技会名 = 画面.DSDspDataHelper.Get競技会名(dm?.DA_Master);
+
+            bool canReuse = _currentHonorScreen != null
+                && (_currentHonorScreen.ScreenId == "DSP_SOL_001"
+                    || _currentHonorScreen.ScreenId == "DSP_PRG_010");
+
+            if (!canReuse)
+            {
+                if (_currentHonorScreen != null)
+                    _currentHonorScreen.ScreenCompleted -= OnHonorScreenCompleted;
+
+                if (_honorDisplay == HonorDisplayMode.Full)
+                {
+                    var s = new 画面.DSP_SOL_001_ソロ選手紹介_大();
+                    s.ScreenId = screenId;
+                    s.DA_Master = dm?.DA_Master;
+                    s.ScreenCompleted += OnHonorScreenCompleted;
+                    _currentHonorScreen = s;
+                    _offScreenWindow.ShowScreen(s, screenId);
+                    s.EnsurePartsInitialized();
+                    s.PartsCOM001.IM_JDSFマーク.Source =
+                        new System.Windows.Media.Imaging.BitmapImage(
+                            new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
+                    s.PartsCOM001.TB_左上1.Text = 競技会名;
+                    s.PartsCOM001.TB_左上2.Text = string.Empty;
+                }
+                else // クロマキ: DSP_PRG_010
+                {
+                    var s = new 画面.DSP_PRG_010_選手紹介_小();
+                    s.ScreenId = screenId;
+                    s.DA_Master = dm?.DA_Master;
+                    s.ScreenCompleted += OnHonorScreenCompleted;
+                    _currentHonorScreen = s;
+                    _offScreenWindow.ShowScreen(s, screenId);
+                    s.EnsurePartsInitialized();
+                    s.PartsCOM001.IM_JDSFマーク.Source =
+                        new System.Windows.Media.Imaging.BitmapImage(
+                            new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
+                    s.PartsCOM001.TB_左上1.Text = 競技会名;
+                    s.PartsCOM001.TB_左上2.Text = string.Empty;
+                }
+            }
+
+            // COM001以外を非表示
+            if (_currentHonorScreen is 画面.DSP_SOL_001_ソロ選手紹介_大 sol1)
+            {
+                sol1.PartsCOM001.TB_左上2.Text = string.Empty;
+                sol1.PartsCOM002.LB_右上.Visibility  = Visibility.Collapsed;
+                sol1.PartsCOM003.LB_右上.Visibility  = Visibility.Collapsed;
+                sol1.PartsTIT004.LB_演技順.Visibility = Visibility.Collapsed;
+                sol1.PartsTIT004.LB_背番号.Visibility  = Visibility.Collapsed;
+                sol1.PartsTIT004.LB_選手名L.Visibility = Visibility.Collapsed;
+                sol1.PartsTIT004.LB_選手名P.Visibility = Visibility.Collapsed;
+                sol1.PartsTIT004.LB_所属.Visibility   = Visibility.Collapsed;
+                sol1.PartsTIT004.IM_種目1.Visibility  = Visibility.Collapsed;
+                sol1.PartsTIT004.IM_種目2.Visibility  = Visibility.Collapsed;
+            }
+            else if (_currentHonorScreen is 画面.DSP_PRG_010_選手紹介_小 sol010)
+            {
+                sol010.PartsCOM001.TB_左上2.Text        = string.Empty;
+                sol010.PartsCOM002.LB_右上.Visibility   = Visibility.Collapsed;
+                sol010.PartsCOM003.LB_右上.Visibility   = Visibility.Collapsed;
+                sol010.PartsPRG006.LB_区分名.Visibility = Visibility.Collapsed;
+                sol010.PartsPRG006.LB_順位.Visibility   = Visibility.Collapsed;
+                sol010.PartsPRG006.LB_選手名.Visibility = Visibility.Collapsed;
+                sol010.PartsPRG006.LB_所属.Visibility   = Visibility.Collapsed;
+                sol010.PartsPRG006.LB_得点.Visibility   = Visibility.Collapsed;
+                sol010.PartsPRG006.IM_種目1.Visibility  = Visibility.Collapsed;
+                sol010.PartsPRG006.IM_種目2.Visibility  = Visibility.Collapsed;
+            }
+
+            UpdateHonorStatus("終了 — COM001のみ表示中");
+            _log?.LogAdd("オナーダンス 終了画面", _log.INFO);
+        }
+
+        private void OnHonorScreenCompleted(object? sender, EventArgs e)
+        {
+            if (sender is 画面.DSDspScreenBase s)
+                s.ScreenCompleted -= OnHonorScreenCompleted;
+            _currentHonorScreen = null;
+            Dispatcher.Invoke(() => UpdateHonorStatus("画面終了"));
+            _log?.LogAdd("オナーダンス 画面完了", _log.INFO);
+        }
+
+        private void UpdateHonorStatus(string text)
+        {
+            if (TxtHonorStatus != null)
+                TxtHonorStatus.Text = text;
+        }
+
+        /// <summary>SOL_001 パーツのフォントサイズ自動調整。</summary>
+        private void ApplyHonorFontAdjustments(画面.DSP_SOL_001_ソロ選手紹介_大 s)
+        {
+            var pm = s.PartsMainInstance;
+            if (pm == null) return;
+            pm.フォントサイズ自動調整(s.PartsTIT004.LB_演技順,  s.PartsTIT004.LB_演技順.Content?.ToString()  ?? "", 400, 16, 6, "Segoe UI Semibold");
+            pm.フォントサイズ自動調整(s.PartsTIT004.LB_選手名L, s.PartsTIT004.LB_選手名L.Content?.ToString() ?? "", 400, 22, 8, "Segoe UI Semibold");
+            pm.フォントサイズ自動調整(s.PartsTIT004.LB_選手名P, s.PartsTIT004.LB_選手名P.Content?.ToString() ?? "", 400, 22, 8, "Segoe UI Semibold");
+            pm.フォントサイズ自動調整(s.PartsTIT004.LB_所属,    s.PartsTIT004.LB_所属.Content?.ToString()    ?? "", 400, 20, 8, "Segoe UI Semibold");
         }
 
         #endregion

@@ -14,7 +14,7 @@
 
             <Image x:Name="IM_タイトル2" Height="39" Source="..\イメージ\CHR169_結果緑_タイトル2.png" Stretch="Fill" Width="527" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Top="27" Canvas.Left="0"/>
             <Label x:Name="LB_タイトル2" Content ="001 Ａ級戦スタンダード　1次予選" HorizontalContentAlignment="Left" Canvas.Left="7" Canvas.Top="29" Width="412" Height="30" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16"/>
-            <Label x:Name="LB_種目" Content ="W T V F Q" HorizontalContentAlignment="Right" Canvas.Left="403" Canvas.Top="31" Width="112" Height="30" Foreground="White" RenderTransformOrigin="0.452,1.425" FontFamily="Segoe UI Semibold" FontWeight="Normal" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+            <TextBlock x:Name="LB_種目" TextAlignment="Right" Canvas.Left="403" Canvas.Top="34" Width="112" Height="26" Foreground="White" FontFamily="Segoe UI Semibold" FontWeight="Normal" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Top" Text="W T V F Q"/>
 
             <Image x:Name="IM_ヒート1" Height="31" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="65" Canvas.Left="14" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="64"/>
             <Image x:Name="IM_ヒート2" Height="31" Source="..\イメージ\CHR169_結果小_明細.png" Stretch="Fill" Width="65" Canvas.Left="14" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Top="89"/>

@@ -15,5 +15,12 @@
     "ScenarioPath": "./Scenarios",
     "DefaultScreen": 0,
     "ImagePath": "./イメージ"
+  },
+  "AutoDisplaySettings": {
+    "TitSeconds": 3,
+    "GrpResultSeconds": 5
+  },
+  "ChromaKeySettings": {
+    "BackgroundColor": "#FF008800"
   }
 }

@@ -78,6 +78,8 @@ namespace DSDsp.画面
 
             PartsTIT004.IM_種目1.Visibility = Visibility.Collapsed;
             PartsTIT004.IM_種目2.Visibility = Visibility.Collapsed;
+
+            PartsTIT004.LB_背番号.Content = String.Empty;
         }
 
         /// <summary>

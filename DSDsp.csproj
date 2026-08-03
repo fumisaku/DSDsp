@@ -71,6 +71,9 @@
     <Compile Update="画面\DSP_DUE_004_DUE選手結果_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="画面\DSP_PRG_010_選手紹介_小.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="画面\DSP_SOL_002_ソロ選手紹介_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

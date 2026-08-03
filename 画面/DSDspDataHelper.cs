@@ -527,6 +527,294 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// DA_Master から指定区分・ラウンドの全種目（DncNo, DncCd）リストを種目番号順に返す。
+        /// </summary>
+        public static List<(int DncNo, string DncCd)> Get全種目リスト(JsonNode? daMaster, string kbnNo, string rndNo)
+        {
+            var result = new List<(int, string)>();
+            var round = Getラウンド(daMaster, kbnNo, rndNo);
+            if (round == null) return result;
+
+            var dgrps = round["DD_DGRPs"]?.AsArray();
+            if (dgrps == null) return result;
+
+            foreach (var dgrp in dgrps)
+            {
+                var dances = dgrp?["DE_DANCEs"]?.AsArray();
+                if (dances == null) continue;
+                foreach (var dance in dances)
+                {
+                    var no = dance?["DE_DncNo"]?.GetValue<int>() ?? 0;
+                    var cd = dance?["DE_DncCd"]?.ToString() ?? string.Empty;
+                    if (no > 0) result.Add((no, cd));
+                }
+            }
+            result.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            return result;
+        }
+
+        /// <summary>
+        /// DS_Status から指定区分・ラウンドの次の進行番号情報を取得する。
+        /// 現在の区分・ラウンドの最後の PRGRS より SortOrder が大きい最初の PRGRS を返す。
+        /// 戻り値: (PrgNo, KbnNo, RndNo, DS_PrgPStaTM) または null。
+        /// </summary>
+        public static (string PrgNo, string KbnNo, string RndNo, string? PStaTM)? Get次進行情報(
+            JsonNode? dsStatus, string currentKbnNo, string currentRndNo)
+        {
+            var list = Get次進行情報リスト(dsStatus, currentKbnNo, currentRndNo, 1);
+            return list.Count > 0 ? list[0] : null;
+        }
+
+        /// <summary>
+        /// DS_Status から指定区分・ラウンドの次の進行番号情報を最大 maxCount 件取得する。
+        /// SortOrder 昇順で、現在の区分・ラウンドの最後エントリより後のものを返す。
+        /// </summary>
+        public static List<(string PrgNo, string KbnNo, string RndNo, string? PStaTM)> Get次進行情報リスト(
+            JsonNode? dsStatus, string currentKbnNo, string currentRndNo, int maxCount = 3)
+        {
+            var result = new List<(string, string, string, string?)>();
+            if (dsStatus == null) return result;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return result;
+
+            // 全 PRGRS を収集して SortOrder 昇順にソート
+            var allPrgrs = new List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string? PStaTM)>();
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+                foreach (var prg in prgrs)
+                {
+                    var sortOrder = prg?["DS_SortOrder"]?.GetValue<int>() ?? 0;
+                    var prgNo = prg?["DS_PrgNo"]?.ToString() ?? "";
+                    var kbnNo = prg?["DS_KbnNo"]?.ToString() ?? "";
+                    var rndNo = prg?["DS_RndNo"]?.ToString() ?? "";
+                    var pStaTM = prg?["DS_PrgPStaTM"]?.ToString();
+                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, pStaTM));
+                }
+            }
+
+            allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
+
+            // 現在の区分・ラウンドに属する PRGRS の最大 SortOrder を探す
+            int currentLastSortOrder = int.MinValue;
+            foreach (var p in allPrgrs)
+            {
+                if (p.KbnNo == currentKbnNo && p.RndNo == currentRndNo && p.SortOrder > currentLastSortOrder)
+                    currentLastSortOrder = p.SortOrder;
+            }
+
+            if (currentLastSortOrder == int.MinValue) return result;
+
+            // 現在の最後 SortOrder より大きい PRGRS を maxCount 件取得
+            foreach (var p in allPrgrs)
+            {
+                if (p.SortOrder > currentLastSortOrder)
+                {
+                    result.Add((p.PrgNo, p.KbnNo, p.RndNo, p.PStaTM));
+                    if (result.Count >= maxCount) break;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// DS_Status から指定区分・ラウンドの現在の進行番号を取得する。
+        /// </summary>
+        public static string Get現在進行番号(JsonNode? dsStatus, string kbnNo, string rndNo)
+        {
+            if (dsStatus == null) return string.Empty;
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return string.Empty;
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_KbnNo"]?.ToString() == kbnNo &&
+                        prg?["DS_RndNo"]?.ToString() == rndNo)
+                        return prg?["DS_PrgNo"]?.ToString() ?? string.Empty;
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// DS_Status の指定フロア（DS_FlrCd）の現在の進行情報を返す。
+        /// 戻り値: (DS_PrgNo, DS_KbnNo, DS_RndNo) または null。
+        /// </summary>
+        public static (string PrgNo, string KbnNo, string RndNo)? Getフロア現在進行情報(
+            JsonNode? dsStatus, JsonNode? daMaster, string flrCd)
+        {
+            if (dsStatus == null) return null;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return null;
+
+            foreach (var floor in floors)
+            {
+                if (floor?["DS_FlrCd"]?.ToString() != flrCd) continue;
+
+                var curPrgNo = floor?["DS_CurPrgNo"]?.ToString();
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+
+                // DS_CurPrgNo と一致する PRGRS を探す
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_PrgNo"]?.ToString() == curPrgNo)
+                        return (curPrgNo!, prg?["DS_KbnNo"]?.ToString() ?? "", prg?["DS_RndNo"]?.ToString() ?? "");
+                }
+                // CurPrgNo が設定されていない場合は最初の PRGRS を返す
+                var first = prgrs.FirstOrDefault();
+                if (first != null)
+                    return (first?["DS_PrgNo"]?.ToString() ?? "", first?["DS_KbnNo"]?.ToString() ?? "", first?["DS_RndNo"]?.ToString() ?? "");
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// DS_Status の指定フロアの次の進行番号情報を最大 maxCount 件取得する。
+        /// 現在の進行番号より SortOrder が大きいものを返す。
+        /// </summary>
+        public static List<(string PrgNo, string KbnNo, string RndNo, string? PStaTM)> Getフロア次進行情報リスト(
+            JsonNode? dsStatus, string flrCd, int maxCount = 3)
+        {
+            var result = new List<(string, string, string, string?)>();
+            if (dsStatus == null) return result;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return result;
+
+            foreach (var floor in floors)
+            {
+                if (floor?["DS_FlrCd"]?.ToString() != flrCd) continue;
+
+                var curPrgNo = floor?["DS_CurPrgNo"]?.ToString();
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) return result;
+
+                // 全 PRGRS を SortOrder 昇順にソート
+                var allPrgrs = new List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string? PStaTM)>();
+                foreach (var prg in prgrs)
+                {
+                    var sortOrder = prg?["DS_SortOrder"]?.GetValue<int>() ?? 0;
+                    var prgNo = prg?["DS_PrgNo"]?.ToString() ?? "";
+                    var kbnNo = prg?["DS_KbnNo"]?.ToString() ?? "";
+                    var rndNo = prg?["DS_RndNo"]?.ToString() ?? "";
+                    var pStaTM = prg?["DS_PrgPStaTM"]?.ToString();
+                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, pStaTM));
+                }
+                allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
+
+                // 現在の進行番号に対応する SortOrder を探す
+                int curSortOrder = int.MinValue;
+                if (!string.IsNullOrEmpty(curPrgNo))
+                {
+                    foreach (var p in allPrgrs)
+                    {
+                        if (p.PrgNo == curPrgNo) { curSortOrder = p.SortOrder; break; }
+                    }
+                }
+
+                // 現在より後のものを maxCount 件返す
+                foreach (var p in allPrgrs)
+                {
+                    if (p.SortOrder > curSortOrder)
+                    {
+                        result.Add((p.PrgNo, p.KbnNo, p.RndNo, p.PStaTM));
+                        if (result.Count >= maxCount) break;
+                    }
+                }
+                return result;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// DS_Status から指定区分・ラウンドの全種目の全ヒート背番号マップを取得する。
+        /// 戻り値: 種目番号 → (ヒート番号 → 背番号リスト) のディクショナリ。
+        /// </summary>
+        public static Dictionary<int, Dictionary<int, List<string>>> Get全種目全ヒート背番号マップ(
+            JsonNode? dsStatus, string kbnNo, string rndNo)
+        {
+            var result = new Dictionary<int, Dictionary<int, List<string>>>();
+            if (dsStatus == null) return result;
+
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return result;
+
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+
+                    var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
+                    if (prgDances == null) continue;
+
+                    var playerAssignments = prg?["PlayerAssignments"]?.AsArray();
+
+                    foreach (var prgDance in prgDances)
+                    {
+                        var dncNo = prgDance?["DS_DncNo"]?.GetValue<int>() ?? 0;
+                        if (dncNo <= 0) continue;
+
+                        var heats = prgDance?["DS_PRGHEATs"]?.AsArray();
+                        if (heats == null) continue;
+
+                        // ヒートID → ヒート番号 の対応表を作成
+                        var heatIdToNo = new Dictionary<string, int>();
+                        foreach (var heat in heats)
+                        {
+                            var hId = heat?["DS_HeatId"]?.ToString();
+                            var hNo = heat?["DS_HeatNo"]?.GetValue<int>() ?? 0;
+                            if (!string.IsNullOrEmpty(hId)) heatIdToNo[hId!] = hNo;
+                        }
+
+                        var heatPlayerMap = new Dictionary<int, List<string>>();
+                        foreach (var hNo in heatIdToNo.Values.OrderBy(n => n))
+                            heatPlayerMap[hNo] = new List<string>();
+
+                        if (playerAssignments != null)
+                        {
+                            foreach (var assignment in playerAssignments)
+                            {
+                                var playerNo = assignment?["PlayerNo"]?.ToString();
+                                if (string.IsNullOrEmpty(playerNo)) continue;
+
+                                var assignedHeatIds = assignment?["AssignedHeatIds"]?.AsArray();
+                                if (assignedHeatIds == null) continue;
+
+                                foreach (var id in assignedHeatIds)
+                                {
+                                    var idStr = id?.ToString();
+                                    if (!string.IsNullOrEmpty(idStr) && heatIdToNo.TryGetValue(idStr!, out var hNo))
+                                    {
+                                        if (!heatPlayerMap.ContainsKey(hNo))
+                                            heatPlayerMap[hNo] = new List<string>();
+                                        heatPlayerMap[hNo].Add(playerNo!);
+                                    }
+                                }
+                            }
+                        }
+
+                        result[dncNo] = heatPlayerMap;
+                    }
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
         /// DS_Status から指定の区分・ラウンドの種目番号リストを昇順で返す。
         /// </summary>
         public static List<int> Get種目番号リスト(JsonNode? dsStatus, string kbnNo, string rndNo)
@@ -594,7 +882,151 @@ namespace DSDsp.画面
             string nextCd = Get種目記号(daMaster, kbnNo, rndNo, nextDncNo);
             return (nextDncNo, 1, nextCd);
         }
+
+        // ────────────────────────────────────────────────
+        // DV_Result ヘルパー
+        // ────────────────────────────────────────────────
+
+        /// <summary>
+        /// DV_Result の採点方式ID を取得する。
+        /// </summary>
+        public static string Get採点方式ID_DV(JsonNode? dvResult)
+            => dvResult?["採点方式ID"]?.ToString() ?? string.Empty;
+
+        /// <summary>
+        /// DV_Result が AJS 採点（採点方式ID が "AJS" で始まる）かどうかを返す。
+        /// </summary>
+        public static bool IsAJS採点(JsonNode? dvResult)
+        {
+            var id = Get採点方式ID_DV(dvResult);
+            return id.StartsWith("AJS", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// DV_Result の 総合結果[] から選手結果リストを総合順位番号昇順で返す。
+        /// 戻り値: (総合順位番号, 背番号, 総合得点, 総合順位表記) のリスト。
+        /// </summary>
+        public static List<(int 順位番号, string 背番号, decimal 得点, string 順位表記)> Get総合結果リスト(
+            JsonNode? dvResult)
+        {
+            var result = new List<(int 順位番号, string 背番号, decimal 得点, string 順位表記)>();
+            if (dvResult == null) return result;
+
+            var 総合結果 = dvResult["総合結果"]?.AsArray();
+            if (総合結果 == null) return result;
+
+            foreach (var item in 総合結果)
+            {
+                int rankNo = item?["総合順位番号"]?.GetValue<int>() ?? 0;
+                string bango = item?["背番号"]?.ToString() ?? string.Empty;
+                decimal score = 0m;
+                if (item?["総合得点"] != null)
+                    decimal.TryParse(item["総合得点"]!.ToString(), out score);
+                string rankStr = item?["総合順位表記"]?.ToString() ?? string.Empty;
+                result.Add((rankNo, bango, score, rankStr));
+            }
+
+            result.Sort((a, b) => a.順位番号.CompareTo(b.順位番号));
+            return result;
+        }
+
+        /// <summary>
+        /// 順位番号から表示用順位テキストを生成する。
+        /// 1→「優勝」、2→「準優勝」、3以降→「N位」
+        /// ただし DV_Result の 総合順位表記 が取得できる場合はそちらを優先する。
+        /// </summary>
+        public static string Format順位テキスト(int rankNo, string rankStr = "")
+        {
+            // DV_Result の順位表記が設定されていればそれを使う
+            if (!string.IsNullOrEmpty(rankStr)) return rankStr;
+
+            return rankNo switch
+            {
+                1 => "優勝",
+                2 => "準優勝",
+                _ => $"{rankNo}位"
+            };
+        }
+
+        // ────────────────────────────────────────────────
+        // ジャッジ情報ヘルパー
+        // ────────────────────────────────────────────────
+
+        /// <summary>
+        /// DA_Master の DJ_JUDGEs からジャッジリストを取得する。
+        /// 戻り値: (ジャッジ記号, ジャッジ表記名, ジャッジ所属, ジャッジグループIDリスト) のリスト。
+        /// </summary>
+        public static List<(string JdgCd, string JdgDispName, string JdgCtry, List<string> JdgGrps)>
+            Getジャッジリスト(JsonNode? daMaster)
+        {
+            var result = new List<(string, string, string, List<string>)>();
+            if (daMaster == null) return result;
+
+            var judges = daMaster["DJ_JUDGEs"]?.AsArray();
+            if (judges == null) return result;
+
+            foreach (var j in judges)
+            {
+                if (j == null) continue;
+                var jdgCd       = j["DJ_JdgCd"]?.ToString()       ?? string.Empty;
+                var jdgDispName = j["DJ_JdgDispName"]?.ToString()  ?? string.Empty;
+                var jdgCtry     = j["DJ_JdgCtry"]?.ToString()      ?? string.Empty;
+
+                var grpList = new List<string>();
+                var grpArr = j["DJ_JdgGrps"]?.AsArray();
+                if (grpArr != null)
+                {
+                    foreach (var g in grpArr)
+                    {
+                        var grp = g?["DJ_JdgGrp"]?.ToString();
+                        if (!string.IsNullOrEmpty(grp))
+                            grpList.Add(grp!);
+                    }
+                }
+
+                result.Add((jdgCd, jdgDispName, jdgCtry, grpList));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// DA_Master の DJ_JUDGEs から使用されているジャッジグループIDの一覧を重複なしで返す。
+        /// 返却順は出現順（最初に登場したグループ順）。
+        /// </summary>
+        public static List<string> Getジャッジグループリスト(JsonNode? daMaster)
+        {
+            var seen = new System.Collections.Generic.HashSet<string>();
+            var result = new List<string>();
+
+            var judges = daMaster?["DJ_JUDGEs"]?.AsArray();
+            if (judges == null) return result;
+
+            foreach (var j in judges)
+            {
+                var grpArr = j?["DJ_JdgGrps"]?.AsArray();
+                if (grpArr == null) continue;
+                foreach (var g in grpArr)
+                {
+                    var grp = g?["DJ_JdgGrp"]?.ToString();
+                    if (!string.IsNullOrEmpty(grp) && seen.Add(grp!))
+                        result.Add(grp!);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// ジャッジリストを指定グループでフィルタする。
+        /// grpId が null または空の場合は全件を返す。
+        /// </summary>
+        public static List<(string JdgCd, string JdgDispName, string JdgCtry, List<string> JdgGrps)>
+            Getジャッジリスト_ByGroup(JsonNode? daMaster, string? grpId)
+        {
+            var all = Getジャッジリスト(daMaster);
+            if (string.IsNullOrEmpty(grpId)) return all;
+            return all.Where(j => j.JdgGrps.Contains(grpId!)).ToList();
+        }
     }
 }
-
-// Made with Bob

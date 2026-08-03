@@ -16,6 +16,11 @@ namespace DSDsp
         private object?      _currentScreenTag;
         private object?      _currentSubScreenTag;
 
+        // 割り込み表示（PauseScreen）用の退避フィールド
+        private UserControl? _pausedScreen;
+        private object?      _pausedScreenTag;
+        private bool         _isPaused = false;
+
         /// <summary>現在表示中のメイン画面</summary>
         public UserControl? CurrentScreen => _currentScreen;
 
@@ -89,8 +94,9 @@ namespace DSDsp
         public void SetBackgroundColor(byte r, byte g, byte b)
         {
             var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
-            this.Background  = brush;
+            this.Background        = brush;
             RootGrid.Background    = brush;
+            BackgroundRect.Fill    = brush;
             ContentGrid.Background = brush;
         }
 
@@ -99,8 +105,9 @@ namespace DSDsp
         /// </summary>
         public void ClearBackground()
         {
-            this.Background  = Brushes.Black;
+            this.Background        = Brushes.Black;
             RootGrid.Background    = Brushes.Black;
+            BackgroundRect.Fill    = Brushes.Black;
             ContentGrid.Background = Brushes.Black;
         }
 
@@ -124,6 +131,71 @@ namespace DSDsp
             ContentGrid.Children.Add(_currentScreen);
         }
 
+        /// <summary>
+        /// 現在の画面を退避して割り込み画面を前面に表示する。
+        /// 退避した画面は Dispose せず保持する。
+        /// ResumeScreen() で元の画面に戻れる。
+        /// </summary>
+        public void PauseScreen(UserControl interruptScreen, object? tag = null)
+        {
+            // 既にポーズ中なら上書き（入れ子割り込みは想定しない）
+            if (_isPaused)
+            {
+                if (_currentScreen != null)
+                {
+                    ContentGrid.Children.Remove(_currentScreen);
+                    if (_currentScreen is IDisposable d) d.Dispose();
+                }
+            }
+            else
+            {
+                // 現在の画面（null の場合も含め）を退避して _isPaused = true にする
+                if (_currentScreen != null)
+                    ContentGrid.Children.Remove(_currentScreen);
+                _pausedScreen    = _currentScreen;   // null でも保持（ResumeScreen で null に戻す）
+                _pausedScreenTag = _currentScreenTag;
+                _isPaused = true;
+            }
+
+            _currentScreen    = interruptScreen;
+            _currentScreenTag = tag;
+            _currentScreen.Width  = ContentGrid.Width;
+            _currentScreen.Height = ContentGrid.Height;
+            ContentGrid.Children.Add(_currentScreen);
+        }
+
+        /// <summary>
+        /// 割り込み画面を解除して退避していた元の画面に戻す。
+        /// PauseScreen() を呼んでいない場合は何もしない。
+        /// </summary>
+        public void ResumeScreen()
+        {
+            if (!_isPaused) return;
+
+            // 割り込み画面を除去・Dispose
+            if (_currentScreen != null)
+            {
+                ContentGrid.Children.Remove(_currentScreen);
+                if (_currentScreen is IDisposable d) d.Dispose();
+            }
+
+            // 退避画面を復元（null = 元々何も表示していなかった）
+            _currentScreen    = _pausedScreen;
+            _currentScreenTag = _pausedScreenTag;
+            _pausedScreen     = null;
+            _pausedScreenTag  = null;
+            _isPaused         = false;
+
+            if (_currentScreen != null)
+                ContentGrid.Children.Add(_currentScreen);
+        }
+
+        /// <summary>割り込み表示中かどうか</summary>
+        public bool IsPaused => _isPaused;
+
+        /// <summary>退避中の画面タグ（ResumeScreen 前に参照可能）</summary>
+        public object? PausedScreenTag => _pausedScreenTag;
+
         public void ShowSubScreen(UserControl screen, object? tag = null)
         {
             if (_currentSubScreen != null)
@@ -141,10 +213,19 @@ namespace DSDsp
         }
 
         /// <summary>
-        /// メイン画面をクリア
+        /// メイン画面をクリア（退避中の画面も含めてすべて破棄する）
         /// </summary>
         public void ClearScreen()
         {
+            // 退避画面も破棄
+            if (_pausedScreen != null)
+            {
+                if (_pausedScreen is IDisposable pd) pd.Dispose();
+                _pausedScreen    = null;
+                _pausedScreenTag = null;
+                _isPaused        = false;
+            }
+
             if (_currentScreen != null)
             {
                 ContentGrid.Children.Remove(_currentScreen);

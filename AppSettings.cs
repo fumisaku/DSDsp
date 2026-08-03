@@ -42,6 +42,33 @@ namespace DSDsp
     }
 
     /// <summary>
+    /// クロマキ設定
+    /// </summary>
+    public class ChromaKeySettings
+    {
+        /// <summary>クロマキ背景色（WPF ARGB 16進数文字列。例: "#FF00FF00"）</summary>
+        public string BackgroundColor { get; set; } = "#FF00FF00";
+    }
+
+    /// <summary>
+    /// グループ競技自動表示設定
+    /// </summary>
+    public class AutoDisplaySettings
+    {
+        /// <summary>
+        /// DSP_TIT_002（種目紹介）の自動非表示タイマー秒数。
+        /// 次の画面が結果表示でない場合に使用する。
+        /// </summary>
+        public int TitSeconds { get; set; } = 3;
+
+        /// <summary>
+        /// DSP_GRP_003（グループ結果一覧）および DSP_COM_001（総合結果）の
+        /// 自動非表示タイマー秒数。
+        /// </summary>
+        public int GrpResultSeconds { get; set; } = 5;
+    }
+
+    /// <summary>
     /// アプリケーション設定
     /// </summary>
     public class AppSettings
@@ -49,6 +76,8 @@ namespace DSDsp
         public WebSocketSettings WebSocketSettings { get; set; } = new WebSocketSettings();
         public LogSettings LogSettings { get; set; } = new LogSettings();
         public DisplaySettings DisplaySettings { get; set; } = new DisplaySettings();
+        public AutoDisplaySettings AutoDisplaySettings { get; set; } = new AutoDisplaySettings();
+        public ChromaKeySettings ChromaKeySettings { get; set; } = new ChromaKeySettings();
 
         private static AppSettings? _instance;
         private static readonly object _lock = new object();

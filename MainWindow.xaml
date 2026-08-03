@@ -213,40 +213,172 @@
                 <Grid Margin="15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="4"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- シナリオ選択 -->
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="シナリオ" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"
-                                   Margin="0,0,0,5"/>
-                        <ComboBox x:Name="CmbProgressScenario"
-                                  Height="32"
-                                  SelectionChanged="CmbProgressScenario_SelectionChanged"/>
-                    </StackPanel>
+                    <!-- 行0: 画面サイズ / 表示モード 選択 -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- 進行一覧 -->
-                    <Grid Grid.Row="2">
+                        <!-- 大/小 -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <TextBlock Text="画面:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,6,0"/>
+                            <RadioButton x:Name="RbLarge" Content="大" IsChecked="True"
+                                         GroupName="ProgressSize" VerticalAlignment="Center" Margin="0,0,8,0"
+                                         Checked="RbProgressSize_Changed"/>
+                            <RadioButton x:Name="RbSmall" Content="小"
+                                         GroupName="ProgressSize" VerticalAlignment="Center"
+                                         Checked="RbProgressSize_Changed"/>
+                        </StackPanel>
+
+                        <!-- 進行のみ/ヒートも/決勝 -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <TextBlock Text="モード:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,6,0"/>
+                            <RadioButton x:Name="RbModeProgress" Content="進行のみ" IsChecked="True"
+                                         GroupName="ProgressMode" VerticalAlignment="Center" Margin="0,0,8,0"
+                                         Checked="RbProgressMode_Changed"/>
+                            <RadioButton x:Name="RbModeHeat" Content="ヒートも"
+                                         GroupName="ProgressMode" VerticalAlignment="Center" Margin="0,0,8,0"
+                                         Checked="RbProgressMode_Changed"/>
+                            <RadioButton x:Name="RbModeFinal" Content="決勝"
+                                         GroupName="ProgressMode" VerticalAlignment="Center"
+                                         Checked="RbProgressMode_Changed"/>
+                        </StackPanel>
+
+                        <!-- DS_Status 読込 -->
+                        <Button x:Name="BtnLoadProgressList"
+                                Grid.Column="4"
+                                Content="📋 進行一覧を更新"
+                                Click="BtnLoadProgressList_Click"
+                                Height="28"
+                                Width="130"
+                                Background="#607D8B"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand"/>
+
+                        <!-- 自動更新スイッチ -->
+                        <ToggleButton x:Name="TglAutoProgress"
+                                      Grid.Column="6"
+                                      Content="⟳ 自動更新 ON"
+                                      IsChecked="True"
+                                      Click="TglAutoProgress_Click"
+                                      Height="28"
+                                      Width="130"
+                                      Background="#388E3C"
+                                      Foreground="White"
+                                      BorderThickness="0"
+                                      FontWeight="Bold"
+                                      Cursor="Hand"
+                                      ToolTip="ONにすると、DS_Status更新時に自動で進行画面を切り替えます"/>
+                    </Grid>
+
+                    <!-- 行2: 現在選択中の画面ID 表示 -->
+                    <Border Grid.Row="2" Background="#F0F4F8" BorderBrush="#DDDDDD" BorderThickness="1"
+                            Padding="8,4" CornerRadius="3">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="TxtProgressScreenId"
+                                       Grid.Column="0"
+                                       Text="画面: ―"
+                                       FontSize="12"
+                                       Foreground="#444444"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtProgressCurrentPrg"
+                                       Grid.Column="1"
+                                       Text=""
+                                       FontSize="11"
+                                       Foreground="#888888"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 行4: 種目・ヒート選択（DSP_PRG_004 ヒートモード時のみ有効） -->
+                    <Border Grid.Row="4" Background="#FFF8E1" BorderBrush="#FFD54F" BorderThickness="1"
+                            Padding="8,4" CornerRadius="3">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="種目:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
+                            <ComboBox x:Name="CmbProgressDance"
+                                      Grid.Column="2"
+                                      Width="100"
+                                      Height="24"
+                                      FontSize="12"
+                                      SelectionChanged="CmbProgressDance_SelectionChanged"/>
+                            <TextBlock Grid.Column="4" Text="ヒート:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
+                            <ComboBox x:Name="CmbProgressHeat"
+                                      Grid.Column="6"
+                                      Width="70"
+                                      Height="24"
+                                      FontSize="12"
+                                      SelectionChanged="CmbProgressHeat_SelectionChanged"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 行6: 進行一覧 -->
+                    <Grid Grid.Row="6">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="5"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" 
-                                   Text="進行一覧" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"/>
-                        
+                        <TextBlock Grid.Row="0" Text="進行一覧" FontWeight="Bold" FontSize="13"/>
                         <ListBox x:Name="LstProgressItems"
                                  Grid.Row="2"
                                  SelectionChanged="LstProgressItems_SelectionChanged"
                                  BorderBrush="#DDDDDD"
                                  FontSize="12"/>
                     </Grid>
+
+                    <!-- 行8: 割り込みボタン -->
+                    <StackPanel Grid.Row="8" Orientation="Horizontal">
+                        <TextBlock Text="割り込み:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnIntervalInterrupt"
+                                Content="インターバル"
+                                Click="BtnIntervalInterrupt_Click"
+                                Height="28" Width="110"
+                                Background="#FF9800" Foreground="White"
+                                BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"/>
+                        <Button x:Name="BtnAdjustInterrupt"
+                                Content="調整中"
+                                Click="BtnAdjustInterrupt_Click"
+                                Height="28" Width="80"
+                                Background="#FF9800" Foreground="White"
+                                BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"/>
+                        <Button x:Name="BtnCustomInterrupt"
+                                Content="任意メッセージ"
+                                Click="BtnCustomInterrupt_Click"
+                                Height="28" Width="110"
+                                Background="#FF9800" Foreground="White"
+                                BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
                 </Grid>
             </TabItem>
 
@@ -272,10 +404,12 @@
                                   SelectionChanged="CmbAjsScenario_SelectionChanged"/>
                     </StackPanel>
 
-                    <!-- 区分選択 / ヒート番号 -->
+                    <!-- 区分選択 / グループ自動表示 / ヒート番号 -->
                     <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="20"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
@@ -288,7 +422,25 @@
                                       Height="32"
                                       SelectionChanged="CmbAjsCategory_SelectionChanged"/>
                         </StackPanel>
+                        <!-- グループ競技自動表示スイッチ -->
                         <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                            <TextBlock Text="グループ自動表示"
+                                       FontWeight="Bold"
+                                       FontSize="13"
+                                       Margin="0,0,0,5"/>
+                            <ToggleButton x:Name="TglAutoGroupDisplay"
+                                          Width="120"
+                                          Height="32"
+                                          Content="● OFF"
+                                          Background="#9E9E9E"
+                                          Foreground="White"
+                                          BorderThickness="0"
+                                          FontWeight="Bold"
+                                          Cursor="Hand"
+                                          Click="TglAutoGroupDisplay_Click"
+                                          ToolTip="ONにすると、グループ競技の画面を自動的に表示・非表示します"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
                             <TextBlock Text="ヒート番号"
                                        FontWeight="Bold"
                                        FontSize="13"
@@ -435,53 +587,397 @@
                 <Grid Margin="15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="10"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="8"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- シナリオ選択 -->
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="シナリオ" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"
-                                   Margin="0,0,0,5"/>
-                        <ComboBox x:Name="CmbAwardScenario"
-                                  Height="32"
-                                  SelectionChanged="CmbAwardScenario_SelectionChanged"/>
-                    </StackPanel>
+                    <!-- 行0: 表示設定 -->
+                    <Border Grid.Row="0" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="1"
+                            CornerRadius="4" Padding="10,7">
+                        <StackPanel Orientation="Horizontal">
 
-                    <!-- 区分選択 -->
-                    <StackPanel Grid.Row="2">
-                        <TextBlock Text="区分選択" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"
-                                   Margin="0,0,0,5"/>
-                        <ComboBox x:Name="CmbAwardCategory"
-                                  Height="32"
-                                  SelectionChanged="CmbAwardCategory_SelectionChanged"/>
-                    </StackPanel>
+                            <!-- 表示モード -->
+                            <TextBlock Text="表示" VerticalAlignment="Center" FontWeight="Bold"
+                                       Foreground="#333333" Margin="0,0,8,0"/>
+                            <RadioButton x:Name="RbAwardFull" Content="全画面" IsChecked="True"
+                                         GroupName="AwardDisplay" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbAwardDisplay_Changed"/>
+                            <RadioButton x:Name="RbAwardChromaList" Content="クロマキ_リスト"
+                                         GroupName="AwardDisplay" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbAwardDisplay_Changed"/>
+                            <RadioButton x:Name="RbAwardChromaIndividual" Content="クロマキ_個別"
+                                         GroupName="AwardDisplay" VerticalAlignment="Center"
+                                         Checked="RbAwardDisplay_Changed"/>
 
-                    <!-- 画面進行 -->
-                    <Grid Grid.Row="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="5"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                            <!-- 区切り -->
+                            <Border BorderBrush="#CCCCCC" BorderThickness="1,0,0,0" Margin="14,2,14,2"/>
 
-                        <TextBlock Grid.Row="0" 
-                                   Text="画面進行" 
-                                   FontWeight="Bold" 
-                                   FontSize="13"/>
-                        
-                        <ListBox x:Name="LstAwardProgress"
-                                 Grid.Row="2"
-                                 SelectionChanged="LstAwardProgress_SelectionChanged"
-                                 BorderBrush="#DDDDDD"
-                                 FontSize="12"/>
+                            <!-- 順序 -->
+                            <TextBlock Text="順序" VerticalAlignment="Center" FontWeight="Bold"
+                                       Foreground="#333333" Margin="0,0,8,0"/>
+                            <RadioButton x:Name="RbAwardPage" Content="一括"
+                                         GroupName="AwardOrder" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbAwardOrder_Changed"/>
+                            <RadioButton x:Name="RbAwardAsc" Content="昇順" IsChecked="True"
+                                         GroupName="AwardOrder" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbAwardOrder_Changed"/>
+                            <RadioButton x:Name="RbAwardDesc" Content="降順"
+                                         GroupName="AwardOrder" VerticalAlignment="Center" Margin="0,0,14,0"
+                                         Checked="RbAwardOrder_Changed"/>
+
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 行2: 区分リスト ＋ プレビュー -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 区分リスト -->
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="決勝結果あり区分" FontWeight="Bold" FontSize="13"/>
+                            <Button x:Name="BtnAwardRefresh"
+                                    Grid.Row="2"
+                                    Content="📋 一覧を更新"
+                                    Click="BtnAwardRefresh_Click"
+                                    Height="26" Width="110"
+                                    HorizontalAlignment="Left"
+                                    Background="#607D8B" Foreground="White"
+                                    BorderThickness="0" Cursor="Hand"/>
+                            <ListBox x:Name="LstAwardCategories"
+                                     Grid.Row="4"
+                                     SelectionChanged="LstAwardCategories_SelectionChanged"
+                                     BorderBrush="#DDDDDD"
+                                     FontSize="12"/>
+                        </Grid>
+
+                        <!-- 区切り -->
+                        <Border Grid.Column="1" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0" Margin="5,0"/>
+
+                        <!-- プレビューパネル -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="結果プレビュー（モニター確認用）" FontWeight="Bold" FontSize="13"/>
+                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="AwardPreviewList" FontSize="12">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#EEEEEE" BorderThickness="0,0,0,1" Padding="2,3">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="50"/>
+                                                        <ColumnDefinition Width="50"/>
+                                                        <ColumnDefinition Width="160"/>
+                                                        <ColumnDefinition Width="130"/>
+                                                        <ColumnDefinition Width="70"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding 順位}" FontWeight="Bold" Foreground="#C62828"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding 背番号}"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding 選手名}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding 所属}" TextTrimming="CharacterEllipsis" Foreground="#555"/>
+                                                    <TextBlock Grid.Column="4" Text="{Binding 得点}" HorizontalAlignment="Right" Foreground="#1565C0"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
                     </Grid>
+
+                    <!-- 行4: 現在の画面状態 -->
+                    <Border Grid.Row="4" Background="#F0F4F8" BorderBrush="#DDDDDD" BorderThickness="1"
+                            Padding="8,4" CornerRadius="3">
+                        <TextBlock x:Name="TxtAwardStatus"
+                                   Text="―"
+                                   FontSize="12" Foreground="#444444"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- オナーダンスタブ -->
+            <TabItem Header="オナーダンス" FontSize="14" Padding="15,8">
+                <Grid Margin="15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 行0: 表示設定 -->
+                    <Border Grid.Row="0" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="1"
+                            CornerRadius="4" Padding="10,7">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="表示" VerticalAlignment="Center" FontWeight="Bold"
+                                       Foreground="#333333" Margin="0,0,8,0"/>
+                            <RadioButton x:Name="RbHonorFull" Content="全画面" IsChecked="True"
+                                         GroupName="HonorDisplay" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbHonorDisplay_Changed"/>
+                            <RadioButton x:Name="RbHonorChroma" Content="クロマキ"
+                                         GroupName="HonorDisplay" VerticalAlignment="Center"
+                                         Checked="RbHonorDisplay_Changed"/>
+                            <Separator Width="1" Background="#CCCCCC" Margin="14,2,14,2"/>
+                            <TextBlock Text="所属表示" VerticalAlignment="Center" FontWeight="Bold"
+                                       Foreground="#333333" Margin="0,0,8,0"/>
+                            <RadioButton x:Name="RbHonorAffCouple" Content="カップル所属" IsChecked="True"
+                                         GroupName="HonorAffiliation" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbHonorAffiliation_Changed"/>
+                            <RadioButton x:Name="RbHonorAffSplit" Content="L所属 / P所属"
+                                         GroupName="HonorAffiliation" VerticalAlignment="Center"
+                                         Checked="RbHonorAffiliation_Changed"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 行2: 区分リスト ＋ プレビュー -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 区分リスト -->
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="決勝結果あり区分" FontWeight="Bold" FontSize="13"/>
+                            <Button x:Name="BtnHonorRefresh"
+                                    Grid.Row="2"
+                                    Content="📋 一覧を更新"
+                                    Click="BtnHonorRefresh_Click"
+                                    Height="26" Width="110"
+                                    HorizontalAlignment="Left"
+                                    Background="#607D8B" Foreground="White"
+                                    BorderThickness="0" Cursor="Hand"/>
+                            <ListBox x:Name="LstHonorCategories"
+                                     Grid.Row="4"
+                                     SelectionChanged="LstHonorCategories_SelectionChanged"
+                                     BorderBrush="#DDDDDD"
+                                     FontSize="12"/>
+                        </Grid>
+
+                        <!-- 区切り -->
+                        <Border Grid.Column="1" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0" Margin="5,0"/>
+
+                        <!-- 入賞者リスト -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="決勝入賞者（クリックで選択）" FontWeight="Bold" FontSize="13"/>
+                            <ListBox x:Name="LstHonorPlayers"
+                                     Grid.Row="2"
+                                     SelectionChanged="LstHonorPlayers_SelectionChanged"
+                                     BorderBrush="#DDDDDD"
+                                     FontSize="12">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="50"/>
+                                                <ColumnDefinition Width="160"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding 順位表示}" FontWeight="Bold" Foreground="#C62828"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding 背番号}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding 選手名}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding 所属}" TextTrimming="CharacterEllipsis" Foreground="#555"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+
+                    <!-- 行4: 現在の画面状態 -->
+                    <Border Grid.Row="4" Background="#F0F4F8" BorderBrush="#DDDDDD" BorderThickness="1"
+                            Padding="8,4" CornerRadius="3">
+                        <TextBlock x:Name="TxtHonorStatus"
+                                   Text="―"
+                                   FontSize="12" Foreground="#444444"/>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ジャッジ紹介タブ -->
+            <TabItem Header="ジャッジ紹介" FontSize="14" Padding="15,8">
+                <Grid Margin="15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 行0: 表示設定 -->
+                    <Border Grid.Row="0" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="1"
+                            CornerRadius="4" Padding="10,7">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="表示" VerticalAlignment="Center" FontWeight="Bold"
+                                       Foreground="#333333" Margin="0,0,8,0"/>
+                            <RadioButton x:Name="RbJudgeFull" Content="全画面" IsChecked="True"
+                                         GroupName="JudgeDisplay" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbJudgeDisplay_Changed"/>
+                            <RadioButton x:Name="RbJudgeChromaList" Content="クロマキリスト"
+                                         GroupName="JudgeDisplay" VerticalAlignment="Center" Margin="0,0,10,0"
+                                         Checked="RbJudgeDisplay_Changed"/>
+                            <RadioButton x:Name="RbJudgeChromaIndividual" Content="クロマキ個別"
+                                         GroupName="JudgeDisplay" VerticalAlignment="Center"
+                                         Checked="RbJudgeDisplay_Changed"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 行2: ジャッジタブ（全員＋グループ別）＋ジャッジ一覧 -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 左: タブ選択＋ジャッジリスト -->
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="ジャッジグループ" FontWeight="Bold" FontSize="13"/>
+                            <Button x:Name="BtnJudgeRefresh"
+                                    Grid.Row="2"
+                                    Content="📋 一覧を更新"
+                                    Click="BtnJudgeRefresh_Click"
+                                    Height="26" Width="110"
+                                    HorizontalAlignment="Left"
+                                    Background="#607D8B" Foreground="White"
+                                    BorderThickness="0" Cursor="Hand"/>
+                            <!-- グループタブ -->
+                            <TabControl x:Name="TabJudgeGroups"
+                                        Grid.Row="4"
+                                        BorderBrush="#DDDDDD"
+                                        SelectionChanged="TabJudgeGroups_SelectionChanged">
+                            </TabControl>
+                        </Grid>
+
+                        <!-- 区切り -->
+                        <Border Grid.Column="1" BorderBrush="#DDDDDD" BorderThickness="1,0,0,0" Margin="5,0"/>
+
+                        <!-- 右: ジャッジ一覧（クロマキ個別: クリックで選択、末尾に「終了」行あり）-->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="ジャッジ一覧（クロマキ個別: クリックで選択）" FontWeight="Bold" FontSize="13"/>
+                            <ListBox x:Name="LstJudgeItems"
+                                     Grid.Row="2"
+                                     SelectionChanged="LstJudgeItems_SelectionChanged"
+                                     BorderBrush="#DDDDDD"
+                                     FontSize="12">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="50"/>
+                                                <ColumnDefinition Width="160"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <!-- 通常行（IsEnd=false の場合のみ表示） -->
+                                            <TextBlock Grid.Column="0" FontWeight="Bold" Foreground="#1565C0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="{Binding JdgCd}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEnd}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="{Binding JdgDispName}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEnd}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="2" Foreground="#555" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="{Binding JdgCtry}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEnd}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <!-- 終了行（IsEnd=true の場合のみ表示） -->
+                                            <TextBlock Grid.Column="0" Grid.ColumnSpan="3"
+                                                       FontStyle="Italic" Foreground="#888888">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Setter Property="Text" Value="（終了）"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEnd}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+
+                    <!-- 行4: 現在の画面状態 -->
+                    <Border Grid.Row="4" Background="#F0F4F8" BorderBrush="#DDDDDD" BorderThickness="1"
+                            Padding="8,4" CornerRadius="3">
+                        <TextBlock x:Name="TxtJudgeStatus"
+                                   Text="―"
+                                   FontSize="12" Foreground="#444444"/>
+                    </Border>
                 </Grid>
             </TabItem>
         </TabControl>
