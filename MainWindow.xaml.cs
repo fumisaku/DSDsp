@@ -235,6 +235,7 @@ namespace DSDsp
                 _client.DS_StatusReceived += OnDS_StatusReceived;
                 _client.DV_ResultReceived += OnDV_ResultReceived;
                 _client.ErrorReceived += OnErrorReceived;
+                _client.HeatEndNotifyReceived += OnHeatEndNotifyReceived;
                 _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                 bool connected = await _client.ConnectAsync();
@@ -2286,6 +2287,7 @@ namespace DSDsp
                         _client.DS_StatusReceived -= OnDS_StatusReceived;
                         _client.DV_ResultReceived -= OnDV_ResultReceived;
                         _client.ErrorReceived -= OnErrorReceived;
+                        _client.HeatEndNotifyReceived -= OnHeatEndNotifyReceived;
                         _client.Dispose();
                         _client = null;
                     }
@@ -2296,6 +2298,7 @@ namespace DSDsp
                     _client.DS_StatusReceived += OnDS_StatusReceived;
                     _client.DV_ResultReceived += OnDV_ResultReceived;
                     _client.ErrorReceived += OnErrorReceived;
+                    _client.HeatEndNotifyReceived += OnHeatEndNotifyReceived;
                     _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                     bool connected = await _client.ConnectAsync();
@@ -2418,6 +2421,158 @@ namespace DSDsp
             if (_client?.DataManager.DS_Status == null) return;
             var version = _client.DataManager.DS_StatusVersion;
             _log?.LogAdd($"DS_Status受信: Version={version}", _log.INFO);
+        }
+
+        /// <summary>
+        /// MC_HEAT_NOTIFY（END）受信時の進行画面自動遷移ハンドラ。
+        ///
+        /// 処理方針:
+        ///   1. 通知された進行番号（PrgNo）と一致する ProgressListItem を探す。
+        ///      現在表示中の進行が異なる場合でも電文の内容を優先し、
+        ///      一致する進行にカーソルを移動する。
+        ///   2. 次の表示対象を決定する:
+        ///      a) 終了したのが同一進行内の途中ヒート
+        ///            → 現在の進行画面に Advance()（ヒート毎更新モード）
+        ///      b) 進行内の最終ヒート（かつ最終種目）
+        ///            → _currentProgressIndex を次に進め、新しい進行を ExecuteProgressStep() で表示
+        ///   3. _autoProgress が OFF のときは実行しない。
+        /// </summary>
+        private void OnHeatEndNotifyReceived(object? sender, Handlers.HeatEndNotifyEventArgs e)
+        {
+            if (!_autoProgress) return;
+
+            Dispatcher.Invoke(() =>
+            {
+                var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+                if (dm?.DS_Status == null) return;
+
+                var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+                if (items == null || items.Count == 0) return;
+
+                _log?.LogAdd(
+                    $"HeatEnd通知: floor={e.FloorCd}, prg={e.PrgNo}, dance={e.DncNo}, heat={e.HeatNo}",
+                    _log.INFO);
+
+                // ── 1. 電文の進行番号に対応する ProgressListItem を探す ──────────
+                // DS_Status の PrgNo（DS_PrgNo）は ProgressListItem の PrgNo と一致する。
+                // 区分・ラウンド単位でデdup しているため、同一区分ラウンドの最初の PrgNo と比較。
+                // → DS_Status から kbnNo / rndNo を引いて items を絞り込む。
+                var floors = dm.DS_Status["DS_FLOORs"]?.AsArray();
+                if (floors == null) return;
+
+                string kbnNo = "";
+                string rndNo = "";
+                foreach (var floor in floors)
+                {
+                    if (floor?["DS_FlrCd"]?.ToString() != e.FloorCd) continue;
+                    var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                    if (prgrs == null) break;
+                    foreach (var prg in prgrs)
+                    {
+                        if (prg?["DS_PrgNo"]?.ToString() == e.PrgNo)
+                        {
+                            kbnNo = prg?["DS_KbnNo"]?.ToString() ?? "";
+                            rndNo = prg?["DS_RndNo"]?.ToString() ?? "";
+                            break;
+                        }
+                    }
+                    if (!string.IsNullOrEmpty(kbnNo)) break;
+                }
+
+                if (string.IsNullOrEmpty(kbnNo)) return;
+
+                // ProgressListItem は kbnNo + rndNo で一意
+                int targetIdx = items.FindIndex(x => x.KbnNo == kbnNo && x.RndNo == rndNo);
+                if (targetIdx < 0) return;
+
+                // 現在の選択が通知と異なる場合はカーソルを電文の進行に合わせる（電文優先）
+                if (_currentProgressIndex != targetIdx)
+                {
+                    _currentProgressIndex = targetIdx;
+                    LstProgressItems.SelectedIndex = targetIdx;
+                    _log?.LogAdd($"HeatEnd: 進行カーソルを電文に合わせて移動 → Index={targetIdx}", _log.INFO);
+                }
+
+                // ── 2. 次ヒートがあるか判定 ──────────────────────────────────────
+                var nextHeat = 画面.DSDspDataHelper.Get次ヒート情報(
+                    dm.DS_Status, dm.DA_Master, kbnNo, rndNo, e.DncNo, e.HeatNo);
+
+                if (nextHeat.HasValue)
+                {
+                    // 2a. 同一進行内に次ヒートが存在 → 現在の進行画面に Advance()
+                    // 現在の進行画面がこの進行に対応していない場合は新規生成してから Advance
+                    EnsureOffScreenWindowCreated();
+                    if (_offScreenWindow == null) return;
+
+                    var item     = items[targetIdx];
+                    var screenId = GetProgressScreenId();
+                    bool isSameScreen = _currentProgressScreen != null
+                        && _currentProgressScreenId == screenId
+                        && _currentProgressScreen.区分番号  == item.KbnNo
+                        && _currentProgressScreen.ラウンド番号 == item.RndNo;
+
+                    if (!isSameScreen)
+                    {
+                        // DS_Status が更新されているのでデータを注入して新規生成
+                        if (_currentProgressScreen != null)
+                            _currentProgressScreen.ScreenCompleted -= OnProgressScreenCompleted;
+
+                        画面.DSDspScreenBase? newScreen = screenId switch
+                        {
+                            "DSP_PRG_002" => new 画面.DSP_PRG_002_進行表示1面_小(),
+                            "DSP_PRG_004" => new 画面.DSP_PRG_004_進行表示ヒート表_大(),
+                            "DSP_PRG_005" => new 画面.DSP_PRG_005_進行表示ヒート表_小(),
+                            "DSP_PRG_006" => new 画面.DSP_PRG_006_決勝進出者_大(),
+                            "DSP_PRG_007" => new 画面.DSP_PRG_007_決勝進出者_小(),
+                            _             => new 画面.DSP_PRG_001_進行表示1面_大(),
+                        };
+
+                        newScreen.ScreenId      = screenId;
+                        newScreen.DA_Master     = dm.DA_Master;
+                        newScreen.DS_Status     = dm.DS_Status;
+                        newScreen.DV_Result     = dm.DV_Result;
+                        newScreen.区分番号      = item.KbnNo;
+                        newScreen.ラウンド番号   = item.RndNo;
+                        newScreen.ScreenCompleted += OnProgressScreenCompleted;
+
+                        _currentProgressScreen   = newScreen;
+                        _currentProgressScreenId = screenId;
+                        _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
+                        _log?.LogAdd($"HeatEnd: 進行画面再生成 {screenId} KbnNo={item.KbnNo} RndNo={item.RndNo}", _log.INFO);
+                    }
+                    else
+                    {
+                        // 既存画面の DS_Status を最新に更新
+                        _currentProgressScreen!.DS_Status = dm.DS_Status;
+                    }
+
+                    _currentProgressScreen!.Advance();
+                    _log?.LogAdd(
+                        $"HeatEnd: 次ヒートへ Advance (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
+                        _log.INFO);
+                }
+                else
+                {
+                    // 2b. 進行内の全ヒート終了 → 次の進行へ
+                    int nextIdx = targetIdx + 1;
+                    if (nextIdx < items.Count)
+                    {
+                        _currentProgressIndex = nextIdx;
+                        LstProgressItems.SelectedIndex = nextIdx;
+                        _currentProgressScreen = null;
+                        _currentProgressScreenId = string.Empty;
+
+                        // 次の進行を即時表示（STEP1 から実行）
+                        EnsureOffScreenWindowCreated();
+                        ExecuteProgressStep();
+                        _log?.LogAdd($"HeatEnd: 次の進行へ自動遷移 Index={nextIdx}", _log.INFO);
+                    }
+                    else
+                    {
+                        _log?.LogAdd("HeatEnd: 全進行が終了しました", _log.INFO);
+                    }
+                }
+            });
         }
 
         private void OnDV_ResultReceived(object? sender, EventArgs e)

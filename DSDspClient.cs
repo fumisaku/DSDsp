@@ -45,6 +45,8 @@ namespace DSDsp
         public event EventHandler? DS_StatusReceived;
         public event EventHandler? DV_ResultReceived;
         public event EventHandler<ErrorReceivedEventArgs>? ErrorReceived;
+        /// <summary>MC_HEAT_NOTIFY（END）を受信したときに発火する。</summary>
+        public event EventHandler<HeatEndNotifyEventArgs>? HeatEndNotifyReceived;
 
         /// <summary>
         /// 複数競技会リストを受信したときに呼ばれるコールバック。
@@ -77,6 +79,7 @@ namespace DSDsp
             _messageHandler.DS_StatusReceived += (s, e) => DS_StatusReceived?.Invoke(s, e);
             _messageHandler.DV_ResultReceived += (s, e) => DV_ResultReceived?.Invoke(s, e);
             _messageHandler.ErrorReceived += (s, e) => ErrorReceived?.Invoke(s, e);
+            _messageHandler.HeatEndNotifyReceived += (s, e) => HeatEndNotifyReceived?.Invoke(s, e);
 
             _isDisposed = false;
 

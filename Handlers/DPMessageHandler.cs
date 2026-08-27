@@ -21,6 +21,8 @@ namespace DSDsp.Handlers
         public event EventHandler? DS_StatusReceived;
         public event EventHandler? DV_ResultReceived;
         public event EventHandler<ErrorReceivedEventArgs>? ErrorReceived;
+        /// <summary>MC_HEAT_NOTIFY（イベント="END"）を受信したときに発火する。</summary>
+        public event EventHandler<HeatEndNotifyEventArgs>? HeatEndNotifyReceived;
 
         private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions =
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -76,6 +78,10 @@ namespace DSDsp.Handlers
 
                     case "DP_UPD_DV_RESULT":
                         await Handle_DP_UPD_DV_RESULT(parsed);
+                        break;
+
+                    case "MC_HEAT_NOTIFY":
+                        await Handle_MC_HEAT_NOTIFY(parsed);
                         break;
 
                     default:
@@ -230,6 +236,40 @@ namespace DSDsp.Handlers
         }
 
         /// <summary>
+        /// MC_HEAT_NOTIFY 処理（DSServer → DSDsp へのヒート状態通知）。
+        /// イベント = "END" のときのみ HeatEndNotifyReceived を発火する。
+        /// </summary>
+        private async Task Handle_MC_HEAT_NOTIFY(ParsedMessage msg)
+        {
+            try
+            {
+                var notify = System.Text.Json.JsonSerializer.Deserialize<MC_HeatNotifyPayload>(
+                    msg.MsgDetail, _jsonOptions);
+                if (notify == null) return;
+
+                _log.LogAdd(
+                    $"MC_HEAT_NOTIFY 受信: floor={notify.フロア記号}, prg={notify.進行番号}, " +
+                    $"dance={notify.種目順}, heat={notify.ヒート番号}, event={notify.イベント}",
+                    _log.INFO);
+
+                if (string.Equals(notify.イベント, "END", StringComparison.OrdinalIgnoreCase))
+                {
+                    HeatEndNotifyReceived?.Invoke(this, new HeatEndNotifyEventArgs(
+                        notify.フロア記号 ?? "",
+                        notify.進行番号 ?? "",
+                        notify.進行番号枝番 ?? "",
+                        notify.種目順,
+                        notify.ヒート番号));
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.LogAdd($"MC_HEAT_NOTIFY パースエラー: {ex.Message}", _log.WARNING);
+            }
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
         /// エラー応答処理
         /// </summary>
         private async Task HandleError(ParsedMessage msg)
@@ -337,6 +377,51 @@ namespace DSDsp.Handlers
             Command = command;
             ErrorMessage = errorMessage;
         }
+    }
+
+    /// <summary>
+    /// MC_HEAT_NOTIFY（END）受信イベント引数
+    /// </summary>
+    public class HeatEndNotifyEventArgs : EventArgs
+    {
+        public string FloorCd   { get; }
+        public string PrgNo     { get; }
+        public string PrgSubNo  { get; }
+        public int    DncNo     { get; }
+        public int    HeatNo    { get; }
+
+        public HeatEndNotifyEventArgs(string floorCd, string prgNo, string prgSubNo, int dncNo, int heatNo)
+        {
+            FloorCd  = floorCd;
+            PrgNo    = prgNo;
+            PrgSubNo = prgSubNo;
+            DncNo    = dncNo;
+            HeatNo   = heatNo;
+        }
+    }
+
+    /// <summary>
+    /// MC_HEAT_NOTIFY ペイロード（DSServer → DSDsp）
+    /// </summary>
+    internal class MC_HeatNotifyPayload
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("フロア記号")]
+        public string? フロア記号 { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("進行番号")]
+        public string? 進行番号 { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("進行番号枝番")]
+        public string? 進行番号枝番 { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("種目順")]
+        public int 種目順 { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("ヒート番号")]
+        public int ヒート番号 { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("イベント")]
+        public string? イベント { get; set; }
     }
 }
 
