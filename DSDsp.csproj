@@ -7,6 +7,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- ビルドごとに自動更新: 1.yy.MMdd.HHmm  例: 1.25.0720.1432 -->
+    <Version>1.$([System.DateTime]::Now.ToString("yy")).$([System.DateTime]::Now.ToString("MMdd")).$([System.DateTime]::Now.ToString("HHmm"))</Version>
   </PropertyGroup>
 
   <ItemGroup>

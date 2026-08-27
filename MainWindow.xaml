@@ -22,14 +22,14 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
+
                 <TextBlock Grid.Row="0"
                            Text="DSDsp 競技会進行画面表示システム"
                            Foreground="White"
                            FontSize="16"
                            FontWeight="Bold"
                            HorizontalAlignment="Center"/>
-                
+
                 <TextBlock x:Name="TxtCompetitionInfo"
                            Grid.Row="1"
                            Text=""
@@ -37,6 +37,16 @@
                            FontSize="12"
                            HorizontalAlignment="Center"
                            Margin="0,4,0,0"/>
+
+                <!-- バージョン情報（右下に小さく表示） -->
+                <TextBlock x:Name="TxtVersion"
+                           Grid.Row="1"
+                           Text=""
+                           Foreground="#B3D9FF"
+                           FontSize="10"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Margin="0,4,4,0"/>
             </Grid>
         </Border>
 

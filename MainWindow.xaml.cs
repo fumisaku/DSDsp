@@ -69,6 +69,20 @@ namespace DSDsp
             _log.CreateFile(AppSettings.Instance.LogSettings.LogPath);
             _log.LogAdd("DSDsp起動", _log.INFO);
 
+            // バージョン情報をヘッダーに表示
+            // Version形式: 1.yy.MMdd.HHmm  例: 1.25.720.1432 → "v1.25 build 2025-07-20 14:32"
+            var ver = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+            if (ver != null && TxtVersion != null)
+            {
+                // ver.Build = MMdd (例: 720 = 07/20), ver.Revision = HHmm (例: 1432)
+                int year  = 2000 + ver.Minor;
+                int month = ver.Build / 100;
+                int day   = ver.Build % 100;
+                int hour  = ver.Revision / 100;
+                int min   = ver.Revision % 100;
+                TxtVersion.Text = $"v{ver.Major}.{ver.Minor} build {year}-{month:D2}-{day:D2} {hour:D2}:{min:D2}";
+            }
+
             // シナリオマネージャーの初期化
             var scenarioPath = AppSettings.Instance.DisplaySettings.ScenarioPath;
             _scenarioManager = new ScenarioManager(_log, scenarioPath);
