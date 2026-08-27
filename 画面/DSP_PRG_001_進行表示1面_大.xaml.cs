@@ -153,7 +153,7 @@ namespace DSDsp.画面
                     if (p.FindName($"LB_明細_次{i}") is Label lb次)
                         _partsMain?.フォントサイズ自動調整(lb次, 次テキスト, 394, 16, 8, FontFamilyName);
                     if (!string.IsNullOrEmpty(next.PStaTM))
-                        SetLabelContent(p, $"LB_時刻_次{i}", $"開始予定　{next.PStaTM}");
+                        SetLabelContent(p, $"LB_時刻_次{i}", $"開始予定　{DSDspDataHelper.ExtractTimeOnly(next.PStaTM)}");
                     else
                         SetLabelContent(p, $"LB_時刻_次{i}", string.Empty);
                 }

@@ -150,11 +150,11 @@ namespace DSDsp.画面
             SetVisible(p, "IM_タイトル_次", true);
             SetVisible(p, "LB_タイトル_次", true);
 
-            // LB_時刻_次: 両フロアの次進行の PStaTM のうち早い方を表示
+            // LB_時刻_次: 両フロアの次進行の PStaTM のうち早い方を表示（時刻のみ）
             string? 時刻_次 = Get最早次進行時刻();
             if (!string.IsNullOrEmpty(時刻_次))
             {
-                SetLabelContent(p, "LB_時刻_次", $"開始予定　{時刻_次}");
+                SetLabelContent(p, "LB_時刻_次", $"開始予定　{DSDspDataHelper.ExtractTimeOnly(時刻_次)}");
                 SetVisible(p, "LB_時刻_次", true);
             }
             else
@@ -360,7 +360,10 @@ namespace DSDsp.画面
             if (string.IsNullOrEmpty(tmA)) return tmB;
             if (string.IsNullOrEmpty(tmB)) return tmA;
 
-            // 時刻文字列を比較（"HH:mm" 形式前提で文字列比較で早い方を返す）
+            // DateTime でパースして早い方を返す（日付付き文字列にも対応）
+            bool parsedA = DateTime.TryParse(tmA, out var dtA);
+            bool parsedB = DateTime.TryParse(tmB, out var dtB);
+            if (parsedA && parsedB) return dtA <= dtB ? tmA : tmB;
             return string.Compare(tmA, tmB, StringComparison.Ordinal) <= 0 ? tmA : tmB;
         }
 

@@ -176,7 +176,7 @@ namespace DSDsp.画面
                 // 次の競技開始予定時刻（データがない場合はブランク・非表示）
                 if (!string.IsNullOrEmpty(next.Value.PStaTM))
                 {
-                    SetLabelContent(p, "LB_次_時刻", $"開始予定　{next.Value.PStaTM}");
+                    SetLabelContent(p, "LB_次_時刻", $"開始予定　{DSDspDataHelper.ExtractTimeOnly(next.Value.PStaTM)}");
                     SetVisible(p, "LB_次_時刻", true);
                 }
                 else

@@ -37,7 +37,8 @@ namespace DSDsp
         private int _selectedScreenIndex = -1;   // コンボボックスで選択されているスクリーン番号
         private int _activeScreenIndex = -1;     // 現在全画面表示中のスクリーン番号（-1=非表示）
         private bool _isTestDisplayActive = false;  // テスト表示が有効かどうか
-        
+        private bool _isManualDisconnect = false;   // 手動切断フラグ（true の場合は自動再接続しない）
+
         // AJS区分情報（キー: 表示テキスト, 値: "区分No-ラウンドNo"）
         private Dictionary<string, string> _ajsCategoryKeys = new Dictionary<string, string>();
 
@@ -224,6 +225,7 @@ namespace DSDsp
         {
             try
             {
+                _isManualDisconnect = false;
                 UpdateConnectionStatus("接続中...", Brushes.Orange);
                 BtnConnect.IsEnabled = false;
 
@@ -283,6 +285,7 @@ namespace DSDsp
         {
             try
             {
+                _isManualDisconnect = true;
                 UpdateConnectionStatus("切断中...", Brushes.Orange);
                 BtnConnect.IsEnabled = false;
 
@@ -2248,8 +2251,93 @@ namespace DSDsp
                 {
                     UpdateConnectionStatus("切断", Brushes.Red);
                     BtnConnect.Content = "サーバー接続";
+
+                    // 手動切断でなければ自動再接続を試みる
+                    if (!_isManualDisconnect)
+                        StartAutoReconnect();
                 }
             });
+        }
+
+        /// <summary>
+        /// 5秒間隔で自動再接続を試みる。接続成功または手動切断フラグが立つまで繰り返す。
+        /// </summary>
+        private async void StartAutoReconnect()
+        {
+            _log?.LogAdd("自動再接続ループ開始", _log.INFO);
+
+            while (!_isManualDisconnect)
+            {
+                await System.Threading.Tasks.Task.Delay(5000);
+
+                if (_isManualDisconnect) break;
+                if (_client != null && _client.IsConnected) break;
+
+                _log?.LogAdd("自動再接続試行...", _log.INFO);
+                Dispatcher.Invoke(() => UpdateConnectionStatus("再接続中...", Brushes.Orange));
+
+                try
+                {
+                    // 既存の壊れたクライアントを破棄して新規作成
+                    if (_client != null)
+                    {
+                        _client.ConnectionStateChanged -= OnConnectionStateChanged;
+                        _client.DA_MasterReceived -= OnDA_MasterReceived;
+                        _client.DS_StatusReceived -= OnDS_StatusReceived;
+                        _client.DV_ResultReceived -= OnDV_ResultReceived;
+                        _client.ErrorReceived -= OnErrorReceived;
+                        _client.Dispose();
+                        _client = null;
+                    }
+
+                    _client = new DSDspClient();
+                    _client.ConnectionStateChanged += OnConnectionStateChanged;
+                    _client.DA_MasterReceived += OnDA_MasterReceived;
+                    _client.DS_StatusReceived += OnDS_StatusReceived;
+                    _client.DV_ResultReceived += OnDV_ResultReceived;
+                    _client.ErrorReceived += OnErrorReceived;
+                    _client.CompetitionSelector = OnSelectCompetitionAsync;
+
+                    bool connected = await _client.ConnectAsync();
+                    if (connected)
+                    {
+                        bool initialized = await _client.InitializeAsync();
+                        if (initialized)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                UpdateConnectionStatus("接続済み", Brushes.LimeGreen);
+                                BtnConnect.Content = "切断";
+                            });
+                            _log?.LogAdd("自動再接続成功", _log.INFO);
+                            break;
+                        }
+                        else
+                        {
+                            _log?.LogAdd("自動再接続後の初期化失敗", _log.WARNING);
+                            _client?.Dispose();
+                            _client = null;
+                        }
+                    }
+                    else
+                    {
+                        _log?.LogAdd("自動再接続失敗（接続不可）", _log.WARNING);
+                        _client?.Dispose();
+                        _client = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log?.LogAdd($"自動再接続エラー: {ex.Message}", _log.ERR);
+                    _client?.Dispose();
+                    _client = null;
+                }
+
+                if (!_isManualDisconnect)
+                    Dispatcher.Invoke(() => UpdateConnectionStatus("切断（再接続待機中）", Brushes.Red));
+            }
+
+            _log?.LogAdd("自動再接続ループ終了", _log.INFO);
         }
 
         private void OnDA_MasterReceived(object? sender, EventArgs e)

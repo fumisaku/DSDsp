@@ -10,6 +10,19 @@ namespace DSDsp.画面
     public static class DSDspDataHelper
     {
         /// <summary>
+        /// DS_PrgPStaTM などの日時文字列から時刻部分 (HH:mm) のみを返す。
+        /// 解析に失敗した場合は元の文字列をそのまま返す。
+        /// </summary>
+        public static string ExtractTimeOnly(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            if (DateTime.TryParse(value, out var dt))
+                return dt.ToString("HH:mm");
+            // "HH:mm" だけの文字列は長さ5以下なのでそのまま返す
+            return value;
+        }
+
+        /// <summary>
         /// 競技会名を取得
         /// </summary>
         public static string Get競技会名(JsonNode? daMaster)
