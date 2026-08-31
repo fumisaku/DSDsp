@@ -8,6 +8,54 @@
         Title="DSDsp コントロール" Height="700" Width="900"
         MinHeight="500" MinWidth="700"
         Background="#F5F5F5">
+    <Window.Resources>
+        <!-- 自動更新ToggleButton用スタイル: ON=明緑, OFF=グレー, ホバー/押下時も色を維持 -->
+        <Style x:Key="AutoToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="3"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="6,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- IsChecked=True: 明るい緑 -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2E7D32"/>
+                            </Trigger>
+                            <!-- IsChecked=False: グレー -->
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#757575"/>
+                            </Trigger>
+                            <!-- マウスオーバー -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsChecked" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="border" Property="Background" Value="#388E3C"/>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsChecked" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="border" Property="Background" Value="#9E9E9E"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -288,13 +336,9 @@
                                       Content="⟳ 自動更新 ON"
                                       IsChecked="True"
                                       Click="TglAutoProgress_Click"
-                                      Height="28"
-                                      Width="130"
-                                      Background="#388E3C"
-                                      Foreground="White"
-                                      BorderThickness="0"
-                                      FontWeight="Bold"
-                                      Cursor="Hand"
+                                      Height="32"
+                                      Width="140"
+                                      Style="{StaticResource AutoToggleButtonStyle}"
                                       ToolTip="ONにすると、DS_Status更新時に自動で進行画面を切り替えます"/>
                     </Grid>
 

@@ -168,9 +168,24 @@ namespace DSDsp.画面
                 string nextRndName = DSDspDataHelper.Getラウンド名(DA_Master, next.Value.KbnNo, next.Value.RndNo);
                 string next明細Text = $"{next.Value.PrgNo}　{nextKbnName}　{nextRndName}";
                 SetLabelContent(p, "LB_次_明細", next明細Text);
-                // フォントサイズ自動調整（LB_次_明細: Canvas.Left=20, IM_次_明細の幅513 → 実効幅 513-20=493px）
+                // フォントサイズ自動調整（LB_次_明細: Canvas.Left=20, LB_次_時刻: Canvas.Left=372 → 実効幅 372-20=352px）
+                // LB_次_時刻 と重ならないよう幅を制限。最小6pt まで縮小し、それでも収まらない場合は後ろをカット。
                 if (p.FindName("LB_次_明細") is Label lbNext明細)
-                    _partsMain?.フォントサイズ自動調整(lbNext明細, next明細Text, maxWidth: 493, maxFontSize: 16, minFontSize: 8, fontFamilyName: FontFamilyName);
+                {
+                    _partsMain?.フォントサイズ自動調整(lbNext明細, next明細Text, maxWidth: 352, maxFontSize: 16, minFontSize: 6, fontFamilyName: FontFamilyName);
+                    // 最小フォントサイズでも収まらない場合はテキストを後ろからカット
+                    if (lbNext明細.FontSize <= 6)
+                    {
+                        string truncated = next明細Text;
+                        while (truncated.Length > 0)
+                        {
+                            double w = _partsMain?.テキスト幅取得(truncated, FontFamilyName, 6, lbNext明細) ?? 0;
+                            if (w <= 352) break;
+                            truncated = truncated[..^1];
+                        }
+                        lbNext明細.Content = truncated;
+                    }
+                }
                 SetVisible(p, "LB_次_明細", true);
 
                 // 次の競技開始予定時刻（データがない場合はブランク・非表示）
@@ -212,11 +227,27 @@ namespace DSDsp.画面
                 // 完了後に次フェーズへ進む
                 FadeOutAllHeatRows(() =>
                 {
-                    _heatCursor++;
-                    if (_heatCursor < _heatSequence.Count)
-                        _phase = 2;
+                    if (_isBulk)
+                    {
+                        // 一括表示モード: _heatSequence は1エントリのみ。
+                        // HeatEnd通知が来るたびにフェードアウト→フェードインを連続実行する。
+                        // 呼び出し元（MainWindow）から DS_Status が最新に更新されているので、
+                        // PrepareHeatData を再実行して _heatMap/_danceList を最新化してから
+                        // ヒート行を再表示する。LB_種目のハイライト（現在種目）も更新する。
+                        PrepareHeatData();
+                        UpdateLB種目();
+                        _heatCursor = 0;
+                        DoShowHeat();
+                        _phase = 3;
+                    }
                     else
-                        DoStep5();
+                    {
+                        _heatCursor++;
+                        if (_heatCursor < _heatSequence.Count)
+                            _phase = 2;
+                        else
+                            DoStep5();
+                    }
                 });
             }
         }
@@ -276,7 +307,7 @@ namespace DSDsp.画面
 
             if (DS_Status == null || DA_Master == null) return;
 
-            _danceList = DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号);
+            _danceList = DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号, DGrpNo);
             _heatMap   = DSDspDataHelper.Get全種目全ヒート背番号マップ(DS_Status, 区分番号, ラウンド番号);
 
             // シャッフル判定
@@ -367,7 +398,13 @@ namespace DSDsp.画面
         {
             var p = PartsPRG004;
             var firstDnc = _danceList.FirstOrDefault();
-            if (!_heatMap.TryGetValue(firstDnc.DncNo, out var heatDic)) return;
+            // _heatMap にデータが無い場合（DS_Status 更新後など）は再計算する
+            if (!_heatMap.TryGetValue(firstDnc.DncNo, out var heatDic))
+            {
+                PrepareHeatData();
+                firstDnc = _danceList.FirstOrDefault();
+                if (!_heatMap.TryGetValue(firstDnc.DncNo, out heatDic)) return;
+            }
 
             int curDncNo  = GetCurrentDncNo();
             int curHeatNo = GetCurrentHeatNo();

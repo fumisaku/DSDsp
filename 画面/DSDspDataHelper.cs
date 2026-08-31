@@ -541,8 +541,10 @@ namespace DSDsp.画面
 
         /// <summary>
         /// DA_Master から指定区分・ラウンドの全種目（DncNo, DncCd）リストを種目番号順に返す。
+        /// dGrpNo が空でない場合は一致する DGrp のみを対象とする。
         /// </summary>
-        public static List<(int DncNo, string DncCd)> Get全種目リスト(JsonNode? daMaster, string kbnNo, string rndNo)
+        public static List<(int DncNo, string DncCd)> Get全種目リスト(
+            JsonNode? daMaster, string kbnNo, string rndNo, string dGrpNo = "")
         {
             var result = new List<(int, string)>();
             var round = Getラウンド(daMaster, kbnNo, rndNo);
@@ -553,6 +555,13 @@ namespace DSDsp.画面
 
             foreach (var dgrp in dgrps)
             {
+                // dGrpNo が指定されている場合は一致する DGrp のみ処理する
+                if (!string.IsNullOrEmpty(dGrpNo))
+                {
+                    var grpNo = dgrp?["DD_DGrpNo"]?.ToString() ?? string.Empty;
+                    if (grpNo != dGrpNo) continue;
+                }
+
                 var dances = dgrp?["DE_DANCEs"]?.AsArray();
                 if (dances == null) continue;
                 foreach (var dance in dances)
@@ -580,7 +589,9 @@ namespace DSDsp.画面
 
         /// <summary>
         /// DS_Status から指定区分・ラウンドの次の進行番号情報を最大 maxCount 件取得する。
-        /// SortOrder 昇順で、現在の区分・ラウンドの最後エントリより後のものを返す。
+        /// SortOrder 昇順で、現在の区分・ラウンドのすべてのエントリ（複数 DGrp 対応）より後のものを返す。
+        /// 同一区分・ラウンドが複数 DGrp で複数 PRGRS を持つ場合でも、それら全体をスキップして
+        /// 次の異なる区分・ラウンドの最初のエントリを返す。
         /// </summary>
         public static List<(string PrgNo, string KbnNo, string RndNo, string? PStaTM)> Get次進行情報リスト(
             JsonNode? dsStatus, string currentKbnNo, string currentRndNo, int maxCount = 3)
@@ -610,20 +621,25 @@ namespace DSDsp.画面
 
             allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
 
-            // 現在の区分・ラウンドに属する PRGRS の最大 SortOrder を探す
-            int currentLastSortOrder = int.MinValue;
+            // 現在の区分・ラウンドを「一度でも通過した」フラグを立て、
+            // その後に出現する異なる区分・ラウンドのエントリを maxCount 件収集する。
+            // 同一区分・ラウンドが複数 DGrp（複数 SortOrder）を持つ場合も全てスキップされる。
+            bool seenCurrent = false;
+            var seenKbnRnd = new HashSet<string>();
             foreach (var p in allPrgrs)
             {
-                if (p.KbnNo == currentKbnNo && p.RndNo == currentRndNo && p.SortOrder > currentLastSortOrder)
-                    currentLastSortOrder = p.SortOrder;
-            }
+                bool isCurrent = (p.KbnNo == currentKbnNo && p.RndNo == currentRndNo);
+                if (isCurrent)
+                {
+                    seenCurrent = true;
+                    continue;
+                }
+                if (!seenCurrent) continue;
 
-            if (currentLastSortOrder == int.MinValue) return result;
-
-            // 現在の最後 SortOrder より大きい PRGRS を maxCount 件取得
-            foreach (var p in allPrgrs)
-            {
-                if (p.SortOrder > currentLastSortOrder)
+                // 現在の区分・ラウンドを通過した後の別区分・ラウンド
+                // 同一 KbnNo+RndNo の最初のエントリのみを結果に追加（DGrp複数対応）
+                var key = $"{p.KbnNo}-{p.RndNo}";
+                if (seenKbnRnd.Add(key))
                 {
                     result.Add((p.PrgNo, p.KbnNo, p.RndNo, p.PStaTM));
                     if (result.Count >= maxCount) break;

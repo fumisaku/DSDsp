@@ -38,6 +38,7 @@ namespace DSDsp
         private int _activeScreenIndex = -1;     // 現在全画面表示中のスクリーン番号（-1=非表示）
         private bool _isTestDisplayActive = false;  // テスト表示が有効かどうか
         private bool _isManualDisconnect = false;   // 手動切断フラグ（true の場合は自動再接続しない）
+        private bool _isReconnecting = false;        // 自動再接続ループが既に動作中かどうか
 
         // AJS区分情報（キー: 表示テキスト, 値: "区分No-ラウンドNo"）
         private Dictionary<string, string> _ajsCategoryKeys = new Dictionary<string, string>();
@@ -663,6 +664,7 @@ namespace DSDsp
             public string PrgNo   { get; set; } = string.Empty;
             public string KbnNo   { get; set; } = string.Empty;
             public string RndNo   { get; set; } = string.Empty;
+            public string DGrpNo  { get; set; } = string.Empty;
             public string KbnName { get; set; } = string.Empty;
             public string RndName { get; set; } = string.Empty;
             public override string ToString() => $"{PrgNo}  {KbnName}　{RndName}";
@@ -706,11 +708,8 @@ namespace DSDsp
             _autoProgress = TglAutoProgress?.IsChecked == true;
             if (TglAutoProgress != null)
             {
-                TglAutoProgress.Content    = _autoProgress ? "⟳ 自動更新 ON" : "⟳ 自動更新 OFF";
-                TglAutoProgress.Background = new System.Windows.Media.SolidColorBrush(
-                    _autoProgress
-                        ? (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#388E3C")
-                        : (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#9E9E9E"));
+                // 色はスタイルのIsCheckedトリガーで自動切替、テキストのみ更新
+                TglAutoProgress.Content = _autoProgress ? "⟳ 自動更新 ON" : "✕ 自動更新 OFF";
             }
         }
 
@@ -762,10 +761,11 @@ namespace DSDsp
             }
 
             // 全フロアの PRGRS を SortOrder 昇順で収集（区分・ラウンド単位で重複排除）
+            // 同一 KbnNo+RndNo で DGrp が複数ある場合は最小 SortOrder のエントリを代表として使用する。
             var seen  = new System.Collections.Generic.HashSet<string>();
             var items = new System.Collections.Generic.List<ProgressListItem>();
 
-            var allPrgrs = new System.Collections.Generic.List<(int SortOrder, string PrgNo, string KbnNo, string RndNo)>();
+            var allPrgrs = new System.Collections.Generic.List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string DGrpNo)>();
             foreach (var floor in floors)
             {
                 var prgrs = floor?["DS_PRGRSs"]?.AsArray();
@@ -776,12 +776,13 @@ namespace DSDsp
                     var prgNo     = prg?["DS_PrgNo"]?.ToString() ?? "";
                     var kbnNo     = prg?["DS_KbnNo"]?.ToString() ?? "";
                     var rndNo     = prg?["DS_RndNo"]?.ToString() ?? "";
-                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo));
+                    var dGrpNo    = prg?["DS_DGrpNo"]?.ToString() ?? "";
+                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, dGrpNo));
                 }
             }
             allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
 
-            foreach (var (_, prgNo, kbnNo, rndNo) in allPrgrs)
+            foreach (var (_, prgNo, kbnNo, rndNo, dGrpNo) in allPrgrs)
             {
                 var key = $"{kbnNo}-{rndNo}";
                 if (!seen.Add(key)) continue;   // 同一区分・ラウンドは最初の1件のみ
@@ -794,6 +795,7 @@ namespace DSDsp
                     PrgNo   = prgNo,
                     KbnNo   = kbnNo,
                     RndNo   = rndNo,
+                    DGrpNo  = dGrpNo,
                     KbnName = kbnName,
                     RndName = rndName,
                 });
@@ -1678,8 +1680,9 @@ namespace DSDsp
             // 画面の切り替え判定
             bool isSameScreen = _currentProgressScreen != null
                 && _currentProgressScreenId == screenId
-                && _currentProgressScreen.区分番号  == item.KbnNo
-                && _currentProgressScreen.ラウンド番号 == item.RndNo;
+                && _currentProgressScreen.区分番号   == item.KbnNo
+                && _currentProgressScreen.ラウンド番号 == item.RndNo
+                && _currentProgressScreen.DGrpNo   == item.DGrpNo;
 
             if (!isSameScreen)
             {
@@ -1702,12 +1705,13 @@ namespace DSDsp
                 newScreen.DV_Result    = dm?.DV_Result;
                 newScreen.区分番号     = item.KbnNo;
                 newScreen.ラウンド番号  = item.RndNo;
+                newScreen.DGrpNo       = item.DGrpNo;
                 newScreen.ScreenCompleted += OnProgressScreenCompleted;
 
                 _currentProgressScreen   = newScreen;
                 _currentProgressScreenId = screenId;
                 _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
-                _log?.LogAdd($"進行画面表示: {screenId}  KbnNo={item.KbnNo} RndNo={item.RndNo}", _log.INFO);
+                _log?.LogAdd($"進行画面表示: {screenId}  KbnNo={item.KbnNo} RndNo={item.RndNo} DGrpNo={item.DGrpNo}", _log.INFO);
             }
 
             _currentProgressScreen!.Advance();
@@ -2267,8 +2271,8 @@ namespace DSDsp
                     UpdateConnectionStatus("切断", Brushes.Red);
                     BtnConnect.Content = "サーバー接続";
 
-                    // 手動切断でなければ自動再接続を試みる
-                    if (!_isManualDisconnect)
+                    // 手動切断でなければ自動再接続を試みる（多重起動防止）
+                    if (!_isManualDisconnect && !_isReconnecting)
                         StartAutoReconnect();
                 }
             });
@@ -2279,6 +2283,7 @@ namespace DSDsp
         /// </summary>
         private async void StartAutoReconnect()
         {
+            _isReconnecting = true;
             _log?.LogAdd("自動再接続ループ開始", _log.INFO);
 
             while (!_isManualDisconnect)
@@ -2316,7 +2321,7 @@ namespace DSDsp
                     _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                     bool connected = await _client.ConnectAsync();
-                    if (connected)
+                    if (connected && _client != null)
                     {
                         bool initialized = await _client.InitializeAsync();
                         if (initialized)
@@ -2354,6 +2359,7 @@ namespace DSDsp
                     Dispatcher.Invoke(() => UpdateConnectionStatus("切断（再接続待機中）", Brushes.Red));
             }
 
+            _isReconnecting = false;
             _log?.LogAdd("自動再接続ループ終了", _log.INFO);
         }
 
@@ -2522,8 +2528,9 @@ namespace DSDsp
                     var screenId = GetProgressScreenId();
                     bool isSameScreen = _currentProgressScreen != null
                         && _currentProgressScreenId == screenId
-                        && _currentProgressScreen.区分番号  == item.KbnNo
-                        && _currentProgressScreen.ラウンド番号 == item.RndNo;
+                        && _currentProgressScreen.区分番号   == item.KbnNo
+                        && _currentProgressScreen.ラウンド番号 == item.RndNo
+                        && _currentProgressScreen.DGrpNo   == item.DGrpNo;
 
                     if (!isSameScreen)
                     {
@@ -2547,12 +2554,13 @@ namespace DSDsp
                         newScreen.DV_Result     = dm.DV_Result;
                         newScreen.区分番号      = item.KbnNo;
                         newScreen.ラウンド番号   = item.RndNo;
+                        newScreen.DGrpNo        = item.DGrpNo;
                         newScreen.ScreenCompleted += OnProgressScreenCompleted;
 
                         _currentProgressScreen   = newScreen;
                         _currentProgressScreenId = screenId;
                         _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
-                        _log?.LogAdd($"HeatEnd: 進行画面再生成 {screenId} KbnNo={item.KbnNo} RndNo={item.RndNo}", _log.INFO);
+                        _log?.LogAdd($"HeatEnd: 進行画面再生成 {screenId} KbnNo={item.KbnNo} RndNo={item.RndNo} DGrpNo={item.DGrpNo}", _log.INFO);
                     }
                     else
                     {
@@ -2560,6 +2568,11 @@ namespace DSDsp
                         _currentProgressScreen!.DS_Status = dm.DS_Status;
                     }
 
+                    // 次の種目番号・ヒート番号を明示的にセット
+                    // （DS_Status の DS_CurDanNo/DS_CurHeat 更新より先に
+                    //  画面側のハイライトを正しくするため）
+                    _currentProgressScreen!.種目番号 = nextHeat.Value.DncNo;
+                    _currentProgressScreen!.ヒート番号 = nextHeat.Value.HeatNo;
                     _currentProgressScreen!.Advance();
                     _log?.LogAdd(
                         $"HeatEnd: 次ヒートへ Advance (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
@@ -2583,7 +2596,13 @@ namespace DSDsp
                     }
                     else
                     {
+                        // 全進行が終了 → 現在の画面を Advance() してフェードアウト・完了
                         _log?.LogAdd("HeatEnd: 全進行が終了しました", _log.INFO);
+                        if (_currentProgressScreen != null)
+                        {
+                            _currentProgressScreen.Advance();
+                            _log?.LogAdd("HeatEnd: 最終進行画面を Advance() で完了させます", _log.INFO);
+                        }
                     }
                 }
             });

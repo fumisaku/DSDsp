@@ -42,8 +42,9 @@ namespace DSDsp.画面
         private JsonNode? _daMaster;
         private JsonNode? _dsStatus;
         private JsonNode? _dvResult;
-        private string _kbnNo = string.Empty;
-        private string _rndNo = string.Empty;
+        private string _kbnNo   = string.Empty;
+        private string _rndNo   = string.Empty;
+        private string _dGrpNo  = string.Empty;
         private int _dncNo = 0;
         private int _heatNo = 0;
         private bool _isOverviewMode = false;
@@ -72,6 +73,7 @@ namespace DSDsp.画面
         public JsonNode? DV_Result  { get => _dvResult;  set => _dvResult  = value; }
         public string    区分番号   { get => _kbnNo;     set => _kbnNo     = value; }
         public string    ラウンド番号{ get => _rndNo;     set => _rndNo     = value; }
+        public string    DGrpNo     { get => _dGrpNo;    set => _dGrpNo    = value; }
         public int       種目番号   { get => _dncNo;     set => _dncNo     = value; }
         public int       ヒート番号 { get => _heatNo;    set => _heatNo    = value; }
 
