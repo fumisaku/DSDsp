@@ -121,7 +121,7 @@ namespace DSDsp.画面
             var p = PartsPRG001;
 
             // 現在の競技
-            string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号);
+            string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
             string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
             string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
             string 現テキスト = $"{prgNo}　{kbnName}　{rndName}";
@@ -139,7 +139,7 @@ namespace DSDsp.画面
                 _partsMain?.フォントサイズ自動調整(lb種目現, 種目テキスト, 90, 12, 7, FontFamilyName);
 
             // 次の競技（最大3件）
-            var nextList = DSDspDataHelper.Get次進行情報リスト(DS_Status, 区分番号, ラウンド番号, 3);
+            var nextList = DSDspDataHelper.Get次進行情報リスト(DS_Status, 区分番号, ラウンド番号, 3, DGrpNo);
             for (int i = 1; i <= 3; i++)
             {
                 if (i <= nextList.Count && DA_Master != null)

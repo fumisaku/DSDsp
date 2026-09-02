@@ -112,7 +112,7 @@ namespace DSDsp.画面
 
             if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
             {
-                string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号);
+                string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
                 string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
                 string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
                 tb2.Text = $"{prgNo}　{kbnName}　{rndName}";

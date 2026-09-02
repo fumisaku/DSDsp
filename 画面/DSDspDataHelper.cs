@@ -81,6 +81,34 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// 指定区分・ラウンドの種目GRP（DD_DGRP）数を返す。
+        /// </summary>
+        public static int GetDGRP数(JsonNode? daMaster, string kbnNo, string rndNo)
+        {
+            var round = Getラウンド(daMaster, kbnNo, rndNo);
+            if (round == null) return 0;
+            return round["DD_DGRPs"]?.AsArray()?.Count ?? 0;
+        }
+
+        /// <summary>
+        /// 指定区分・ラウンド・種目GRP番号の種目GRP名（DD_DGrpName）を返す。
+        /// 見つからない場合は空文字を返す。
+        /// </summary>
+        public static string GetDGRP名(JsonNode? daMaster, string kbnNo, string rndNo, string dGrpNo)
+        {
+            var round = Getラウンド(daMaster, kbnNo, rndNo);
+            if (round == null) return string.Empty;
+            var dgrps = round["DD_DGRPs"]?.AsArray();
+            if (dgrps == null) return string.Empty;
+            foreach (var dgrp in dgrps)
+            {
+                if (dgrp?["DD_DGrpNo"]?.ToString() == dGrpNo)
+                    return dgrp?["DD_DGrpName"]?.ToString() ?? string.Empty;
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
         /// 種目情報を取得
         /// </summary>
         public static JsonNode? Get種目(JsonNode? daMaster, string kbnNo, string rndNo, int dncNo)
@@ -413,7 +441,7 @@ namespace DSDsp.画面
         /// DS_Statusから指定種目の全ヒート数を取得する。
         /// ヒート情報が存在しない場合は 0 を返す。
         /// </summary>
-        public static int Getヒート数(JsonNode? dsStatus, string kbnNo, string rndNo, int dncNo)
+        public static int Getヒート数(JsonNode? dsStatus, string kbnNo, string rndNo, int dncNo, string dGrpNo = "")
         {
             if (dsStatus == null) return 0;
 
@@ -428,6 +456,9 @@ namespace DSDsp.画面
                 foreach (var prg in prgrs)
                 {
                     if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+                    // dGrpNo が指定されている場合は一致する PRGRS のみ処理する
+                    if (!string.IsNullOrEmpty(dGrpNo) && prg?["DS_DGrpNo"]?.ToString() != dGrpNo)
                         continue;
 
                     var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
@@ -576,14 +607,37 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// DS_Status から指定 PrgNo（DS_PrgNo）に対応する DGrpNo を取得する。
+        /// 見つからない場合は空文字を返す。
+        /// </summary>
+        public static string GetDGrpNoFromPrgNo(JsonNode? dsStatus, string prgNo)
+        {
+            if (dsStatus == null || string.IsNullOrEmpty(prgNo)) return string.Empty;
+            var floors = dsStatus["DS_FLOORs"]?.AsArray();
+            if (floors == null) return string.Empty;
+            foreach (var floor in floors)
+            {
+                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                if (prgrs == null) continue;
+                foreach (var prg in prgrs)
+                {
+                    if (prg?["DS_PrgNo"]?.ToString() == prgNo)
+                        return prg?["DS_DGrpNo"]?.ToString() ?? string.Empty;
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
         /// DS_Status から指定区分・ラウンドの次の進行番号情報を取得する。
         /// 現在の区分・ラウンドの最後の PRGRS より SortOrder が大きい最初の PRGRS を返す。
+        /// currentDGrpNo が指定された場合はそのエントリの SortOrder を起点とする。
         /// 戻り値: (PrgNo, KbnNo, RndNo, DS_PrgPStaTM) または null。
         /// </summary>
         public static (string PrgNo, string KbnNo, string RndNo, string? PStaTM)? Get次進行情報(
-            JsonNode? dsStatus, string currentKbnNo, string currentRndNo)
+            JsonNode? dsStatus, string currentKbnNo, string currentRndNo, string currentDGrpNo = "")
         {
-            var list = Get次進行情報リスト(dsStatus, currentKbnNo, currentRndNo, 1);
+            var list = Get次進行情報リスト(dsStatus, currentKbnNo, currentRndNo, 1, currentDGrpNo);
             return list.Count > 0 ? list[0] : null;
         }
 
@@ -592,9 +646,11 @@ namespace DSDsp.画面
         /// SortOrder 昇順で、現在の区分・ラウンドのすべてのエントリ（複数 DGrp 対応）より後のものを返す。
         /// 同一区分・ラウンドが複数 DGrp で複数 PRGRS を持つ場合でも、それら全体をスキップして
         /// 次の異なる区分・ラウンドの最初のエントリを返す。
+        /// currentDGrpNo が指定された場合、同一区分・ラウンド内のそのエントリの SortOrder 以降を起点とする。
         /// </summary>
         public static List<(string PrgNo, string KbnNo, string RndNo, string? PStaTM)> Get次進行情報リスト(
-            JsonNode? dsStatus, string currentKbnNo, string currentRndNo, int maxCount = 3)
+            JsonNode? dsStatus, string currentKbnNo, string currentRndNo, int maxCount = 3,
+            string currentDGrpNo = "")
         {
             var result = new List<(string, string, string, string?)>();
             if (dsStatus == null) return result;
@@ -603,7 +659,7 @@ namespace DSDsp.画面
             if (floors == null) return result;
 
             // 全 PRGRS を収集して SortOrder 昇順にソート
-            var allPrgrs = new List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string? PStaTM)>();
+            var allPrgrs = new List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string DGrpNo, string? PStaTM)>();
             foreach (var floor in floors)
             {
                 var prgrs = floor?["DS_PRGRSs"]?.AsArray();
@@ -611,30 +667,57 @@ namespace DSDsp.画面
                 foreach (var prg in prgrs)
                 {
                     var sortOrder = prg?["DS_SortOrder"]?.GetValue<int>() ?? 0;
-                    var prgNo = prg?["DS_PrgNo"]?.ToString() ?? "";
-                    var kbnNo = prg?["DS_KbnNo"]?.ToString() ?? "";
-                    var rndNo = prg?["DS_RndNo"]?.ToString() ?? "";
-                    var pStaTM = prg?["DS_PrgPStaTM"]?.ToString();
-                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, pStaTM));
+                    var prgNo   = prg?["DS_PrgNo"]?.ToString() ?? "";
+                    var kbnNo   = prg?["DS_KbnNo"]?.ToString() ?? "";
+                    var rndNo   = prg?["DS_RndNo"]?.ToString() ?? "";
+                    var dGrpNo  = prg?["DS_DGrpNo"]?.ToString() ?? "";
+                    var pStaTM  = prg?["DS_PrgPStaTM"]?.ToString();
+                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, dGrpNo, pStaTM));
                 }
             }
 
             allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
 
-            // 現在の区分・ラウンドを「一度でも通過した」フラグを立て、
-            // その後に出現する異なる区分・ラウンドのエントリを maxCount 件収集する。
-            // 同一区分・ラウンドが複数 DGrp（複数 SortOrder）を持つ場合も全てスキップされる。
+            // currentDGrpNo が指定されている場合、そのエントリの SortOrder を「通過点」とする。
+            // 指定がない場合は現在の KbnNo+RndNo のエントリを全てスキップする従来動作。
+            int currentSortOrder = -1;
+            if (!string.IsNullOrEmpty(currentDGrpNo))
+            {
+                foreach (var p in allPrgrs)
+                {
+                    if (p.KbnNo == currentKbnNo && p.RndNo == currentRndNo && p.DGrpNo == currentDGrpNo)
+                    {
+                        currentSortOrder = p.SortOrder;
+                        break;
+                    }
+                }
+            }
+
             bool seenCurrent = false;
             var seenKbnRnd = new HashSet<string>();
             foreach (var p in allPrgrs)
             {
                 bool isCurrent = (p.KbnNo == currentKbnNo && p.RndNo == currentRndNo);
-                if (isCurrent)
+
+                if (currentSortOrder >= 0)
                 {
+                    // DGrpNo 指定あり: 現在エントリの SortOrder 以下はすべてスキップ
+                    if (p.SortOrder <= currentSortOrder)
+                        continue;
+                    // SortOrder 超過後は isCurrent（同一KbnRndの後続DGrp）もスキップ
+                    if (isCurrent) continue;
                     seenCurrent = true;
-                    continue;
                 }
-                if (!seenCurrent) continue;
+                else
+                {
+                    // DGrpNo 指定なし: 従来動作（KbnNo+RndNo を通過したフラグで判定）
+                    if (isCurrent)
+                    {
+                        seenCurrent = true;
+                        continue;
+                    }
+                    if (!seenCurrent) continue;
+                }
 
                 // 現在の区分・ラウンドを通過した後の別区分・ラウンド
                 // 同一 KbnNo+RndNo の最初のエントリのみを結果に追加（DGrp複数対応）
@@ -650,25 +733,44 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// DS_Status から指定区分・ラウンドの現在の進行番号を取得する。
+        /// DS_Status から指定区分・ラウンド（および DGrpNo）の現在の進行番号を取得する。
+        /// dGrpNo が空でない場合は DS_DGrpNo も一致するエントリを優先して返す。
         /// </summary>
-        public static string Get現在進行番号(JsonNode? dsStatus, string kbnNo, string rndNo)
+        public static string Get現在進行番号(JsonNode? dsStatus, string kbnNo, string rndNo, string dGrpNo = "")
         {
             if (dsStatus == null) return string.Empty;
             var floors = dsStatus["DS_FLOORs"]?.AsArray();
             if (floors == null) return string.Empty;
+
+            string fallback = string.Empty;
             foreach (var floor in floors)
             {
                 var prgrs = floor?["DS_PRGRSs"]?.AsArray();
                 if (prgrs == null) continue;
                 foreach (var prg in prgrs)
                 {
-                    if (prg?["DS_KbnNo"]?.ToString() == kbnNo &&
-                        prg?["DS_RndNo"]?.ToString() == rndNo)
-                        return prg?["DS_PrgNo"]?.ToString() ?? string.Empty;
+                    if (prg?["DS_KbnNo"]?.ToString() != kbnNo ||
+                        prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+
+                    var prgNoVal = prg?["DS_PrgNo"]?.ToString() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(dGrpNo))
+                    {
+                        // DGrpNo 指定あり → 一致するエントリを返す
+                        if (prg?["DS_DGrpNo"]?.ToString() == dGrpNo)
+                            return prgNoVal;
+                        // 一致しない場合は最初のエントリをフォールバックとして保存
+                        if (fallback == string.Empty)
+                            fallback = prgNoVal;
+                    }
+                    else
+                    {
+                        // DGrpNo 指定なし → 最初のエントリを返す（従来動作）
+                        return prgNoVal;
+                    }
                 }
             }
-            return string.Empty;
+            return fallback;
         }
 
         /// <summary>
@@ -768,7 +870,7 @@ namespace DSDsp.画面
         /// 戻り値: 種目番号 → (ヒート番号 → 背番号リスト) のディクショナリ。
         /// </summary>
         public static Dictionary<int, Dictionary<int, List<string>>> Get全種目全ヒート背番号マップ(
-            JsonNode? dsStatus, string kbnNo, string rndNo)
+            JsonNode? dsStatus, string kbnNo, string rndNo, string dGrpNo = "")
         {
             var result = new Dictionary<int, Dictionary<int, List<string>>>();
             if (dsStatus == null) return result;
@@ -784,6 +886,9 @@ namespace DSDsp.画面
                 foreach (var prg in prgrs)
                 {
                     if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+                    // dGrpNo が指定されている場合は一致する PRGRS のみ処理する
+                    if (!string.IsNullOrEmpty(dGrpNo) && prg?["DS_DGrpNo"]?.ToString() != dGrpNo)
                         continue;
 
                     var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
@@ -846,7 +951,7 @@ namespace DSDsp.画面
         /// <summary>
         /// DS_Status から指定の区分・ラウンドの種目番号リストを昇順で返す。
         /// </summary>
-        public static List<int> Get種目番号リスト(JsonNode? dsStatus, string kbnNo, string rndNo)
+        public static List<int> Get種目番号リスト(JsonNode? dsStatus, string kbnNo, string rndNo, string dGrpNo = "")
         {
             var result = new List<int>();
             if (dsStatus == null) return result;
@@ -862,6 +967,9 @@ namespace DSDsp.画面
                 foreach (var prg in prgrs)
                 {
                     if (prg?["DS_KbnNo"]?.ToString() != kbnNo || prg?["DS_RndNo"]?.ToString() != rndNo)
+                        continue;
+                    // dGrpNo が指定されている場合は一致する PRGRS のみ処理する
+                    if (!string.IsNullOrEmpty(dGrpNo) && prg?["DS_DGrpNo"]?.ToString() != dGrpNo)
                         continue;
 
                     var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
@@ -883,13 +991,14 @@ namespace DSDsp.画面
         /// 「次のヒート」情報を返す。
         /// 現在の種目・ヒートの次ヒートを同一種目内で探し、なければ次の種目の1Hを返す。
         /// その区分・ラウンドの最後のヒートの場合は null を返す。
+        /// dGrpNo を指定すると同一 DGrp 内の種目のみを対象にする。
         /// 戻り値: (次種目番号, 次ヒート番号, 次種目記号) のタプル、または null。
         /// </summary>
         public static (int DncNo, int HeatNo, string DncCd)? Get次ヒート情報(
-            JsonNode? dsStatus, JsonNode? daMaster, string kbnNo, string rndNo, int currentDncNo, int currentHeatNo)
+            JsonNode? dsStatus, JsonNode? daMaster, string kbnNo, string rndNo, string dGrpNo, int currentDncNo, int currentHeatNo)
         {
-            // 現在種目の全ヒート数
-            int currentHeatCount = Getヒート数(dsStatus, kbnNo, rndNo, currentDncNo);
+            // 現在種目の全ヒート数（同一 DGrp 内で検索）
+            int currentHeatCount = Getヒート数(dsStatus, kbnNo, rndNo, currentDncNo, dGrpNo);
 
             if (currentHeatNo < currentHeatCount)
             {
@@ -898,12 +1007,12 @@ namespace DSDsp.画面
                 return (currentDncNo, currentHeatNo + 1, cd);
             }
 
-            // 次の種目を探す
-            var dncList = Get種目番号リスト(dsStatus, kbnNo, rndNo);
+            // 次の種目を探す（同一 DGrp 内の種目リスト）
+            var dncList = Get種目番号リスト(dsStatus, kbnNo, rndNo, dGrpNo);
             int idx = dncList.IndexOf(currentDncNo);
             if (idx < 0 || idx + 1 >= dncList.Count)
             {
-                // 区分・ラウンドの最後のヒート → null
+                // 区分・ラウンド（かつ同一 DGrp）の最後のヒート → null
                 return null;
             }
 
@@ -911,6 +1020,13 @@ namespace DSDsp.画面
             string nextCd = Get種目記号(daMaster, kbnNo, rndNo, nextDncNo);
             return (nextDncNo, 1, nextCd);
         }
+
+        /// <summary>
+        /// 「次のヒート」情報を返す（dGrpNo なし版・後方互換）。
+        /// </summary>
+        public static (int DncNo, int HeatNo, string DncCd)? Get次ヒート情報(
+            JsonNode? dsStatus, JsonNode? daMaster, string kbnNo, string rndNo, int currentDncNo, int currentHeatNo)
+            => Get次ヒート情報(dsStatus, daMaster, kbnNo, rndNo, "", currentDncNo, currentHeatNo);
 
         // ────────────────────────────────────────────────
         // DV_Result ヘルパー

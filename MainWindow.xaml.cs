@@ -52,11 +52,15 @@ namespace DSDsp
         // テスト用データマネージャー（サーバー未接続時にJSONファイルから直接投入）
         private DataManager? _testDataManager;
 
+        // 終了確認済みフラグ（Closing イベント再入防止）
+        private bool _closingConfirmed = false;
+
         public MainWindow()
         {
             InitializeComponent();
-            this.Loaded += MainWindow_Loaded;
+            this.Loaded  += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
+            this.Closed  += MainWindow_Closed;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -105,11 +109,37 @@ namespace DSDsp
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
+            // 確認済みの場合はそのまま閉じる（再入防止）
+            if (_closingConfirmed) return;
+
+            // 終了確認ダイアログ
+            var result = MessageBox.Show(
+                "DSDsp を終了してもよいですか？",
+                "終了確認",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                MessageBoxResult.No);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            _closingConfirmed = true;
+
             _log?.LogAdd("DSDsp終了", _log.INFO);
             _client?.Dispose();
             _fullScreenWindow?.Close();
             _displayWindow?.Close();
             _offScreenWindow?.Close();
+        }
+
+        private void MainWindow_Closed(object? sender, EventArgs e)
+        {
+            // ウィンドウが完全に閉じた後にプロセスを確実に終了させる
+            // （バックグラウンドスレッドが残存する場合に対応）
+            Application.Current.Shutdown();
         }
 
         /// <summary>
@@ -656,6 +686,19 @@ namespace DSDsp
 
         private 画面.DSDspScreenBase? _currentProgressScreen = null;
         private string _currentProgressScreenId = string.Empty;
+        /// <summary>
+        /// ユーザーがコンボを手動変更した場合に true になるフラグ。
+        /// 次の再生ボタン押下で指定種目・ヒートにジャンプ再生し、その後 false にリセットする。
+        /// </summary>
+        private bool _manualComboChanged = false;
+        /// <summary>
+        /// OnHeatNoChanged などの自動同期処理中に CmbSelection イベントが発火しても
+        /// _manualComboChanged をセットしないよう抑制するカウンタ。
+        /// 0 のとき抑制なし（手動変更フラグをセット可）、1 以上のとき抑制中。
+        /// int にすることで UpdateProgressDanceCombo → UpdateProgressHeatCombo のように
+        /// ネストして呼ばれる場合でも外側の抑制が内側の finally で解除されない。
+        /// </summary>
+        private int _suppressManualComboDepth = 0;
 
         // ---- データクラス ----
 
@@ -670,6 +713,19 @@ namespace DSDsp
             public override string ToString() => $"{PrgNo}  {KbnName}　{RndName}";
         }
 
+        private class ProgressDanceItem
+        {
+            public int    DncNo { get; set; }
+            public string DncCd { get; set; } = string.Empty;
+            public override string ToString() => DncCd;
+        }
+
+        private class ProgressHeatItem
+        {
+            public int HeatNo { get; set; }
+            public override string ToString() => $"{HeatNo}H";
+        }
+
         // ---- UIイベント ----
 
         private void LstProgressItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -677,6 +733,7 @@ namespace DSDsp
             _currentProgressIndex = LstProgressItems.SelectedIndex;
             _log?.LogAdd($"進行項目選択: {_currentProgressIndex}", _log.DEBUG);
             UpdateProgressScreenIdLabel();
+            UpdateProgressDanceCombo();
         }
 
         private void RbProgressSize_Changed(object sender, RoutedEventArgs e)
@@ -698,6 +755,7 @@ namespace DSDsp
             _currentProgressScreen = null;
             _currentProgressScreenId = string.Empty;
             UpdateProgressScreenIdLabel();
+            UpdateProgressDanceCombo();
         }
 
         private void BtnLoadProgressList_Click(object sender, RoutedEventArgs e)
@@ -713,8 +771,178 @@ namespace DSDsp
             }
         }
 
-        private void CmbProgressDance_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
-        private void CmbProgressHeat_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+        private void CmbProgressDance_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateProgressHeatCombo();
+            // 自動同期中でなければ手動変更フラグをセット
+            if (_suppressManualComboDepth == 0)
+                _manualComboChanged = true;
+        }
+
+        private void CmbProgressHeat_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // 自動同期中でなければ手動変更フラグをセット
+            if (_suppressManualComboDepth == 0)
+                _manualComboChanged = true;
+        }
+
+        /// <summary>
+        /// 種目コンボを更新する。
+        /// ヒートモード（DSP_PRG_004/005）かつ進行項目が選択されている場合のみデータを設定する。
+        /// </summary>
+        private void UpdateProgressDanceCombo()
+        {
+            bool isHeatMode = (_progressMode == ProgressDisplayMode.Heat);
+
+            if (CmbProgressDance != null) CmbProgressDance.IsEnabled = isHeatMode;
+            if (CmbProgressHeat  != null) CmbProgressHeat.IsEnabled  = isHeatMode;
+
+            if (!isHeatMode)
+            {
+                _suppressManualComboDepth++;
+                try
+                {
+                    if (CmbProgressDance != null) CmbProgressDance.ItemsSource = null;
+                    if (CmbProgressHeat  != null) CmbProgressHeat.ItemsSource  = null;
+                }
+                finally { _suppressManualComboDepth--; }
+                return;
+            }
+
+            var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+            if (items == null || _currentProgressIndex < 0 || _currentProgressIndex >= items.Count)
+            {
+                _suppressManualComboDepth++;
+                try
+                {
+                    if (CmbProgressDance != null) CmbProgressDance.ItemsSource = null;
+                    if (CmbProgressHeat  != null) CmbProgressHeat.ItemsSource  = null;
+                }
+                finally { _suppressManualComboDepth--; }
+                return;
+            }
+
+            var item = items[_currentProgressIndex];
+            var dm   = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+            if (dm?.DA_Master == null)
+            {
+                _suppressManualComboDepth++;
+                try
+                {
+                    if (CmbProgressDance != null) CmbProgressDance.ItemsSource = null;
+                    if (CmbProgressHeat  != null) CmbProgressHeat.ItemsSource  = null;
+                }
+                finally { _suppressManualComboDepth--; }
+                return;
+            }
+
+            // 種目一覧を取得してコンボに設定（システム更新なので手動変更フラグを立てない）
+            var danceList  = 画面.DSDspDataHelper.Get全種目リスト(dm.DA_Master, item.KbnNo, item.RndNo, item.DGrpNo);
+            var danceItems = danceList.Select(d => new ProgressDanceItem { DncNo = d.DncNo, DncCd = d.DncCd }).ToList();
+
+            _suppressManualComboDepth++;
+            try
+            {
+                if (CmbProgressDance != null)
+                {
+                    CmbProgressDance.ItemsSource = danceItems;
+                    if (danceItems.Count > 0)
+                        CmbProgressDance.SelectedIndex = 0;
+                }
+            }
+            finally { _suppressManualComboDepth--; }
+        }
+
+        /// <summary>
+        /// ヒートコンボを更新する。
+        /// 種目コンボで選択された種目のヒート一覧を設定する。
+        /// </summary>
+        private void UpdateProgressHeatCombo()
+        {
+            if (CmbProgressHeat == null) return;
+
+            if (CmbProgressDance?.SelectedItem is not ProgressDanceItem selectedDance)
+            {
+                _suppressManualComboDepth++;
+                try { CmbProgressHeat.ItemsSource = null; }
+                finally { _suppressManualComboDepth--; }
+                return;
+            }
+
+            var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+            if (items == null || _currentProgressIndex < 0 || _currentProgressIndex >= items.Count)
+            {
+                _suppressManualComboDepth++;
+                try { CmbProgressHeat.ItemsSource = null; }
+                finally { _suppressManualComboDepth--; }
+                return;
+            }
+
+            var item = items[_currentProgressIndex];
+            var dm   = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+            if (dm?.DS_Status == null)
+            {
+                _suppressManualComboDepth++;
+                try { CmbProgressHeat.ItemsSource = null; }
+                finally { _suppressManualComboDepth--; }
+                return;
+            }
+
+            int heatCount = 画面.DSDspDataHelper.Getヒート数(dm.DS_Status, item.KbnNo, item.RndNo, selectedDance.DncNo);
+            var heatItems = Enumerable.Range(1, heatCount)
+                .Select(h => new ProgressHeatItem { HeatNo = h })
+                .ToList();
+
+            // システム更新なので手動変更フラグを立てない
+            _suppressManualComboDepth++;
+            try
+            {
+                CmbProgressHeat.ItemsSource = heatItems;
+                if (heatItems.Count > 0)
+                    CmbProgressHeat.SelectedIndex = 0;
+            }
+            finally { _suppressManualComboDepth--; }
+        }
+
+        /// <summary>
+        /// DSP_PRG_004/005 の既存画面インスタンスが内部で進めたヒート番号をコンボに同期する。
+        /// 画面が Advance() によって次ヒートへ進んだ後、コンボが古い値のままだと
+        /// 次回 ExecuteProgressStep() での isSameScreen 判定や selHeatNo が不整合になるため、
+        /// Advance() 呼び出し前に呼んでコンボを現在画面の状態と合わせる。
+        /// </summary>
+        private void SyncHeatCombosFromScreen(string screenId)
+        {
+            if (_currentProgressScreen == null) return;
+            if (screenId != "DSP_PRG_004" && screenId != "DSP_PRG_005") return;
+
+            int screenHeatNo = _currentProgressScreen.ヒート番号;
+            int screenDncNo  = _currentProgressScreen.種目番号;
+            if (screenHeatNo <= 0) return;  // 未設定なら同期不要
+
+            _suppressManualComboDepth++;
+            try
+            {
+                // ヒートコンボを現在画面のヒート番号に合わせる
+                if (CmbProgressHeat?.ItemsSource is System.Collections.Generic.List<ProgressHeatItem> heatItems)
+                {
+                    int idx = heatItems.FindIndex(h => h.HeatNo == screenHeatNo);
+                    if (idx >= 0 && CmbProgressHeat.SelectedIndex != idx)
+                        CmbProgressHeat.SelectedIndex = idx;
+                }
+
+                // 種目コンボも合わせる（種目が変わっている場合）
+                if (screenDncNo > 0 && CmbProgressDance?.ItemsSource is System.Collections.Generic.List<ProgressDanceItem> danceItems)
+                {
+                    int dIdx = danceItems.FindIndex(d => d.DncNo == screenDncNo);
+                    if (dIdx >= 0 && CmbProgressDance.SelectedIndex != dIdx)
+                        CmbProgressDance.SelectedIndex = dIdx;
+                }
+            }
+            finally
+            {
+                _suppressManualComboDepth--;
+            }
+        }
 
         private void BtnIntervalInterrupt_Click(object sender, RoutedEventArgs e)
         {
@@ -760,8 +988,9 @@ namespace DSDsp
                 return;
             }
 
-            // 全フロアの PRGRS を SortOrder 昇順で収集（区分・ラウンド単位で重複排除）
-            // 同一 KbnNo+RndNo で DGrp が複数ある場合は最小 SortOrder のエントリを代表として使用する。
+            // 全フロアの PRGRS を SortOrder 昇順で収集する。
+            // DGrp が複数ある区分・ラウンドでは DS_PrgNo が DGrp ごとに異なるため、
+            // 重複排除キーは DS_PrgNo を使用し、各 DGrp を個別のエントリとして表示する。
             var seen  = new System.Collections.Generic.HashSet<string>();
             var items = new System.Collections.Generic.List<ProgressListItem>();
 
@@ -784,8 +1013,8 @@ namespace DSDsp
 
             foreach (var (_, prgNo, kbnNo, rndNo, dGrpNo) in allPrgrs)
             {
-                var key = $"{kbnNo}-{rndNo}";
-                if (!seen.Add(key)) continue;   // 同一区分・ラウンドは最初の1件のみ
+                // 同一 PrgNo の重複排除（通常は発生しないが念のため）
+                if (!seen.Add(prgNo)) continue;
 
                 var kbnName = daMaster != null ? 画面.DSDspDataHelper.Get区分名(daMaster, kbnNo) : kbnNo;
                 var rndName = daMaster != null ? 画面.DSDspDataHelper.Getラウンド名(daMaster, kbnNo, rndNo) : rndNo;
@@ -1677,7 +1906,19 @@ namespace DSDsp
             var screenId = GetProgressScreenId();
             var dm       = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
 
+            // ヒートモード時のコンボ選択値を取得（新規画面生成の初期値に使用）
+            int selDncNo  = 0;
+            int selHeatNo = 0;
+            if ((screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                && CmbProgressDance?.SelectedItem is ProgressDanceItem pd
+                && CmbProgressHeat?.SelectedItem  is ProgressHeatItem  ph)
+            {
+                selDncNo  = pd.DncNo;
+                selHeatNo = ph.HeatNo;
+            }
+
             // 画面の切り替え判定
+            // DSP_PRG_004/005 は内部でヒートを管理するため、種目番号・ヒート番号はコンボに依存しない
             bool isSameScreen = _currentProgressScreen != null
                 && _currentProgressScreenId == screenId
                 && _currentProgressScreen.区分番号   == item.KbnNo
@@ -1706,6 +1947,42 @@ namespace DSDsp
                 newScreen.区分番号     = item.KbnNo;
                 newScreen.ラウンド番号  = item.RndNo;
                 newScreen.DGrpNo       = item.DGrpNo;
+
+                // ヒートモード（DSP_PRG_004/005）の場合、コンボの初期値を反映
+                if (selDncNo > 0)
+                {
+                    newScreen.種目番号  = selDncNo;
+                    newScreen.ヒート番号 = selHeatNo;
+                    _log?.LogAdd($"進行画面種目・ヒート指定: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
+                }
+
+                // DSP_PRG_004/005 はヒート番号が内部変更されたとき、コンボを即時同期する。
+                // 自動同期中は _suppressManualComboDepth++ にして
+                // SelectionChanged イベントによる手動変更フラグの誤セットを防ぐ。
+                if (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                {
+                    newScreen.OnHeatNoChanged = heatNo =>
+                    {
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            _suppressManualComboDepth++;
+                            try
+                            {
+                                if (CmbProgressHeat?.ItemsSource is System.Collections.Generic.List<ProgressHeatItem> heatItems)
+                                {
+                                    int idx = heatItems.FindIndex(h => h.HeatNo == heatNo);
+                                    if (idx >= 0 && CmbProgressHeat.SelectedIndex != idx)
+                                        CmbProgressHeat.SelectedIndex = idx;
+                                }
+                            }
+                            finally
+                            {
+                                _suppressManualComboDepth--;
+                            }
+                        });
+                    };
+                }
+
                 newScreen.ScreenCompleted += OnProgressScreenCompleted;
 
                 _currentProgressScreen   = newScreen;
@@ -1713,9 +1990,43 @@ namespace DSDsp
                 _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
                 _log?.LogAdd($"進行画面表示: {screenId}  KbnNo={item.KbnNo} RndNo={item.RndNo} DGrpNo={item.DGrpNo}", _log.INFO);
             }
+            else if (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+            {
+                // 既存の DSP_PRG_004/005 画面を継続使用する場合:
+                // 手動変更フラグが立っているときはジャンプ再生（後述）するのでここでは同期しない。
+                // 手動変更がない場合のみ、OnHeatNoChanged で未反映な分を補完する。
+                if (!_manualComboChanged)
+                    SyncHeatCombosFromScreen(screenId);
+            }
 
-            _currentProgressScreen!.Advance();
-            _log?.LogAdd($"進行 Advance: {screenId}  Step={_currentProgressScreen.CurrentStep}", _log.INFO);
+            // 手動変更フラグが立っている場合:
+            //   コンボで指定された種目・ヒートにジャンプして表示する。
+            //   _phase==3（ヒート表示中）なら FadeOut→指定ヒートへ、
+            //   それ以外（初回表示中など）なら通常の Advance() にフォールバック。
+            if (_manualComboChanged
+                && (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                && selDncNo > 0 && selHeatNo > 0
+                && _currentProgressScreen is 画面.DSP_PRG_004_進行表示ヒート表_大 screen004)
+            {
+                _manualComboChanged = false;
+                _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
+                screen004.JumpToHeat(selDncNo, selHeatNo);
+            }
+            else if (_manualComboChanged
+                && (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                && selDncNo > 0 && selHeatNo > 0
+                && _currentProgressScreen is 画面.DSP_PRG_005_進行表示ヒート表_小 screen005)
+            {
+                _manualComboChanged = false;
+                _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
+                screen005.JumpToHeat(selDncNo, selHeatNo);
+            }
+            else
+            {
+                _manualComboChanged = false;
+                _currentProgressScreen!.Advance();
+                _log?.LogAdd($"進行 Advance: {screenId}  Step={_currentProgressScreen.CurrentStep}", _log.INFO);
+            }
         }
 
         /// <summary>
@@ -2475,13 +2786,15 @@ namespace DSDsp
 
                 // ── 1. 電文の進行番号に対応する ProgressListItem を探す ──────────
                 // DS_Status の PrgNo（DS_PrgNo）は ProgressListItem の PrgNo と一致する。
-                // 区分・ラウンド単位でデdup しているため、同一区分ラウンドの最初の PrgNo と比較。
-                // → DS_Status から kbnNo / rndNo を引いて items を絞り込む。
+                // 同一区分・ラウンドで DGrpNo が異なる進行が複数存在する場合（例: LA予選DGrp1/DGrp2）、
+                // kbnNo + rndNo だけでは最初の DGrp にしかマッチしない。
+                // → DS_PrgNo から kbnNo / rndNo / dGrpNo を取得して正確に一致させる。
                 var floors = dm.DS_Status["DS_FLOORs"]?.AsArray();
                 if (floors == null) return;
 
-                string kbnNo = "";
-                string rndNo = "";
+                string kbnNo  = "";
+                string rndNo  = "";
+                string dGrpNo = "";
                 foreach (var floor in floors)
                 {
                     if (floor?["DS_FlrCd"]?.ToString() != e.FloorCd) continue;
@@ -2491,8 +2804,9 @@ namespace DSDsp
                     {
                         if (prg?["DS_PrgNo"]?.ToString() == e.PrgNo)
                         {
-                            kbnNo = prg?["DS_KbnNo"]?.ToString() ?? "";
-                            rndNo = prg?["DS_RndNo"]?.ToString() ?? "";
+                            kbnNo  = prg?["DS_KbnNo"]?.ToString()  ?? "";
+                            rndNo  = prg?["DS_RndNo"]?.ToString()  ?? "";
+                            dGrpNo = prg?["DS_DGrpNo"]?.ToString() ?? "";
                             break;
                         }
                     }
@@ -2501,8 +2815,15 @@ namespace DSDsp
 
                 if (string.IsNullOrEmpty(kbnNo)) return;
 
-                // ProgressListItem は kbnNo + rndNo で一意
-                int targetIdx = items.FindIndex(x => x.KbnNo == kbnNo && x.RndNo == rndNo);
+                // ProgressListItem は PrgNo で一意（DGrpNo を含めて完全一致）。
+                // PrgNo で直接引くことで DGrp が異なる複数進行を正しく区別する。
+                int targetIdx = items.FindIndex(x => x.PrgNo == e.PrgNo);
+                if (targetIdx < 0)
+                {
+                    // PrgNo が一覧にない場合（DGrpNo なし環境等）は kbnNo+rndNo+dGrpNo でフォールバック
+                    targetIdx = items.FindIndex(x => x.KbnNo == kbnNo && x.RndNo == rndNo
+                        && (string.IsNullOrEmpty(dGrpNo) || x.DGrpNo == dGrpNo));
+                }
                 if (targetIdx < 0) return;
 
                 // 現在の選択が通知と異なる場合はカーソルを電文の進行に合わせる（電文優先）
@@ -2514,8 +2835,10 @@ namespace DSDsp
                 }
 
                 // ── 2. 次ヒートがあるか判定 ──────────────────────────────────────
+                // dGrpNo を渡して同一 DGrp 内の種目リストのみを参照する。
+                // DGrpNo なしでは複数 DGrp がある場合に最初の DGrp の種目リストが返ってしまう。
                 var nextHeat = 画面.DSDspDataHelper.Get次ヒート情報(
-                    dm.DS_Status, dm.DA_Master, kbnNo, rndNo, e.DncNo, e.HeatNo);
+                    dm.DS_Status, dm.DA_Master, kbnNo, rndNo, dGrpNo, e.DncNo, e.HeatNo);
 
                 if (nextHeat.HasValue)
                 {
@@ -2573,10 +2896,25 @@ namespace DSDsp
                     //  画面側のハイライトを正しくするため）
                     _currentProgressScreen!.種目番号 = nextHeat.Value.DncNo;
                     _currentProgressScreen!.ヒート番号 = nextHeat.Value.HeatNo;
-                    _currentProgressScreen!.Advance();
-                    _log?.LogAdd(
-                        $"HeatEnd: 次ヒートへ Advance (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
-                        _log.INFO);
+
+                    // DSP_PRG_004/005 はフェーズ補完付きの NotifyHeatChanged() を使用する。
+                    // 再生ボタン未押しでフェーズが途中のままでも確実にヒートを表示できる。
+                    // その他の画面は従来通り Advance() を呼ぶ。
+                    var screenIdForHeat = GetProgressScreenId();
+                    if (screenIdForHeat is "DSP_PRG_004" or "DSP_PRG_005")
+                    {
+                        _currentProgressScreen!.NotifyHeatChanged();
+                        _log?.LogAdd(
+                            $"HeatEnd: 次ヒートへ NotifyHeatChanged (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
+                            _log.INFO);
+                    }
+                    else
+                    {
+                        _currentProgressScreen!.Advance();
+                        _log?.LogAdd(
+                            $"HeatEnd: 次ヒートへ Advance (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
+                            _log.INFO);
+                    }
                 }
                 else
                 {

@@ -144,6 +144,179 @@ namespace DSDsp.画面
                     break;
             }
         }
+        /// <summary>
+        /// HeatEnd 通知受信時に MainWindow から呼ばれる。
+        /// 現在のフェーズが未完了（ヒート未表示）であっても確実に次ヒートへ切り替える。
+        /// _heatSequence が未構築の場合は PrepareHeatData() で構築してから処理する。
+        /// </summary>
+        public override void NotifyHeatChanged()
+        {
+            // _heatSequence が未構築（Advance() 未呼び出し or STEP0 のみ実行）の場合は構築する
+            if (_heatSequence.Count == 0)
+                PrepareHeatData();
+
+            // _heatSequence の先頭が現在ヒート。_step2Visible の状態を問わず
+            // STEP4（明細フェードアウト）→ STEP5（現在・次フェードアウト）→ ScreenCompleted を
+            // 呼ぶ代わりに、次ヒートを直接表示する。
+            // 最もシンプルな実装: 先頭エントリを1つ進めて Step1→Step2→Step3 を即時実行する。
+
+            // 先頭を消費して次のヒートへ
+            if (_heatSequence.Count > 0)
+                _heatSequence.RemoveAt(0);
+
+            if (_heatSequence.Count == 0)
+            {
+                // 全ヒート終了 → Step5 で完了通知
+                HideAllParts();
+                RaiseScreenCompleted();
+                return;
+            }
+
+            // 次ヒートの情報で即時表示（アニメーションなし）
+            int heatIdx = 0;
+            var (curDncNo, curHeatNo) = _heatSequence[0];
+
+            // COM003 更新
+            UpdateCOM003種目(heatIdx);
+
+            // IM_現・LB_現 を即時更新
+            var p = PartsPRG005;
+            string curDncCd = GetDncCd(curDncNo);
+            string 現テキスト = $"現在　{curDncCd}　{curHeatNo}H";
+            SetLabelContent(p, "LB_現", 現テキスト);
+            if (p.FindName("LB_現") is System.Windows.Controls.Label lb現)
+                _partsMain?.フォントサイズ自動調整(lb現, 現テキスト, 175, 11, 7, FontFamilyName);
+            SetOpacity(p, "IM_現", 1); SetVisible(p, "IM_現", true);
+            SetOpacity(p, "LB_現", 1); SetVisible(p, "LB_現", true);
+
+            // 次のヒート
+            var next = DSDspDataHelper.Get次ヒート情報(DS_Status, DA_Master, 区分番号, ラウンド番号, DGrpNo, curDncNo, curHeatNo);
+            if (next.HasValue)
+            {
+                string 次テキスト = $"Next　{next.Value.DncCd}　{next.Value.HeatNo}H";
+                SetLabelContent(p, "LB_次", 次テキスト);
+                if (p.FindName("LB_次") is System.Windows.Controls.Label lb次)
+                    _partsMain?.フォントサイズ自動調整(lb次, 次テキスト, 175, 11, 7, FontFamilyName);
+                SetOpacity(p, "IM_次", 1); SetVisible(p, "IM_次", true);
+                SetOpacity(p, "LB_次", 1); SetVisible(p, "LB_次", true);
+            }
+            else
+            {
+                SetLabelContent(p, "LB_次", string.Empty);
+                SetVisible(p, "IM_次", false); SetVisible(p, "LB_次", false);
+            }
+            _step2Visible = true;
+
+            // 背番号行（明細）を即時表示
+            // 古い明細を先に消す
+            foreach (var suffix in new[] { "現1", "現2", "次1", "次2" })
+            {
+                SetVisible(p, $"IM_明細_{suffix}", false);
+                SetVisible(p, $"LB_明細_{suffix}", false);
+            }
+
+            var curPlayers = GetPlayers(curDncNo, curHeatNo);
+            SetPlayerRows(p, curPlayers, "現");
+            if (next.HasValue)
+            {
+                var nextPlayers = GetPlayers(next.Value.DncNo, next.Value.HeatNo);
+                SetPlayerRows(p, nextPlayers, "次");
+            }
+
+            // 明細を即時表示（Opacity=1）
+            foreach (var suffix in new[] { "現1", "現2", "次1", "次2" })
+            {
+                if (p.FindName($"IM_明細_{suffix}") is UIElement el && el.Visibility == Visibility.Visible)
+                    SetOpacity(p, $"IM_明細_{suffix}", 1);
+                if (p.FindName($"LB_明細_{suffix}") is UIElement el2 && el2.Visibility == Visibility.Visible)
+                    SetOpacity(p, $"LB_明細_{suffix}", 1);
+            }
+        }
+
+        /// <summary>
+        /// 指定の種目番号・ヒート番号にジャンプして表示する（マニュアル操作用）。
+        /// _heatSequence を再構築して指定位置を先頭に据えてから即時表示する。
+        /// 指定位置が存在しない場合は通常の Advance() にフォールバックする。
+        /// </summary>
+        public void JumpToHeat(int dncNo, int heatNo)
+        {
+            // _heatSequence を再構築する
+            PrepareHeatData();
+
+            // 指定の種目・ヒートを _heatSequence の先頭に移動する
+            int found = _heatSequence.FindIndex(e => e.DncNo == dncNo && e.HeatNo == heatNo);
+            if (found < 0)
+            {
+                // 見つからない場合は通常の Advance() にフォールバック
+                Advance();
+                return;
+            }
+
+            // 先頭からジャンプ先の手前を削除して、先頭がジャンプ先になるようにする
+            if (found > 0)
+                _heatSequence.RemoveRange(0, found);
+
+            // NotifyHeatChanged と同じ即時表示処理
+            if (_heatSequence.Count == 0)
+            {
+                HideAllParts();
+                RaiseScreenCompleted();
+                return;
+            }
+
+            int heatIdx = 0;
+            var (curDncNo, curHeatNo) = _heatSequence[0];
+
+            UpdateCOM003種目(heatIdx);
+
+            var p = PartsPRG005;
+            string curDncCd  = GetDncCd(curDncNo);
+            string 現テキスト = $"現在　{curDncCd}　{curHeatNo}H";
+            SetLabelContent(p, "LB_現", 現テキスト);
+            if (p.FindName("LB_現") is System.Windows.Controls.Label lb現)
+                _partsMain?.フォントサイズ自動調整(lb現, 現テキスト, 175, 11, 7, FontFamilyName);
+            SetOpacity(p, "IM_現", 1); SetVisible(p, "IM_現", true);
+            SetOpacity(p, "LB_現", 1); SetVisible(p, "LB_現", true);
+
+            var next = DSDspDataHelper.Get次ヒート情報(DS_Status, DA_Master, 区分番号, ラウンド番号, DGrpNo, curDncNo, curHeatNo);
+            if (next.HasValue)
+            {
+                string 次テキスト = $"Next　{next.Value.DncCd}　{next.Value.HeatNo}H";
+                SetLabelContent(p, "LB_次", 次テキスト);
+                if (p.FindName("LB_次") is System.Windows.Controls.Label lb次)
+                    _partsMain?.フォントサイズ自動調整(lb次, 次テキスト, 175, 11, 7, FontFamilyName);
+                SetOpacity(p, "IM_次", 1); SetVisible(p, "IM_次", true);
+                SetOpacity(p, "LB_次", 1); SetVisible(p, "LB_次", true);
+            }
+            else
+            {
+                SetLabelContent(p, "LB_次", string.Empty);
+                SetVisible(p, "IM_次", false); SetVisible(p, "LB_次", false);
+            }
+            _step2Visible = true;
+
+            foreach (var suffix in new[] { "現1", "現2", "次1", "次2" })
+            {
+                SetVisible(p, $"IM_明細_{suffix}", false);
+                SetVisible(p, $"LB_明細_{suffix}", false);
+            }
+
+            var curPlayers = GetPlayers(curDncNo, curHeatNo);
+            SetPlayerRows(p, curPlayers, "現");
+            if (next.HasValue)
+            {
+                var nextPlayers = GetPlayers(next.Value.DncNo, next.Value.HeatNo);
+                SetPlayerRows(p, nextPlayers, "次");
+            }
+
+            foreach (var suffix in new[] { "現1", "現2", "次1", "次2" })
+            {
+                if (p.FindName($"IM_明細_{suffix}") is UIElement el && el.Visibility == Visibility.Visible)
+                    SetOpacity(p, $"IM_明細_{suffix}", 1);
+                if (p.FindName($"LB_明細_{suffix}") is UIElement el2 && el2.Visibility == Visibility.Visible)
+                    SetOpacity(p, $"LB_明細_{suffix}", 1);
+            }
+        }
         #endregion
 
         #region ステップ実装
@@ -204,7 +377,7 @@ namespace DSDsp.画面
                 _partsMain?.フォントサイズ自動調整(lb現, 現テキスト, 175, 11, 7, FontFamilyName);
 
             // 次のヒート情報
-            var next = DSDspDataHelper.Get次ヒート情報(DS_Status, DA_Master, 区分番号, ラウンド番号, curDncNo, curHeatNo);
+            var next = DSDspDataHelper.Get次ヒート情報(DS_Status, DA_Master, 区分番号, ラウンド番号, DGrpNo, curDncNo, curHeatNo);
 
             string? 次テキスト = null;
             if (next.HasValue)
@@ -271,7 +444,7 @@ namespace DSDsp.画面
             SetPlayerRows(p, curPlayers, "現");
 
             // 次のヒートの背番号
-            var next = DSDspDataHelper.Get次ヒート情報(DS_Status, DA_Master, 区分番号, ラウンド番号, curDncNo, curHeatNo);
+            var next = DSDspDataHelper.Get次ヒート情報(DS_Status, DA_Master, 区分番号, ラウンド番号, DGrpNo, curDncNo, curHeatNo);
             if (next.HasValue)
             {
                 var nextPlayers = GetPlayers(next.Value.DncNo, next.Value.HeatNo);
@@ -549,24 +722,10 @@ namespace DSDsp.画面
 
         #region ヘルパー
 
-        /// <summary>現在の進行番号文字列を取得</summary>
+        /// <summary>現在の進行番号文字列を取得（DGrpNo が設定されている場合は一致するエントリを返す）</summary>
         private string GetCurrentPrgNo()
         {
-            if (DS_Status == null) return string.Empty;
-            var floors = DS_Status["DS_FLOORs"]?.AsArray();
-            if (floors == null) return string.Empty;
-            foreach (var floor in floors)
-            {
-                var prgrs = floor?["DS_PRGRSs"]?.AsArray();
-                if (prgrs == null) continue;
-                foreach (var prg in prgrs)
-                {
-                    if (prg?["DS_KbnNo"]?.ToString() == 区分番号 &&
-                        prg?["DS_RndNo"]?.ToString() == ラウンド番号)
-                        return prg?["DS_PrgNo"]?.ToString() ?? string.Empty;
-                }
-            }
-            return string.Empty;
+            return DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
         }
 
         /// <summary>DS_Status から現在種目番号を取得（種目番号プロパティ優先）</summary>
@@ -592,7 +751,8 @@ namespace DSDsp.画面
             return 0;
         }
 
-        /// <summary>DS_Status から現在ヒート番号を取得（ヒート番号プロパティ優先）</summary>
+        /// <summary>DS_Status から現在ヒート番号を取得（ヒート番号プロパティ優先）。
+        /// DS_CurHeatId（UUID）を DS_PRGDANCEs[].DS_PRGHEATs[].DS_HeatId と照合してヒート番号を解決する。</summary>
         private int GetCurrentHeatNo()
         {
             if (ヒート番号 > 0) return ヒート番号;
@@ -605,11 +765,28 @@ namespace DSDsp.画面
                 if (prgrs == null) continue;
                 foreach (var prg in prgrs)
                 {
-                    if (prg?["DS_KbnNo"]?.ToString() == 区分番号 &&
-                        prg?["DS_RndNo"]?.ToString() == ラウンド番号)
+                    if (prg?["DS_KbnNo"]?.ToString() != 区分番号 ||
+                        prg?["DS_RndNo"]?.ToString() != ラウンド番号)
+                        continue;
+
+                    var curHeatId = prg?["DS_CurHeatId"]?.ToString();
+                    if (string.IsNullOrEmpty(curHeatId)) return 0;
+
+                    var prgDances = prg?["DS_PRGDANCEs"]?.AsArray();
+                    if (prgDances == null) return 0;
+                    foreach (var prgDance in prgDances)
                     {
-                        if (int.TryParse(prg?["DS_CurHeat"]?.ToString(), out var heatNo)) return heatNo;
+                        var heats = prgDance?["DS_PRGHEATs"]?.AsArray();
+                        if (heats == null) continue;
+                        foreach (var heat in heats)
+                        {
+                            if (heat?["DS_HeatId"]?.ToString() == curHeatId)
+                            {
+                                if (int.TryParse(heat?["DS_HeatNo"]?.ToString(), out var heatNo)) return heatNo;
+                            }
+                        }
                     }
+                    return 0;
                 }
             }
             return 0;

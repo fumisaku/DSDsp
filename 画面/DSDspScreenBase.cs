@@ -75,7 +75,21 @@ namespace DSDsp.画面
         public string    ラウンド番号{ get => _rndNo;     set => _rndNo     = value; }
         public string    DGrpNo     { get => _dGrpNo;    set => _dGrpNo    = value; }
         public int       種目番号   { get => _dncNo;     set => _dncNo     = value; }
-        public int       ヒート番号 { get => _heatNo;    set => _heatNo    = value; }
+        public int       ヒート番号
+        {
+            get => _heatNo;
+            set
+            {
+                _heatNo = value;
+                OnHeatNoChanged?.Invoke(value);
+            }
+        }
+
+        /// <summary>
+        /// ヒート番号プロパティが変化したときに呼ばれるコールバック。
+        /// MainWindow がセットして、コンボボックスをリアルタイム同期するために使用する。
+        /// </summary>
+        public Action<int>? OnHeatNoChanged { get; set; }
 
         /// <summary>
         /// 画面ID（例: "DSP_GRP_001"）。MainWindow が設定する。
@@ -94,6 +108,14 @@ namespace DSDsp.画面
 
         /// <summary>種目内の最終ヒートかどうか。</summary>
         public bool IsLastHeatInDance { get; set; } = false;
+
+        /// <summary>
+        /// HeatEnd 通知受信時に MainWindow から呼ばれる。
+        /// 派生クラスは、フェーズが未完了であれば必要なステップを補完し、
+        /// 次ヒートへの切り替えを自律的に処理する。
+        /// デフォルト実装は何もしない（Advance() にフォールバックさせる）。
+        /// </summary>
+        public virtual void NotifyHeatChanged() { }
 
         /// <summary>タイマー間隔（秒）- 派生クラスでオーバーライド可能</summary>
         protected virtual int TimerIntervalSeconds => 10;
