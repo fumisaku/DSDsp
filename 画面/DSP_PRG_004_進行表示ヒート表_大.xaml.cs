@@ -81,8 +81,11 @@ namespace DSDsp.画面
         #region イベントハンドラ
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // _partsMain の初期化のみ行う。
+            // HideAllParts() は DoStep1() の先頭で呼ぶことにしたため、ここでは呼ばない。
+            // Loaded イベントが Advance()/NotifyHeatChanged() より後に遅延発火した場合に
+            // タイトル・ヒート行を消去してしまう問題を根本から防ぐため。
             EnsurePartsMainInitialized();
-            HideAllParts();
         }
         #endregion
 
@@ -238,6 +241,11 @@ namespace DSDsp.画面
         /// <summary>STEP1: COM001, COM002 を表示。ヒートデータ事前計算。</summary>
         private void DoStep1()
         {
+            // 前回画面のゴミデータをクリアする。
+            // Loaded イベントではなくここで呼ぶことで、Loaded の遅延発火タイミングに依存しない。
+            EnsurePartsMainInitialized();
+            HideAllParts();
+
             // COM001: 競技会名
             if (DA_Master != null)
             {

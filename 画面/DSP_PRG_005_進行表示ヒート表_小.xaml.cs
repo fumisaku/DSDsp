@@ -58,8 +58,11 @@ namespace DSDsp.画面
         #region イベントハンドラ
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // _partsMain の初期化のみ行う。
+            // HideAllParts() は ExecuteCurrentStep() の初回（s=0）で呼ぶことにしたため、ここでは呼ばない。
+            // Loaded イベントが Advance()/NotifyHeatChanged() より後に遅延発火した場合に
+            // タイトル・ヒート行を消去してしまう問題を根本から防ぐため。
             EnsurePartsMainInitialized();
-            HideAllParts();
         }
         #endregion
 
@@ -81,7 +84,10 @@ namespace DSDsp.画面
 
             if (s == 0)
             {
-                // 初回 STEP1
+                // 初回 STEP1: 前回画面のゴミデータをクリアしてから表示する。
+                // Loaded ではなくここで呼ぶことで、Loaded の遅延発火タイミングに依存しない。
+                EnsurePartsMainInitialized();
+                HideAllParts();
                 PrepareHeatData();
                 Step1(0);
                 return;
