@@ -934,7 +934,10 @@ namespace DSDsp.画面
                                     {
                                         if (!heatPlayerMap.ContainsKey(hNo))
                                             heatPlayerMap[hNo] = new List<string>();
-                                        heatPlayerMap[hNo].Add(playerNo!);
+                                        if (!heatPlayerMap[hNo].Contains(playerNo!))
+                                            heatPlayerMap[hNo].Add(playerNo!);
+                                        // 1選手は同一種目内のいずれか1ヒートだけに所属する
+                                        break;
                                     }
                                 }
                             }
