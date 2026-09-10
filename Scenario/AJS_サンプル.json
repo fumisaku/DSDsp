@@ -1,4 +1,4 @@
-{
+﻿{
   "ScenarioName": "AJSサンプルシナリオ",
   "ScenarioType": "AJS",
   "Description": "AJS採点方式の画面進行シナリオ（画面IDのみ）",
@@ -11,28 +11,28 @@
       "Description": "区分ラウンド紹介"
     },
     {
-      "ScreenId": "DSP_TIT_002",
+      "ScreenId": "DSP_TIT_002_B",
       "EventNo": "",
       "EventSymbol": "",
       "HeatNo": "",
       "Description": "種目紹介大"
     },
     {
-      "ScreenId": "DSP_SOL_001",
+      "ScreenId": "DSP_SOL_001_B",
       "EventNo": "",
       "EventSymbol": "",
       "HeatNo": "",
       "Description": "ソロ選手紹介_大"
     },
     {
-      "ScreenId": "DSP_SOL_003",
+      "ScreenId": "DSP_SOL_002_B",
       "EventNo": "",
       "EventSymbol": "",
       "HeatNo": "",
       "Description": "ソロ選手結果_大"
     },
     {
-      "ScreenId": "DSP_SOL_004",
+      "ScreenId": "DSP_SOL_002_S",
       "EventNo": "",
       "EventSymbol": "",
       "HeatNo": "",

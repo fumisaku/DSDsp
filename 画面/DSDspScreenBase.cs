@@ -92,7 +92,7 @@ namespace DSDsp.画面
         public Action<int>? OnHeatNoChanged { get; set; }
 
         /// <summary>
-        /// 画面ID（例: "DSP_GRP_001"）。MainWindow が設定する。
+        /// 画面ID（例: "DSP_GRP_001_B"）。MainWindow が設定する。
         /// 自動表示ロジックでの画面判定に使用する。
         /// </summary>
         public string ScreenId { get; set; } = string.Empty;
@@ -102,7 +102,7 @@ namespace DSDsp.画面
 
         /// <summary>
         /// クロマキーモードかどうか。
-        /// DSP_GRP_001/002 で Step5（LST005フェードイン）後に自動進行せず停止する。
+        /// DSP_GRP_001_B/001_S で Step5（LST005フェードイン）後に自動進行せず停止する。
         /// </summary>
         public bool ChromaKeyMode   { get => _chromaKeyMode;  set => _chromaKeyMode  = value; }
 

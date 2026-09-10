@@ -913,7 +913,7 @@ namespace DSDsp
         private void SyncHeatCombosFromScreen(string screenId)
         {
             if (_currentProgressScreen == null) return;
-            if (screenId != "DSP_PRG_004" && screenId != "DSP_PRG_005") return;
+            if (screenId != "DSP_PRG_003_B" && screenId != "DSP_PRG_003_S") return;
 
             int screenHeatNo = _currentProgressScreen.ヒート番号;
             int screenDncNo  = _currentProgressScreen.種目番号;
@@ -1057,12 +1057,12 @@ namespace DSDsp
             bool isSmall = (_progressSize == ProgressSize.Small);
             return _progressMode switch
             {
-                ProgressDisplayMode.Heat  when !isSmall => "DSP_PRG_004",
-                ProgressDisplayMode.Heat  when isSmall  => "DSP_PRG_005",
-                ProgressDisplayMode.Final when !isSmall => "DSP_PRG_006",
-                ProgressDisplayMode.Final when isSmall  => "DSP_PRG_007",
-                _                         when !isSmall => "DSP_PRG_001",
-                _                                       => "DSP_PRG_002",
+                ProgressDisplayMode.Heat  when !isSmall => "DSP_PRG_003_B",
+                ProgressDisplayMode.Heat  when isSmall  => "DSP_PRG_003_S",
+                ProgressDisplayMode.Final when !isSmall => "DSP_PRG_004_B",
+                ProgressDisplayMode.Final when isSmall  => "DSP_PRG_004_S",
+                _                         when !isSmall => "DSP_PRG_001_B",
+                _                                       => "DSP_PRG_001_S",
             };
         }
 
@@ -1121,7 +1121,7 @@ namespace DSDsp
                         // STEP1（ヘッダー表示）のみ完了した状態になる。
                         // NotifyHeatChanged() でフェーズを補完してSTEP2→ヒート表示まで自動実行する。
                         var nextScreenId = GetProgressScreenId();
-                        if ((nextScreenId is "DSP_PRG_004" or "DSP_PRG_005")
+                        if ((nextScreenId is "DSP_PRG_003_B" or "DSP_PRG_003_S")
                             && _currentProgressScreen != null)
                         {
                             _currentProgressScreen.NotifyHeatChanged();
@@ -1631,9 +1631,9 @@ namespace DSDsp
             // 使用する画面ID を決定
             string screenId;
             if (_judgeDisplay == JudgeDisplayMode.ChromaList)
-                screenId = "DSP_PRG_014";
+                screenId = "DSP_PRG_008_S";
             else
-                screenId = (count <= 10) ? "DSP_PRG_012" : "DSP_PRG_013";
+                screenId = (count <= 10) ? "DSP_PRG_008_B" : "DSP_PRG_009_B";
 
             // クロマキ背景を適用
             bool isChroma = (_judgeDisplay == JudgeDisplayMode.ChromaList);
@@ -1642,9 +1642,9 @@ namespace DSDsp
             // 同じ画面・同じグループなら継続
             bool isSameScreen = _currentJudgeScreen != null
                 && _currentJudgeScreen.ScreenId == screenId
-                && (_currentJudgeScreen is 画面.DSP_PRG_012_ジャッジ紹介10_大 s12 && s12.JudgeGroupId == _currentJudgeGroupId
-                 || _currentJudgeScreen is 画面.DSP_PRG_013_ジャッジ紹介20_大 s13 && s13.JudgeGroupId == _currentJudgeGroupId
-                 || _currentJudgeScreen is 画面.DSP_PRG_014_ジャッジ紹介10_小 s14 && s14.JudgeGroupId == _currentJudgeGroupId);
+                && (_currentJudgeScreen is 画面.DSP_PRG_008_B_ジャッジ紹介10_大 s12 && s12.JudgeGroupId == _currentJudgeGroupId
+                 || _currentJudgeScreen is 画面.DSP_PRG_009_B_ジャッジ紹介20_大 s13 && s13.JudgeGroupId == _currentJudgeGroupId
+                 || _currentJudgeScreen is 画面.DSP_PRG_008_S_ジャッジ紹介10_小 s14 && s14.JudgeGroupId == _currentJudgeGroupId);
 
             if (!isSameScreen)
             {
@@ -1653,9 +1653,9 @@ namespace DSDsp
 
                 画面.DSDspScreenBase? newScreen = screenId switch
                 {
-                    "DSP_PRG_012" => new 画面.DSP_PRG_012_ジャッジ紹介10_大 { JudgeGroupId = _currentJudgeGroupId },
-                    "DSP_PRG_013" => new 画面.DSP_PRG_013_ジャッジ紹介20_大 { JudgeGroupId = _currentJudgeGroupId },
-                    "DSP_PRG_014" => new 画面.DSP_PRG_014_ジャッジ紹介10_小 { JudgeGroupId = _currentJudgeGroupId },
+                    "DSP_PRG_008_B" => new 画面.DSP_PRG_008_B_ジャッジ紹介10_大 { JudgeGroupId = _currentJudgeGroupId },
+                    "DSP_PRG_009_B" => new 画面.DSP_PRG_009_B_ジャッジ紹介20_大 { JudgeGroupId = _currentJudgeGroupId },
+                    "DSP_PRG_008_S" => new 画面.DSP_PRG_008_S_ジャッジ紹介10_小 { JudgeGroupId = _currentJudgeGroupId },
                     _ => null
                 };
 
@@ -1687,11 +1687,11 @@ namespace DSDsp
                 return;
             }
 
-            const string screenId = "DSP_PRG_010";
+            const string screenId = "DSP_PRG_006_S";
             ApplyJudgeWindowBackground(true);
 
             bool isSameScreen = _currentJudgeScreen?.ScreenId == screenId
-                && _currentJudgeScreen is 画面.DSP_PRG_010_選手紹介_小 s10prev
+                && _currentJudgeScreen is 画面.DSP_PRG_006_S_選手紹介_小 s10prev
                 && s10prev.HonorBango == _selectedJudge.JdgCd;
 
             if (!isSameScreen)
@@ -1699,7 +1699,7 @@ namespace DSDsp
                 if (_currentJudgeScreen != null)
                     _currentJudgeScreen.ScreenCompleted -= OnJudgeScreenCompleted;
 
-                var s010 = new 画面.DSP_PRG_010_選手紹介_小();
+                var s010 = new 画面.DSP_PRG_006_S_選手紹介_小();
                 s010.ScreenId          = screenId;
                 s010.DA_Master         = dm?.DA_Master;
                 s010.DS_Status         = dm?.DS_Status;
@@ -1740,11 +1740,11 @@ namespace DSDsp
                           || _judgeDisplay == JudgeDisplayMode.ChromaIndividual);
             ApplyJudgeWindowBackground(isChroma);
 
-            string screenId = isChroma ? "DSP_PRG_010" : "DSP_PRG_012";
+            string screenId = isChroma ? "DSP_PRG_006_S" : "DSP_PRG_008_B";
 
             bool canReuse = _currentJudgeScreen != null
-                && (_currentJudgeScreen.ScreenId == "DSP_PRG_010"
-                    || _currentJudgeScreen.ScreenId == "DSP_PRG_012");
+                && (_currentJudgeScreen.ScreenId == "DSP_PRG_006_S"
+                    || _currentJudgeScreen.ScreenId == "DSP_PRG_008_B");
 
             if (!canReuse)
             {
@@ -1753,7 +1753,7 @@ namespace DSDsp
 
                 if (isChroma)
                 {
-                    var s = new 画面.DSP_PRG_010_選手紹介_小();
+                    var s = new 画面.DSP_PRG_006_S_選手紹介_小();
                     s.ScreenId   = screenId;
                     s.DA_Master  = dm?.DA_Master;
                     s.DS_Status  = dm?.DS_Status;
@@ -1780,7 +1780,7 @@ namespace DSDsp
                 }
                 else
                 {
-                    var s = new 画面.DSP_PRG_012_ジャッジ紹介10_大();
+                    var s = new 画面.DSP_PRG_008_B_ジャッジ紹介10_大();
                     s.ScreenId   = screenId;
                     s.DA_Master  = dm?.DA_Master;
                     s.DS_Status  = dm?.DS_Status;
@@ -1807,7 +1807,7 @@ namespace DSDsp
             else
             {
                 // 画面を再利用する場合も、COM001以外を確実に非表示にする
-                if (_currentJudgeScreen is 画面.DSP_PRG_010_選手紹介_小 s010)
+                if (_currentJudgeScreen is 画面.DSP_PRG_006_S_選手紹介_小 s010)
                 {
                     s010.PartsCOM002.LB_右上.Visibility   = Visibility.Collapsed;
                     s010.PartsCOM003.LB_右上.Visibility   = Visibility.Collapsed;
@@ -1819,7 +1819,7 @@ namespace DSDsp
                     s010.PartsPRG006.IM_種目1.Visibility  = Visibility.Collapsed;
                     s010.PartsPRG006.IM_種目2.Visibility  = Visibility.Collapsed;
                 }
-                else if (_currentJudgeScreen is 画面.DSP_PRG_012_ジャッジ紹介10_大 s012)
+                else if (_currentJudgeScreen is 画面.DSP_PRG_008_B_ジャッジ紹介10_大 s012)
                 {
                     if (s012.PartsCOM002.FindName("LB_右上") is System.Windows.Controls.Label lb002)
                         lb002.Visibility = Visibility.Collapsed;
@@ -1940,7 +1940,7 @@ namespace DSDsp
             // ヒートモード時のコンボ選択値を取得（新規画面生成の初期値に使用）
             int selDncNo  = 0;
             int selHeatNo = 0;
-            if ((screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+            if ((screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
                 && CmbProgressDance?.SelectedItem is ProgressDanceItem pd
                 && CmbProgressHeat?.SelectedItem  is ProgressHeatItem  ph)
             {
@@ -1963,12 +1963,12 @@ namespace DSDsp
 
                 画面.DSDspScreenBase? newScreen = screenId switch
                 {
-                    "DSP_PRG_002" => new 画面.DSP_PRG_002_進行表示1面_小(),
-                    "DSP_PRG_004" => new 画面.DSP_PRG_004_進行表示ヒート表_大(),
-                    "DSP_PRG_005" => new 画面.DSP_PRG_005_進行表示ヒート表_小(),
-                    "DSP_PRG_006" => new 画面.DSP_PRG_006_決勝進出者_大(),
-                    "DSP_PRG_007" => new 画面.DSP_PRG_007_決勝進出者_小(),
-                    _             => new 画面.DSP_PRG_001_進行表示1面_大(),
+                    "DSP_PRG_001_S" => new 画面.DSP_PRG_001_S_進行表示1面_小(),
+                    "DSP_PRG_003_B" => new 画面.DSP_PRG_003_B_進行表示ヒート表_大(),
+                    "DSP_PRG_003_S" => new 画面.DSP_PRG_003_S_進行表示ヒート表_小(),
+                    "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大(),
+                    "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小(),
+                    _             => new 画面.DSP_PRG_001_B_進行表示1面_大(),
                 };
 
                 newScreen.ScreenId     = screenId;
@@ -1990,7 +1990,7 @@ namespace DSDsp
                 // DSP_PRG_004/005 はヒート番号が内部変更されたとき、コンボを即時同期する。
                 // 自動同期中は _suppressManualComboDepth++ にして
                 // SelectionChanged イベントによる手動変更フラグの誤セットを防ぐ。
-                if (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
                 {
                     newScreen.OnHeatNoChanged = heatNo =>
                     {
@@ -2021,7 +2021,7 @@ namespace DSDsp
                 _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
                 _log?.LogAdd($"進行画面表示: {screenId}  KbnNo={item.KbnNo} RndNo={item.RndNo} DGrpNo={item.DGrpNo}", _log.INFO);
             }
-            else if (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+            else if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
             {
                 // 既存の DSP_PRG_004/005 画面を継続使用する場合:
                 // 手動変更フラグが立っているときはジャンプ再生（後述）するのでここでは同期しない。
@@ -2035,18 +2035,18 @@ namespace DSDsp
             //   _phase==3（ヒート表示中）なら FadeOut→指定ヒートへ、
             //   それ以外（初回表示中など）なら通常の Advance() にフォールバック。
             if (_manualComboChanged
-                && (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                && (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
                 && selDncNo > 0 && selHeatNo > 0
-                && _currentProgressScreen is 画面.DSP_PRG_004_進行表示ヒート表_大 screen004)
+                && _currentProgressScreen is 画面.DSP_PRG_003_B_進行表示ヒート表_大 screen004)
             {
                 _manualComboChanged = false;
                 _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
                 screen004.JumpToHeat(selDncNo, selHeatNo);
             }
             else if (_manualComboChanged
-                && (screenId == "DSP_PRG_004" || screenId == "DSP_PRG_005")
+                && (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
                 && selDncNo > 0 && selHeatNo > 0
-                && _currentProgressScreen is 画面.DSP_PRG_005_進行表示ヒート表_小 screen005)
+                && _currentProgressScreen is 画面.DSP_PRG_003_S_進行表示ヒート表_小 screen005)
             {
                 _manualComboChanged = false;
                 _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
@@ -2263,26 +2263,26 @@ namespace DSDsp
         private static DSDspScreenBase? CreateAjsScreen(string screenId) => screenId switch
         {
             "DSP_TIT_001" => new 画面.DSP_TIT_001_区分ラウンド紹介(),
-            "DSP_TIT_002" => new 画面.DSP_TIT_002_種目紹介大(),
-            "DSP_TIT_003" => new 画面.DSP_TIT_003_種目紹介小(),
-            "DSP_SOL_001" => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
-            "DSP_SOL_002" => new 画面.DSP_SOL_002_ソロ選手紹介_小(),
-            "DSP_SOL_003" => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
-            "DSP_SOL_004" => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
-            "DSP_SOL_005" => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
-            "DSP_SOL_006" => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
-            "DSP_SOL_007" => new 画面.DSP_SOL_007_ソロ途中結果_大(),
-            "DSP_SOL_008" => new 画面.DSP_SOL_008_ソロ途中結果_小(),
-            "DSP_GRP_001" => new 画面.DSP_GRP_001_出場選手一覧_大(),
-            "DSP_GRP_002" => new 画面.DSP_GRP_002_出場選手一覧_小(),
-            "DSP_GRP_003" => new 画面.DSP_GRP_003_結果一覧_大(),
-            "DSP_GRP_004" => new 画面.DSP_GRP_004_結果一覧_小(),
-            "DSP_DUE_001" => new 画面.DSP_DUE_001_DUE選手紹介_大(),
-            "DSP_DUE_002" => new 画面.DSP_DUE_002_DUE選手紹介_小(),
-            "DSP_DUE_003" => new 画面.DSP_DUE_003_DUE選手結果_大(),
-            "DSP_DUE_004" => new 画面.DSP_DUE_004_DUE選手結果_小(),
-            "DSP_COM_001" => new 画面.DSP_COM_001_総合結果一覧_大(),
-            "DSP_COM_002" => new 画面.DSP_COM_002_総合結果一覧_小(),
+            "DSP_TIT_002_B" => new 画面.DSP_TIT_002_B_種目紹介大(),
+            "DSP_TIT_002_S" => new 画面.DSP_TIT_002_S_種目紹介小(),
+            "DSP_SOL_001_B" => new 画面.DSP_SOL_001_B_ソロ選手紹介_大(),
+            "DSP_SOL_001_S" => new 画面.DSP_SOL_001_S_ソロ選手紹介_小(),
+            "DSP_SOL_002_B" => new 画面.DSP_SOL_002_B_ソロ選手結果GD_大(),
+            "DSP_SOL_002_S" => new 画面.DSP_SOL_002_S_ソロ選手結果GD_小(),
+            "DSP_SOL_003_B" => new 画面.DSP_SOL_003_B_ソロ選手結果PD_大(),
+            "DSP_SOL_003_S" => new 画面.DSP_SOL_003_S_ソロ選手結果PD_小(),
+            "DSP_SOL_004_B" => new 画面.DSP_SOL_004_B_ソロ途中結果_大(),
+            "DSP_SOL_004_S" => new 画面.DSP_SOL_004_S_ソロ途中結果_小(),
+            "DSP_GRP_001_B" => new 画面.DSP_GRP_001_B_出場選手一覧_大(),
+            "DSP_GRP_001_S" => new 画面.DSP_GRP_001_S_出場選手一覧_小(),
+            "DSP_GRP_002_B" => new 画面.DSP_GRP_002_B_結果一覧_大(),
+            "DSP_GRP_002_S" => new 画面.DSP_GRP_002_S_結果一覧_小(),
+            "DSP_DUE_001_B" => new 画面.DSP_DUE_001_B_DUE選手紹介_大(),
+            "DSP_DUE_001_S" => new 画面.DSP_DUE_001_S_DUE選手紹介_小(),
+            "DSP_DUE_002_B" => new 画面.DSP_DUE_002_B_DUE選手結果_大(),
+            "DSP_DUE_002_S" => new 画面.DSP_DUE_002_S_DUE選手結果_小(),
+            "DSP_COM_001_B" => new 画面.DSP_COM_001_B_総合結果一覧_大(),
+            "DSP_COM_001_S" => new 画面.DSP_COM_001_S_総合結果一覧_小(),
             "DSP_TIT_999" => new 画面.DSP_TIT_999_終了(),
             _ => null
         };
@@ -2329,7 +2329,7 @@ namespace DSDsp
             // タイトル画面
             if (_awardSelectedIsAwardTitle)
             {
-                const string titleScreenId = "DSP_PRG_011";
+                const string titleScreenId = "DSP_PRG_007_B";
                 bool isSameTitleScreen = _currentAwardScreen?.ScreenId == titleScreenId;
 
                 if (!isSameTitleScreen)
@@ -2337,7 +2337,7 @@ namespace DSDsp
                     if (_currentAwardScreen != null)
                         _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
 
-                    var titleScreen = new 画面.DSP_PRG_011_タイトル紹介();
+                    var titleScreen = new 画面.DSP_PRG_007_B_タイトル紹介();
                     titleScreen.ScreenId       = titleScreenId;
                     titleScreen.DA_Master      = dm?.DA_Master;
                     titleScreen.DS_Status      = dm?.DS_Status;
@@ -2368,11 +2368,11 @@ namespace DSDsp
                                                && _awardOrder == AwardOrderMode.Page);
                 string screenId;
                 if (_awardDisplay == AwardDisplayMode.ChromaList)
-                    screenId = "DSP_PRG_009";
+                    screenId = "DSP_PRG_005_S";
                 else if (_awardDisplay == AwardDisplayMode.ChromaIndividual && !isChromaIndividualPage)
-                    screenId = "DSP_PRG_010";
+                    screenId = "DSP_PRG_006_S";
                 else
-                    screenId = "DSP_PRG_008";
+                    screenId = "DSP_PRG_005_B";
 
                 bool isSameScreen = _currentAwardScreen?.ScreenId == screenId
                     && _currentAwardScreen?.区分番号 == kbnNo
@@ -2390,9 +2390,9 @@ namespace DSDsp
 
                     画面.DSDspScreenBase? newScreen = screenId switch
                     {
-                        "DSP_PRG_009" => new 画面.DSP_PRG_009_決勝結果_小(),
-                        "DSP_PRG_010" => new 画面.DSP_PRG_010_選手紹介_小(),
-                        _ => new 画面.DSP_PRG_008_決勝結果_大()
+                        "DSP_PRG_005_S" => new 画面.DSP_PRG_005_S_決勝結果_小(),
+                        "DSP_PRG_006_S" => new 画面.DSP_PRG_006_S_選手紹介_小(),
+                        _ => new 画面.DSP_PRG_005_B_決勝結果_大()
                     };
 
                     newScreen.ScreenId    = screenId;
@@ -2402,7 +2402,7 @@ namespace DSDsp
                     newScreen.区分番号    = kbnNo;
                     newScreen.ラウンド番号 = rndNo;
 
-                    if (newScreen is 画面.DSP_PRG_008_決勝結果_大 s008)
+                    if (newScreen is 画面.DSP_PRG_005_B_決勝結果_大 s008)
                     {
                         s008.昇順表示  = (_awardOrder != AwardOrderMode.Desc);
                         s008.IsPageMode = (_awardOrder == AwardOrderMode.Page);
@@ -2418,12 +2418,12 @@ namespace DSDsp
                             catch { }
                         }
                     }
-                    else if (newScreen is 画面.DSP_PRG_009_決勝結果_小 s009)
+                    else if (newScreen is 画面.DSP_PRG_005_S_決勝結果_小 s009)
                     {
                         s009.IsPageMode = (_awardOrder == AwardOrderMode.Page);
                         s009.昇順表示  = (_awardOrder != AwardOrderMode.Desc);
                     }
-                    else if (newScreen is 画面.DSP_PRG_010_選手紹介_小 s010)
+                    else if (newScreen is 画面.DSP_PRG_006_S_選手紹介_小 s010)
                     {
                         s010.順位番号 = (_awardOrder == AwardOrderMode.Desc) ? GetMaxRank(dvResult) : 1;
                     }
@@ -2447,7 +2447,7 @@ namespace DSDsp
                 s.ScreenCompleted -= OnAwardScreenCompleted;
 
             // クロマキ個別（DSP_PRG_010）: 次の選手に進む
-            if (sender is 画面.DSP_PRG_010_選手紹介_小 s010 && _awardSelectedCategory != null)
+            if (sender is 画面.DSP_PRG_006_S_選手紹介_小 s010 && _awardSelectedCategory != null)
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -2460,8 +2460,8 @@ namespace DSDsp
                     if (hasNext && _offScreenWindow != null)
                     {
                         var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
-                        var newS010 = new 画面.DSP_PRG_010_選手紹介_小();
-                        newS010.ScreenId    = "DSP_PRG_010";
+                        var newS010 = new 画面.DSP_PRG_006_S_選手紹介_小();
+                        newS010.ScreenId    = "DSP_PRG_006_S";
                         newS010.DA_Master   = dm?.DA_Master;
                         newS010.DS_Status   = dm?.DS_Status;
                         newS010.DV_Result   = dvResult;
@@ -2470,7 +2470,7 @@ namespace DSDsp
                         newS010.順位番号    = nextRank;
                         newS010.ScreenCompleted += OnAwardScreenCompleted;
                         _currentAwardScreen = newS010;
-                        _offScreenWindow.ShowScreen(newS010, "DSP_PRG_010");
+                        _offScreenWindow.ShowScreen(newS010, "DSP_PRG_006_S");
                         newS010.Advance();
                         _log?.LogAdd($"クロマキ個別 次選手表示: 順位={nextRank}", _log.INFO);
                         UpdateAwardStatus($"クロマキ個別  順位={nextRank}");
@@ -2563,25 +2563,25 @@ namespace DSDsp
             画面.DSDspScreenBase? dest = source switch
             {
                 画面.DSP_TIT_001_区分ラウンド紹介    => new 画面.DSP_TIT_001_区分ラウンド紹介(),
-                画面.DSP_TIT_002_種目紹介大          => new 画面.DSP_TIT_002_種目紹介大(),
-                画面.DSP_SOL_001_ソロ選手紹介_大     => new 画面.DSP_SOL_001_ソロ選手紹介_大(),
-                画面.DSP_SOL_002_ソロ選手紹介_小     => new 画面.DSP_SOL_002_ソロ選手紹介_小(),
-                画面.DSP_SOL_003_ソロ選手結果GD_大   => new 画面.DSP_SOL_003_ソロ選手結果GD_大(),
-                画面.DSP_SOL_004_ソロ選手結果GD_小   => new 画面.DSP_SOL_004_ソロ選手結果GD_小(),
-                画面.DSP_SOL_005_ソロ選手結果PD_大   => new 画面.DSP_SOL_005_ソロ選手結果PD_大(),
-                画面.DSP_SOL_006_ソロ選手結果PD_小   => new 画面.DSP_SOL_006_ソロ選手結果PD_小(),
-                画面.DSP_SOL_007_ソロ途中結果_大     => new 画面.DSP_SOL_007_ソロ途中結果_大(),
-                画面.DSP_SOL_008_ソロ途中結果_小     => new 画面.DSP_SOL_008_ソロ途中結果_小(),
-                画面.DSP_GRP_001_出場選手一覧_大     => new 画面.DSP_GRP_001_出場選手一覧_大(),
-                画面.DSP_GRP_002_出場選手一覧_小     => new 画面.DSP_GRP_002_出場選手一覧_小(),
-                画面.DSP_GRP_003_結果一覧_大         => new 画面.DSP_GRP_003_結果一覧_大(),
-                画面.DSP_GRP_004_結果一覧_小         => new 画面.DSP_GRP_004_結果一覧_小(),
-                画面.DSP_COM_001_総合結果一覧_大     => new 画面.DSP_COM_001_総合結果一覧_大(),
-                画面.DSP_COM_002_総合結果一覧_小     => new 画面.DSP_COM_002_総合結果一覧_小(),
-                画面.DSP_DUE_001_DUE選手紹介_大      => new 画面.DSP_DUE_001_DUE選手紹介_大(),
-                画面.DSP_DUE_002_DUE選手紹介_小      => new 画面.DSP_DUE_002_DUE選手紹介_小(),
-                画面.DSP_DUE_003_DUE選手結果_大      => new 画面.DSP_DUE_003_DUE選手結果_大(),
-                画面.DSP_DUE_004_DUE選手結果_小      => new 画面.DSP_DUE_004_DUE選手結果_小(),
+                画面.DSP_TIT_002_B_種目紹介大          => new 画面.DSP_TIT_002_B_種目紹介大(),
+                画面.DSP_SOL_001_B_ソロ選手紹介_大     => new 画面.DSP_SOL_001_B_ソロ選手紹介_大(),
+                画面.DSP_SOL_001_S_ソロ選手紹介_小     => new 画面.DSP_SOL_001_S_ソロ選手紹介_小(),
+                画面.DSP_SOL_002_B_ソロ選手結果GD_大   => new 画面.DSP_SOL_002_B_ソロ選手結果GD_大(),
+                画面.DSP_SOL_002_S_ソロ選手結果GD_小   => new 画面.DSP_SOL_002_S_ソロ選手結果GD_小(),
+                画面.DSP_SOL_003_B_ソロ選手結果PD_大   => new 画面.DSP_SOL_003_B_ソロ選手結果PD_大(),
+                画面.DSP_SOL_003_S_ソロ選手結果PD_小   => new 画面.DSP_SOL_003_S_ソロ選手結果PD_小(),
+                画面.DSP_SOL_004_B_ソロ途中結果_大     => new 画面.DSP_SOL_004_B_ソロ途中結果_大(),
+                画面.DSP_SOL_004_S_ソロ途中結果_小     => new 画面.DSP_SOL_004_S_ソロ途中結果_小(),
+                画面.DSP_GRP_001_B_出場選手一覧_大     => new 画面.DSP_GRP_001_B_出場選手一覧_大(),
+                画面.DSP_GRP_001_S_出場選手一覧_小     => new 画面.DSP_GRP_001_S_出場選手一覧_小(),
+                画面.DSP_GRP_002_B_結果一覧_大         => new 画面.DSP_GRP_002_B_結果一覧_大(),
+                画面.DSP_GRP_002_S_結果一覧_小         => new 画面.DSP_GRP_002_S_結果一覧_小(),
+                画面.DSP_COM_001_B_総合結果一覧_大     => new 画面.DSP_COM_001_B_総合結果一覧_大(),
+                画面.DSP_COM_001_S_総合結果一覧_小     => new 画面.DSP_COM_001_S_総合結果一覧_小(),
+                画面.DSP_DUE_001_B_DUE選手紹介_大      => new 画面.DSP_DUE_001_B_DUE選手紹介_大(),
+                画面.DSP_DUE_001_S_DUE選手紹介_小      => new 画面.DSP_DUE_001_S_DUE選手紹介_小(),
+                画面.DSP_DUE_002_B_DUE選手結果_大      => new 画面.DSP_DUE_002_B_DUE選手結果_大(),
+                画面.DSP_DUE_002_S_DUE選手結果_小      => new 画面.DSP_DUE_002_S_DUE選手結果_小(),
                 画面.DSP_TIT_999_終了                => new 画面.DSP_TIT_999_終了(),
                 _ => null
             };
@@ -2894,12 +2894,12 @@ namespace DSDsp
 
                         画面.DSDspScreenBase? newScreen = screenId switch
                         {
-                            "DSP_PRG_002" => new 画面.DSP_PRG_002_進行表示1面_小(),
-                            "DSP_PRG_004" => new 画面.DSP_PRG_004_進行表示ヒート表_大(),
-                            "DSP_PRG_005" => new 画面.DSP_PRG_005_進行表示ヒート表_小(),
-                            "DSP_PRG_006" => new 画面.DSP_PRG_006_決勝進出者_大(),
-                            "DSP_PRG_007" => new 画面.DSP_PRG_007_決勝進出者_小(),
-                            _             => new 画面.DSP_PRG_001_進行表示1面_大(),
+                            "DSP_PRG_001_S" => new 画面.DSP_PRG_001_S_進行表示1面_小(),
+                            "DSP_PRG_003_B" => new 画面.DSP_PRG_003_B_進行表示ヒート表_大(),
+                            "DSP_PRG_003_S" => new 画面.DSP_PRG_003_S_進行表示ヒート表_小(),
+                            "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大(),
+                            "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小(),
+                            _             => new 画面.DSP_PRG_001_B_進行表示1面_大(),
                         };
 
                         newScreen.ScreenId      = screenId;
@@ -2932,7 +2932,7 @@ namespace DSDsp
                     // 再生ボタン未押しでフェーズが途中のままでも確実にヒートを表示できる。
                     // その他の画面は従来通り Advance() を呼ぶ。
                     var screenIdForHeat = GetProgressScreenId();
-                    if (screenIdForHeat is "DSP_PRG_004" or "DSP_PRG_005")
+                    if (screenIdForHeat is "DSP_PRG_003_B" or "DSP_PRG_003_S")
                     {
                         _currentProgressScreen!.NotifyHeatChanged();
                         _log?.LogAdd(
@@ -2968,7 +2968,7 @@ namespace DSDsp
                         // そのままではSTEP2（タイトル・区分名・ヒート表示）が実行されず黒画面になるため、
                         // NotifyHeatChanged() でフェーズを補完してSTEP2→ヒート表示まで自動実行する。
                         var nextScreenId = GetProgressScreenId();
-                        if ((nextScreenId is "DSP_PRG_004" or "DSP_PRG_005")
+                        if ((nextScreenId is "DSP_PRG_003_B" or "DSP_PRG_003_S")
                             && _currentProgressScreen != null)
                         {
                             _currentProgressScreen.NotifyHeatChanged();
@@ -3062,9 +3062,9 @@ namespace DSDsp
             // 対象となる結果画面ID
             var resultScreenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "DSP_DUE_003", "DSP_DUE_004",
-                "DSP_GRP_003", "DSP_GRP_004",
-                "DSP_SOL_003", "DSP_SOL_004", "DSP_SOL_005", "DSP_SOL_006",
+                "DSP_DUE_002_B", "DSP_DUE_002_S",
+                "DSP_GRP_002_B", "DSP_GRP_002_S",
+                "DSP_SOL_002_B", "DSP_SOL_002_S", "DSP_SOL_003_B", "DSP_SOL_003_S",
             };
 
             // 次の画面アイテムを取得
@@ -3304,7 +3304,7 @@ namespace DSDsp
 
                     // DSP_SOL_007 の行を自動選択
                     int sol007Index = _currentAjsProgressItems
-                        .FindIndex(i => i.ScreenId == "DSP_SOL_007");
+                        .FindIndex(i => i.ScreenId == "DSP_SOL_004_B");
                     _currentAjsIndex = sol007Index >= 0 ? sol007Index : 0;
                     LstAjsProgress.SelectedIndex = _currentAjsIndex;
                     UpdateResultReadyLabel();
@@ -3564,7 +3564,7 @@ namespace DSDsp
             // --- (A) タイトル画面 ---
             if (_honorSelectedIsTitle)
             {
-                const string titleId = "DSP_PRG_011";
+                const string titleId = "DSP_PRG_007_B";
                 bool isSame = _currentHonorScreen?.ScreenId == titleId;
 
                 if (!isSame)
@@ -3572,7 +3572,7 @@ namespace DSDsp
                     if (_currentHonorScreen != null)
                         _currentHonorScreen.ScreenCompleted -= OnHonorScreenCompleted;
 
-                    var ts = new 画面.DSP_PRG_011_タイトル紹介();
+                    var ts = new 画面.DSP_PRG_007_B_タイトル紹介();
                     ts.ScreenId       = titleId;
                     ts.DA_Master      = dm?.DA_Master;
                     ts.DS_Status      = dm?.DS_Status;
@@ -3628,7 +3628,7 @@ namespace DSDsp
             string 所属  = GetHonorAffiliation(選手情報);
             string 競技会名 = 画面.DSDspDataHelper.Get競技会名(dm?.DA_Master);
 
-            string screenId  = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_010" : "DSP_SOL_001";
+            string screenId  = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_006_S" : "DSP_SOL_001_B";
             string com003Text = $"{rankSuffix}  {lName}・{pName}";
 
             bool isSameScreen = _currentHonorScreen?.ScreenId == screenId
@@ -3642,7 +3642,7 @@ namespace DSDsp
 
                 if (_honorDisplay == HonorDisplayMode.Full)
                 {
-                    var sol001 = new 画面.DSP_SOL_001_ソロ選手紹介_大();
+                    var sol001 = new 画面.DSP_SOL_001_B_ソロ選手紹介_大();
                     sol001.ScreenId    = screenId;
                     sol001.DA_Master   = dm?.DA_Master;
                     sol001.DS_Status   = dm?.DS_Status;
@@ -3676,7 +3676,7 @@ namespace DSDsp
                 }
                 else // クロマキ: DSP_PRG_010
                 {
-                    var prg010 = new 画面.DSP_PRG_010_選手紹介_小();
+                    var prg010 = new 画面.DSP_PRG_006_S_選手紹介_小();
                     prg010.ScreenId        = screenId;
                     prg010.DA_Master       = dm?.DA_Master;
                     prg010.DS_Status       = dm?.DS_Status;
@@ -3707,7 +3707,7 @@ namespace DSDsp
                 if (_currentHonorScreen?.CurrentStep == 1)
                 {
                     if (_honorDisplay == HonorDisplayMode.Full
-                        && _currentHonorScreen is 画面.DSP_SOL_001_ソロ選手紹介_大 s001)
+                        && _currentHonorScreen is 画面.DSP_SOL_001_B_ソロ選手紹介_大 s001)
                     {
                         s001.PartsCOM003.LB_右上.Content    = com003Text;
                         s001.PartsCOM003.LB_右上.Visibility = Visibility.Visible;
@@ -3731,12 +3731,12 @@ namespace DSDsp
             EnsureOffScreenWindowCreated();
             if (_offScreenWindow == null) return;
 
-            string screenId = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_010" : "DSP_SOL_001";
+            string screenId = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_006_S" : "DSP_SOL_001_B";
             string 競技会名 = 画面.DSDspDataHelper.Get競技会名(dm?.DA_Master);
 
             bool canReuse = _currentHonorScreen != null
-                && (_currentHonorScreen.ScreenId == "DSP_SOL_001"
-                    || _currentHonorScreen.ScreenId == "DSP_PRG_010");
+                && (_currentHonorScreen.ScreenId == "DSP_SOL_001_B"
+                    || _currentHonorScreen.ScreenId == "DSP_PRG_006_S");
 
             if (!canReuse)
             {
@@ -3745,7 +3745,7 @@ namespace DSDsp
 
                 if (_honorDisplay == HonorDisplayMode.Full)
                 {
-                    var s = new 画面.DSP_SOL_001_ソロ選手紹介_大();
+                    var s = new 画面.DSP_SOL_001_B_ソロ選手紹介_大();
                     s.ScreenId = screenId;
                     s.DA_Master = dm?.DA_Master;
                     s.ScreenCompleted += OnHonorScreenCompleted;
@@ -3760,7 +3760,7 @@ namespace DSDsp
                 }
                 else // クロマキ: DSP_PRG_010
                 {
-                    var s = new 画面.DSP_PRG_010_選手紹介_小();
+                    var s = new 画面.DSP_PRG_006_S_選手紹介_小();
                     s.ScreenId = screenId;
                     s.DA_Master = dm?.DA_Master;
                     s.ScreenCompleted += OnHonorScreenCompleted;
@@ -3776,7 +3776,7 @@ namespace DSDsp
             }
 
             // COM001以外を非表示
-            if (_currentHonorScreen is 画面.DSP_SOL_001_ソロ選手紹介_大 sol1)
+            if (_currentHonorScreen is 画面.DSP_SOL_001_B_ソロ選手紹介_大 sol1)
             {
                 sol1.PartsCOM001.TB_左上2.Text = string.Empty;
                 sol1.PartsCOM002.LB_右上.Visibility  = Visibility.Collapsed;
@@ -3789,7 +3789,7 @@ namespace DSDsp
                 sol1.PartsTIT004.IM_種目1.Visibility  = Visibility.Collapsed;
                 sol1.PartsTIT004.IM_種目2.Visibility  = Visibility.Collapsed;
             }
-            else if (_currentHonorScreen is 画面.DSP_PRG_010_選手紹介_小 sol010)
+            else if (_currentHonorScreen is 画面.DSP_PRG_006_S_選手紹介_小 sol010)
             {
                 sol010.PartsCOM001.TB_左上2.Text        = string.Empty;
                 sol010.PartsCOM002.LB_右上.Visibility   = Visibility.Collapsed;
@@ -3823,7 +3823,7 @@ namespace DSDsp
         }
 
         /// <summary>SOL_001 パーツのフォントサイズ自動調整。</summary>
-        private void ApplyHonorFontAdjustments(画面.DSP_SOL_001_ソロ選手紹介_大 s)
+        private void ApplyHonorFontAdjustments(画面.DSP_SOL_001_B_ソロ選手紹介_大 s)
         {
             var pm = s.PartsMainInstance;
             if (pm == null) return;

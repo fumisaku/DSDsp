@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,30 +21,30 @@ namespace DSDsp.Scenario
         {
             ["Common"] = new()
             {
-                ("DSP_COM_001", "DSP_COM_002"),
+                ("DSP_COM_001_B", "DSP_COM_001_S"),
             },
             ["Solo"] = new()
             {
-                ("DSP_TIT_002", "DSP_TIT_003"),
-                ("DSP_SOL_001", "DSP_SOL_002"),
-                ("DSP_SOL_003", "DSP_SOL_004"),
-                ("DSP_SOL_005", "DSP_SOL_006"),
-                ("DSP_SOL_007", "DSP_SOL_008"),
+                ("DSP_TIT_002_B", "DSP_TIT_002_S"),
+                ("DSP_SOL_001_B", "DSP_SOL_001_S"),
+                ("DSP_SOL_002_B", "DSP_SOL_002_S"),
+                ("DSP_SOL_003_B", "DSP_SOL_003_S"),
+                ("DSP_SOL_004_B", "DSP_SOL_004_S"),
             },
             ["Group"] = new()
             {
-                ("DSP_TIT_002", "DSP_TIT_003"),
-                ("DSP_GRP_001", "DSP_GRP_002"),
-                ("DSP_GRP_003", "DSP_GRP_004"),
+                ("DSP_TIT_002_B", "DSP_TIT_002_S"),
+                ("DSP_GRP_001_B", "DSP_GRP_001_S"),
+                ("DSP_GRP_002_B", "DSP_GRP_002_S"),
             },
             ["Duel"] = new()
             {
-                ("DSP_TIT_002", "DSP_TIT_003"),
-                ("DSP_GRP_001", "DSP_GRP_002"),
-                ("DSP_GRP_003", "DSP_GRP_004"),
-                ("DSP_DUE_001", "DSP_DUE_002"),
-                ("DSP_DUE_003", "DSP_DUE_004"),
-                ("DSP_SOL_007", "DSP_SOL_008"),
+                ("DSP_TIT_002_B", "DSP_TIT_002_S"),
+                ("DSP_GRP_001_B", "DSP_GRP_001_S"),
+                ("DSP_GRP_002_B", "DSP_GRP_002_S"),
+                ("DSP_DUE_001_B", "DSP_DUE_001_S"),
+                ("DSP_DUE_002_B", "DSP_DUE_002_S"),
+                ("DSP_SOL_004_B", "DSP_SOL_004_S"),
             },
         };
 
@@ -337,7 +337,7 @@ namespace DSDsp.Scenario
 
                     // 3. 種目先頭で種目紹介（TIT_002 or TIT_003）
                     AddFirstEnabled(result, groupScreens,
-                        new[] { "DSP_TIT_002", "DSP_TIT_003" }, danceNo, 0, dncCd, "種目紹介");
+                        new[] { "DSP_TIT_002_B", "DSP_TIT_002_S" }, danceNo, 0, dncCd, "種目紹介");
 
                     // デュエル競技の場合、種目先頭に全ヒート選手一覧（ヒート表）を1回表示
                     if (dncSg is "D" or "Duel")
@@ -347,7 +347,7 @@ namespace DSDsp.Scenario
                         if (previewHeats != null && previewHeats.Count > 0)
                         {
                             AddFirstEnabledOverview(result, groupScreens,
-                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, dncCd, "デュエルヒート表");
+                                new[] { "DSP_GRP_001_B", "DSP_GRP_001_S" }, danceNo, dncCd, "デュエルヒート表");
                         }
                     }
 
@@ -375,24 +375,24 @@ namespace DSDsp.Scenario
                         {
                             // ソロ競技
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_SOL_001", "DSP_SOL_002" }, danceNo, heatNo, dncCd, "ソロ選手紹介");
+                                new[] { "DSP_SOL_001_B", "DSP_SOL_001_S" }, danceNo, heatNo, dncCd, "ソロ選手紹介");
 
                             if (isGd)
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_SOL_003", "DSP_SOL_004" }, danceNo, heatNo, dncCd, "ソロ選手結果GD");
+                                    new[] { "DSP_SOL_002_B", "DSP_SOL_002_S" }, danceNo, heatNo, dncCd, "ソロ選手結果GD");
                             else if (isPd)
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_SOL_005", "DSP_SOL_006" }, danceNo, heatNo, dncCd, "ソロ選手結果PD");
+                                    new[] { "DSP_SOL_003_B", "DSP_SOL_003_S" }, danceNo, heatNo, dncCd, "ソロ選手結果PD");
 
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, dncCd, "ソロ途中結果");
+                                new[] { "DSP_SOL_004_B", "DSP_SOL_004_S" }, danceNo, heatNo, dncCd, "ソロ途中結果");
 
                             // 最終ヒートの DSP_SOL_007/008 に IsLastHeatInDance フラグを立てる
                             if (isLastHeat)
                             {
                                 var lastItem = result.LastOrDefault(x =>
                                     x.DanceNo == danceNo && x.HeatNo == heatNo &&
-                                    (x.ScreenId == "DSP_SOL_007" || x.ScreenId == "DSP_SOL_008"));
+                                    (x.ScreenId == "DSP_SOL_004_B" || x.ScreenId == "DSP_SOL_004_S"));
                                 if (lastItem != null) lastItem.IsLastHeatInDance = true;
                             }
                         }
@@ -400,10 +400,10 @@ namespace DSDsp.Scenario
                         {
                             // グループ競技
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, dncCd, "グループ出場選手");
+                                new[] { "DSP_GRP_001_B", "DSP_GRP_001_S" }, danceNo, heatNo, dncCd, "グループ出場選手");
 
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, dncCd, "グループ結果");
+                                new[] { "DSP_GRP_002_B", "DSP_GRP_002_S" }, danceNo, heatNo, dncCd, "グループ結果");
                         }
                         else // "D"
                         {
@@ -413,23 +413,23 @@ namespace DSDsp.Scenario
                             {
                                 // 3組以上：グループ用画面で表示
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_GRP_001", "DSP_GRP_002" }, danceNo, heatNo, dncCd, "デュエル選手紹介（3組以上）");
+                                    new[] { "DSP_GRP_001_B", "DSP_GRP_001_S" }, danceNo, heatNo, dncCd, "デュエル選手紹介（3組以上）");
 
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_GRP_003", "DSP_GRP_004" }, danceNo, heatNo, dncCd, "デュエル選手結果（3組以上）");
+                                    new[] { "DSP_GRP_002_B", "DSP_GRP_002_S" }, danceNo, heatNo, dncCd, "デュエル選手結果（3組以上）");
                             }
                             else
                             {
                                 // 2組以下：デュエル専用画面で表示
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_DUE_001", "DSP_DUE_002" }, danceNo, heatNo, dncCd, "デュエル選手紹介");
+                                    new[] { "DSP_DUE_001_B", "DSP_DUE_001_S" }, danceNo, heatNo, dncCd, "デュエル選手紹介");
 
                                 AddFirstEnabled(result, groupScreens,
-                                    new[] { "DSP_DUE_003", "DSP_DUE_004" }, danceNo, heatNo, dncCd, "デュエル選手結果");
+                                    new[] { "DSP_DUE_002_B", "DSP_DUE_002_S" }, danceNo, heatNo, dncCd, "デュエル選手結果");
                             }
 
                             AddFirstEnabled(result, groupScreens,
-                                new[] { "DSP_SOL_007", "DSP_SOL_008" }, danceNo, heatNo, dncCd, "途中結果");
+                                new[] { "DSP_SOL_004_B", "DSP_SOL_004_S" }, danceNo, heatNo, dncCd, "途中結果");
                         }
                     }
 
@@ -441,7 +441,7 @@ namespace DSDsp.Scenario
                     if (!isFirst && !isLast)
                     {
                         AddFirstEnabled(result, resolvedScreens.Common,
-                            new[] { "DSP_COM_001", "DSP_COM_002" }, danceNo, 0, dncCd, "途中総合結果");
+                            new[] { "DSP_COM_001_B", "DSP_COM_001_S" }, danceNo, 0, dncCd, "途中総合結果");
                     }
                 }
 

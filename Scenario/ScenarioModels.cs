@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace DSDsp.Scenario
@@ -132,7 +132,7 @@ namespace DSDsp.Scenario
 
     /// <summary>
     /// AJSシナリオ定義ファイルの競技種別毎の画面グループ
-    /// キーは画面ID（例: "DSP_TIT_002"）
+    /// キーは画面ID（例: "DSP_TIT_002_B"）
     /// </summary>
     public class AjsScreenGroup : Dictionary<string, AjsScreenEntry>
     {
