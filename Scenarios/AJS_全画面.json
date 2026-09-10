@@ -1,0 +1,666 @@
+{
+  "ScenarioName": "AJSサンプルシナリオ",
+  "ScenarioType": "AJS",
+  "Description": "AJS採点方式の画面進行シナリオ定義ファイル。区分・種目順・ヒート順をDS_Statusから取得し、画面進行一覧を動的生成する。\nScreens.Final / Screens.SemiFinal に決勝・準決勝専用の定義を記述できる。\nラウンド名が「決勝」→ Final、「準決勝」→ SemiFinal のセクションを優先使用する。\nFinal/SemiFinalが未定義またはすべて空の場合は Screens 直下のフラットな定義を使用する（後方互換）。",
+
+  "_BackgroundExamples": {
+    "Description": "背景設定の例（実際に使用するものを 'Background' キーとして定義する）",
+    "None":     { "Type": "None" },
+    "Image":    { "Type": "Image", "ImageFile": "CHR169_タイトル1.png" },
+    "Color":    { "Type": "Color", "R": 0, "G": 30, "B": 60 },
+    "ChromaKey": { "Type": "ChromaKey" }
+  },
+
+  "_ChromaKeyNote": "Type=ChromaKey を指定すると DSDsp.json の ChromaKeySettings.BackgroundColor が背景色として使われます。色の変更は DSDsp.json の1箇所で完結します。",
+
+  "Background": {
+    "Type": "None"
+  },
+
+  "Screens": {
+
+    "_Comment": "このフラットセクションは後方互換用。ラウンド名が決勝・準決勝に合致しない場合、またはFinal/SemiFinalが未定義の場合に使用される。",
+
+    "Common": {
+      "DSP_TIT_001": {
+        "ScreenId": "DSP_TIT_001",
+        "Description": "区分ラウンド紹介（最初に1回表示）",
+        "Enabled": true
+      },
+      "DSP_COM_001": {
+        "ScreenId": "DSP_COM_001",
+        "Description": "途中総合結果一覧 大（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
+        "Enabled": true
+      },
+      "DSP_COM_002": {
+        "ScreenId": "DSP_COM_002",
+        "Description": "途中総合結果一覧 小（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
+        "Enabled": false
+      }
+    },
+
+    "Solo": {
+      "DSP_TIT_002": {
+        "ScreenId": "DSP_TIT_002",
+        "Description": "種目紹介 大（各種目の先頭で1回表示）",
+        "Enabled": true
+      },
+      "DSP_TIT_003": {
+        "ScreenId": "DSP_TIT_003",
+        "Description": "種目紹介 小（各種目の先頭で1回表示）",
+        "Enabled": false
+      },
+      "DSP_SOL_001": {
+        "ScreenId": "DSP_SOL_001",
+        "Description": "ソロ選手紹介 大（ヒート毎）",
+        "Enabled": true
+      },
+      "DSP_SOL_002": {
+        "ScreenId": "DSP_SOL_002",
+        "Description": "ソロ選手紹介 小（ヒート毎）",
+        "Enabled": false
+      },
+      "DSP_SOL_003": {
+        "ScreenId": "DSP_SOL_003",
+        "Description": "ソロ選手結果GD 大（GD採点方式のヒート毎結果）",
+        "ScrMtdType": "GD",
+        "Enabled": true
+      },
+      "DSP_SOL_004": {
+        "ScreenId": "DSP_SOL_004",
+        "Description": "ソロ選手結果GD 小（GD採点方式のヒート毎結果）",
+        "ScrMtdType": "GD",
+        "Enabled": false
+      },
+      "DSP_SOL_005": {
+        "ScreenId": "DSP_SOL_005",
+        "Description": "ソロ選手結果PD 大（PD採点方式のヒート毎結果）",
+        "ScrMtdType": "PD",
+        "Enabled": true
+      },
+      "DSP_SOL_006": {
+        "ScreenId": "DSP_SOL_006",
+        "Description": "ソロ選手結果PD 小（PD採点方式のヒート毎結果）",
+        "ScrMtdType": "PD",
+        "Enabled": false
+      },
+      "DSP_SOL_007": {
+        "ScreenId": "DSP_SOL_007",
+        "Description": "ソロ途中結果 大（ヒート毎、結果画面の後に表示）",
+        "Enabled": true
+      },
+      "DSP_SOL_008": {
+        "ScreenId": "DSP_SOL_008",
+        "Description": "ソロ途中結果 小（ヒート毎、結果画面の後に表示）",
+        "Enabled": false
+      }
+    },
+
+    "Group": {
+      "DSP_TIT_002": {
+        "ScreenId": "DSP_TIT_002",
+        "Description": "種目紹介 大（各種目の先頭で1回表示）",
+        "Enabled": true
+      },
+      "DSP_TIT_003": {
+        "ScreenId": "DSP_TIT_003",
+        "Description": "種目紹介 小（各種目の先頭で1回表示）",
+        "Enabled": false
+      },
+      "DSP_GRP_001": {
+        "ScreenId": "DSP_GRP_001",
+        "Description": "グループ出場選手一覧 大（ヒート毎）",
+        "Enabled": true
+      },
+      "DSP_GRP_002": {
+        "ScreenId": "DSP_GRP_002",
+        "Description": "グループ出場選手一覧 小（ヒート毎）",
+        "Enabled": false
+      },
+      "DSP_GRP_003": {
+        "ScreenId": "DSP_GRP_003",
+        "Description": "グループ結果一覧 大（ヒート毎）",
+        "Enabled": true
+      },
+      "DSP_GRP_004": {
+        "ScreenId": "DSP_GRP_004",
+        "Description": "グループ結果一覧 小（ヒート毎）",
+        "Enabled": false
+      }
+    },
+
+    "Duel": {
+      "DSP_TIT_002": {
+        "ScreenId": "DSP_TIT_002",
+        "Description": "種目紹介 大（各種目の先頭で1回表示）",
+        "Enabled": true
+      },
+      "DSP_TIT_003": {
+        "ScreenId": "DSP_TIT_003",
+        "Description": "種目紹介 小（各種目の先頭で1回表示）",
+        "Enabled": false
+      },
+      "DSP_GRP_001": {
+        "ScreenId": "DSP_GRP_001",
+        "Description": "デュエルヒート表 大（各種目の先頭で1回表示。全ヒート選手一覧をヒート番号付きで表示）",
+        "Enabled": true
+      },
+      "DSP_GRP_002": {
+        "ScreenId": "DSP_GRP_002",
+        "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
+        "Enabled": false
+      },
+      "DSP_DUE_001": {
+        "ScreenId": "DSP_DUE_001",
+        "Description": "デュエル選手紹介 大（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": true
+      },
+      "DSP_DUE_002": {
+        "ScreenId": "DSP_DUE_002",
+        "Description": "デュエル選手紹介 小（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": false
+      },
+      "DSP_DUE_003": {
+        "ScreenId": "DSP_DUE_003",
+        "Description": "デュエル選手結果 大（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": true
+      },
+      "DSP_DUE_004": {
+        "ScreenId": "DSP_DUE_004",
+        "Description": "デュエル選手結果 小（ヒート毎・出場選手2組以下の場合）",
+        "Enabled": false
+      },
+      "DSP_GRP_003": {
+        "ScreenId": "DSP_GRP_003",
+        "Description": "デュエル選手結果（3組以上） 大（ヒート毎・出場選手3組以上の場合）",
+        "Enabled": true
+      },
+      "DSP_GRP_004": {
+        "ScreenId": "DSP_GRP_004",
+        "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
+        "Enabled": false
+      },
+      "DSP_SOL_007": {
+        "ScreenId": "DSP_SOL_007",
+        "Description": "途中結果 大（ヒート毎、結果画面の後に表示）",
+        "Enabled": true
+      },
+      "DSP_SOL_008": {
+        "ScreenId": "DSP_SOL_008",
+        "Description": "途中結果 小（ヒート毎、結果画面の後に表示）",
+        "Enabled": false
+      }
+    },
+
+    "Final": {
+      "_Comment": "決勝用の画面定義。ラウンド名に「決勝」を含み「準決勝」を含まない場合にこのセクションが使用される。",
+
+      "Common": {
+        "DSP_TIT_001": {
+          "ScreenId": "DSP_TIT_001",
+          "Description": "区分ラウンド紹介（最初に1回表示）",
+          "Enabled": true
+        },
+        "DSP_COM_001": {
+          "ScreenId": "DSP_COM_001",
+          "Description": "途中総合結果一覧 大（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
+          "Enabled": true
+        },
+        "DSP_COM_002": {
+          "ScreenId": "DSP_COM_002",
+          "Description": "途中総合結果一覧 小（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
+          "Enabled": false
+        }
+      },
+
+      "Solo": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_TIT_003": {
+          "ScreenId": "DSP_TIT_003",
+          "Description": "種目紹介 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_SOL_001": {
+          "ScreenId": "DSP_SOL_001",
+          "Description": "ソロ選手紹介 大（ヒート毎）",
+          "Enabled": true
+        },
+        "DSP_SOL_002": {
+          "ScreenId": "DSP_SOL_002",
+          "Description": "ソロ選手紹介 小（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_SOL_003": {
+          "ScreenId": "DSP_SOL_003",
+          "Description": "ソロ選手結果GD 大（GD採点方式のヒート毎結果）",
+          "ScrMtdType": "GD",
+          "Enabled": true
+        },
+        "DSP_SOL_004": {
+          "ScreenId": "DSP_SOL_004",
+          "Description": "ソロ選手結果GD 小（GD採点方式のヒート毎結果）",
+          "ScrMtdType": "GD",
+          "Enabled": false
+        },
+        "DSP_SOL_005": {
+          "ScreenId": "DSP_SOL_005",
+          "Description": "ソロ選手結果PD 大（PD採点方式のヒート毎結果）",
+          "ScrMtdType": "PD",
+          "Enabled": true
+        },
+        "DSP_SOL_006": {
+          "ScreenId": "DSP_SOL_006",
+          "Description": "ソロ選手結果PD 小（PD採点方式のヒート毎結果）",
+          "ScrMtdType": "PD",
+          "Enabled": false
+        },
+        "DSP_SOL_007": {
+          "ScreenId": "DSP_SOL_007",
+          "Description": "ソロ途中結果 大（ヒート毎、結果画面の後に表示）",
+          "Enabled": true
+        },
+        "DSP_SOL_008": {
+          "ScreenId": "DSP_SOL_008",
+          "Description": "ソロ途中結果 小（ヒート毎、結果画面の後に表示）",
+          "Enabled": false
+        }
+      },
+
+      "Group": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_TIT_003": {
+          "ScreenId": "DSP_TIT_003",
+          "Description": "種目紹介 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_GRP_001": {
+          "ScreenId": "DSP_GRP_001",
+          "Description": "グループ出場選手一覧 大（ヒート毎）",
+          "Enabled": true
+        },
+        "DSP_GRP_002": {
+          "ScreenId": "DSP_GRP_002",
+          "Description": "グループ出場選手一覧 小（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_GRP_003": {
+          "ScreenId": "DSP_GRP_003",
+          "Description": "グループ結果一覧 大（ヒート毎）",
+          "Enabled": true
+        },
+        "DSP_GRP_004": {
+          "ScreenId": "DSP_GRP_004",
+          "Description": "グループ結果一覧 小（ヒート毎）",
+          "Enabled": false
+        }
+      },
+
+      "Duel": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_TIT_003": {
+          "ScreenId": "DSP_TIT_003",
+          "Description": "種目紹介 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_GRP_001": {
+          "ScreenId": "DSP_GRP_001",
+          "Description": "デュエルヒート表 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_GRP_002": {
+          "ScreenId": "DSP_GRP_002",
+          "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_DUE_001": {
+          "ScreenId": "DSP_DUE_001",
+          "Description": "デュエル選手紹介 大（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": true
+        },
+        "DSP_DUE_002": {
+          "ScreenId": "DSP_DUE_002",
+          "Description": "デュエル選手紹介 小（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": false
+        },
+        "DSP_DUE_003": {
+          "ScreenId": "DSP_DUE_003",
+          "Description": "デュエル選手結果 大（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": true
+        },
+        "DSP_DUE_004": {
+          "ScreenId": "DSP_DUE_004",
+          "Description": "デュエル選手結果 小（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": false
+        },
+        "DSP_GRP_003": {
+          "ScreenId": "DSP_GRP_003",
+          "Description": "デュエル選手結果（3組以上） 大（ヒート毎・出場選手3組以上の場合）",
+          "Enabled": true
+        },
+        "DSP_GRP_004": {
+          "ScreenId": "DSP_GRP_004",
+          "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
+          "Enabled": false
+        },
+        "DSP_SOL_007": {
+          "ScreenId": "DSP_SOL_007",
+          "Description": "途中結果 大（ヒート毎、結果画面の後に表示）",
+          "Enabled": true
+        },
+        "DSP_SOL_008": {
+          "ScreenId": "DSP_SOL_008",
+          "Description": "途中結果 小（ヒート毎、結果画面の後に表示）",
+          "Enabled": false
+        }
+      }
+    },
+
+    "SemiFinal": {
+      "_Comment": "準決勝用の画面定義。ラウンド名に「準決勝」を含む場合にこのセクションが使用される。",
+
+      "Common": {
+        "DSP_TIT_001": {
+          "ScreenId": "DSP_TIT_001",
+          "Description": "区分ラウンド紹介（最初に1回表示）",
+          "Enabled": true
+        },
+        "DSP_COM_001": {
+          "ScreenId": "DSP_COM_001",
+          "Description": "途中総合結果一覧 大（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
+          "Enabled": true
+        },
+        "DSP_COM_002": {
+          "ScreenId": "DSP_COM_002",
+          "Description": "途中総合結果一覧 小（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
+          "Enabled": false
+        }
+      },
+
+      "Solo": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_TIT_003": {
+          "ScreenId": "DSP_TIT_003",
+          "Description": "種目紹介 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_SOL_001": {
+          "ScreenId": "DSP_SOL_001",
+          "Description": "ソロ選手紹介 大（ヒート毎）",
+          "Enabled": true
+        },
+        "DSP_SOL_002": {
+          "ScreenId": "DSP_SOL_002",
+          "Description": "ソロ選手紹介 小（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_SOL_003": {
+          "ScreenId": "DSP_SOL_003",
+          "Description": "ソロ選手結果GD 大（GD採点方式のヒート毎結果）",
+          "ScrMtdType": "GD",
+          "Enabled": true
+        },
+        "DSP_SOL_004": {
+          "ScreenId": "DSP_SOL_004",
+          "Description": "ソロ選手結果GD 小（GD採点方式のヒート毎結果）",
+          "ScrMtdType": "GD",
+          "Enabled": false
+        },
+        "DSP_SOL_005": {
+          "ScreenId": "DSP_SOL_005",
+          "Description": "ソロ選手結果PD 大（PD採点方式のヒート毎結果）",
+          "ScrMtdType": "PD",
+          "Enabled": true
+        },
+        "DSP_SOL_006": {
+          "ScreenId": "DSP_SOL_006",
+          "Description": "ソロ選手結果PD 小（PD採点方式のヒート毎結果）",
+          "ScrMtdType": "PD",
+          "Enabled": false
+        },
+        "DSP_SOL_007": {
+          "ScreenId": "DSP_SOL_007",
+          "Description": "ソロ途中結果 大（ヒート毎、結果画面の後に表示）",
+          "Enabled": true
+        },
+        "DSP_SOL_008": {
+          "ScreenId": "DSP_SOL_008",
+          "Description": "ソロ途中結果 小（ヒート毎、結果画面の後に表示）",
+          "Enabled": false
+        }
+      },
+
+      "Group": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_TIT_003": {
+          "ScreenId": "DSP_TIT_003",
+          "Description": "種目紹介 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_GRP_001": {
+          "ScreenId": "DSP_GRP_001",
+          "Description": "グループ出場選手一覧 大（ヒート毎）",
+          "Enabled": true
+        },
+        "DSP_GRP_002": {
+          "ScreenId": "DSP_GRP_002",
+          "Description": "グループ出場選手一覧 小（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_GRP_003": {
+          "ScreenId": "DSP_GRP_003",
+          "Description": "グループ結果一覧 大（ヒート毎）",
+          "Enabled": true
+        },
+        "DSP_GRP_004": {
+          "ScreenId": "DSP_GRP_004",
+          "Description": "グループ結果一覧 小（ヒート毎）",
+          "Enabled": false
+        }
+      },
+
+      "Duel": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_TIT_003": {
+          "ScreenId": "DSP_TIT_003",
+          "Description": "種目紹介 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_GRP_001": {
+          "ScreenId": "DSP_GRP_001",
+          "Description": "デュエルヒート表 大（各種目の先頭で1回表示）",
+          "Enabled": true
+        },
+        "DSP_GRP_002": {
+          "ScreenId": "DSP_GRP_002",
+          "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_DUE_001": {
+          "ScreenId": "DSP_DUE_001",
+          "Description": "デュエル選手紹介 大（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": true
+        },
+        "DSP_DUE_002": {
+          "ScreenId": "DSP_DUE_002",
+          "Description": "デュエル選手紹介 小（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": false
+        },
+        "DSP_DUE_003": {
+          "ScreenId": "DSP_DUE_003",
+          "Description": "デュエル選手結果 大（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": true
+        },
+        "DSP_DUE_004": {
+          "ScreenId": "DSP_DUE_004",
+          "Description": "デュエル選手結果 小（ヒート毎・出場選手2組以下の場合）",
+          "Enabled": false
+        },
+        "DSP_GRP_003": {
+          "ScreenId": "DSP_GRP_003",
+          "Description": "デュエル選手結果（3組以上） 大（ヒート毎・出場選手3組以上の場合）",
+          "Enabled": true
+        },
+        "DSP_GRP_004": {
+          "ScreenId": "DSP_GRP_004",
+          "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
+          "Enabled": false
+        },
+        "DSP_SOL_007": {
+          "ScreenId": "DSP_SOL_007",
+          "Description": "途中結果 大（ヒート毎、結果画面の後に表示）",
+          "Enabled": true
+        },
+        "DSP_SOL_008": {
+          "ScreenId": "DSP_SOL_008",
+          "Description": "途中結果 小（ヒート毎、結果画面の後に表示）",
+          "Enabled": false
+        }
+      }
+    }
+  },
+
+  "SubScenario": {
+    "ScenarioName": "AJS SUBシナリオサンプル",
+    "Description": "メインの上に透明背景で重ねて表示するSUBシナリオ。区分・種目・ヒートはメインと同じDS_Statusから取得する。",
+
+    "Screens": {
+      "Common": {},
+
+      "Solo": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_SOL_001": {
+          "ScreenId": "DSP_SOL_001",
+          "Description": "ソロ選手紹介 大（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_SOL_003": {
+          "ScreenId": "DSP_SOL_003",
+          "Description": "ソロ選手結果GD 大（GD採点方式のヒート毎結果）",
+          "ScrMtdType": "GD",
+          "Enabled": false
+        },
+        "DSP_SOL_005": {
+          "ScreenId": "DSP_SOL_005",
+          "Description": "ソロ選手結果PD 大（PD採点方式のヒート毎結果）",
+          "ScrMtdType": "PD",
+          "Enabled": false
+        },
+        "DSP_SOL_007": {
+          "ScreenId": "DSP_SOL_007",
+          "Description": "ソロ途中結果 大（ヒート毎、結果画面の後に表示）",
+          "Enabled": false
+        }
+      },
+
+      "Group": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_GRP_001": {
+          "ScreenId": "DSP_GRP_001",
+          "Description": "グループ出場選手一覧 大（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_GRP_003": {
+          "ScreenId": "DSP_GRP_003",
+          "Description": "グループ結果一覧 大（ヒート毎）",
+          "Enabled": false
+        }
+      },
+
+      "Duel": {
+        "DSP_TIT_002": {
+          "ScreenId": "DSP_TIT_002",
+          "Description": "種目紹介 大（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_GRP_001": {
+          "ScreenId": "DSP_GRP_001",
+          "Description": "デュエルヒート表 大（各種目の先頭で1回表示）",
+          "Enabled": false
+        },
+        "DSP_DUE_001": {
+          "ScreenId": "DSP_DUE_001",
+          "Description": "デュエル選手紹介 大（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_DUE_003": {
+          "ScreenId": "DSP_DUE_003",
+          "Description": "デュエル選手結果 大（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_GRP_003": {
+          "ScreenId": "DSP_GRP_003",
+          "Description": "デュエル選手結果（3組以上） 大（ヒート毎）",
+          "Enabled": false
+        },
+        "DSP_SOL_007": {
+          "ScreenId": "DSP_SOL_007",
+          "Description": "途中結果 大（ヒート毎）",
+          "Enabled": false
+        }
+      }
+    }
+  },
+
+  "_ScreenBuildRules": {
+    "Description": "画面進行一覧の生成ルール（実装参照用コメント）",
+    "ValidationRules": [
+      "V1. 同一ロールの大/小ペア（例: DSP_TIT_002 と DSP_TIT_003）は、両方 Enabled:true はエラーとする。",
+      "V2. DE_DncSG が 'S'/'G'/'D' 以外の場合はエラーとする。",
+      "V3. DC_RndScrMtd が取得できない場合はエラーとする。"
+    ],
+    "BuildRules": [
+      "1. 最初に Common.DSP_TIT_001 を追加する（Enabled:true の場合）。",
+      "2. DS_Status の DS_PRGDANCEs（種目リスト）を DS_DncNo 昇順で走査する。",
+      "3. 各種目の先頭で、競技種別に対応する DSP_TIT_002 または DSP_TIT_003 を追加する（Enabled:true の方）。",
+      "3d. デュエル競技の場合、種目先頭に DSP_GRP_001/002（IsOverviewMode=true）を1回追加する。",
+      "    この画面は全ヒートの出場選手をヒート番号昇順で一覧表示し、LB_結果_順位 に '1H','2H' などを表示する。",
+      "4. 各種目の DS_PRGHEATs（ヒートリスト）を DS_HeatNo 昇順で走査する。",
+      "4a. ソロ競技（DE_DncSG='S'）かつ GD（DC_RndScrMtd に 'for GD' を含む）の場合：",
+      "    DSP_SOL_001/002 → DSP_SOL_003/004 → DSP_SOL_007/008 をヒート毎に追加する（各 Enabled:true の方）。",
+      "4b. ソロ競技（DE_DncSG='S'）かつ PD（DC_RndScrMtd に 'for PD' を含む）の場合：",
+      "    DSP_SOL_001/002 → DSP_SOL_005/006 → DSP_SOL_007/008 をヒート毎に追加する（各 Enabled:true の方）。",
+      "4c. グループ競技（DE_DncSG='G'）の場合：",
+      "    DSP_GRP_001/002 → DSP_GRP_003/004 をヒート毎に追加する（各 Enabled:true の方）。",
+      "4d. デュエル競技（DE_DncSG='D'）の場合（ヒート毎）：",
+      "    ヒートの出場選手が2組以下: DSP_DUE_001/002（選手紹介）→ DSP_DUE_003/004（選手結果）→ DSP_SOL_007/008（途中結果）",
+      "    ヒートの出場選手が3組以上: DSP_GRP_001/002（選手紹介）→ DSP_GRP_003/004（選手結果）→ DSP_SOL_007/008（途中結果）",
+      "5. 種目終了後、1種目目の終了後と最終種目の終了後を除き、Common.DSP_COM_001 または DSP_COM_002 を追加する（Enabled:true の方）。",
+      "6. [決勝/準決勝切り替え] DA_Masterのラウンド名（DC_RndName_J）を参照し、Screens.Final または Screens.SemiFinal のセクションを優先使用する。",
+      "   ラウンド名に「準決勝」を含む → Screens.SemiFinal",
+      "   ラウンド名に「決勝」を含み「準決勝」を含まない → Screens.Final",
+      "   それ以外またはFinal/SemiFinalが未定義 → Screens直下のフラットセクション（後方互換）"
+    ]
+  }
+}

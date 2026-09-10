@@ -1083,9 +1083,23 @@ namespace DSDsp
         {
             if (sender is 画面.DSDspScreenBase s)
                 s.ScreenCompleted -= OnProgressScreenCompleted;
-            _currentProgressScreen = null;
 
-            // 自動更新ON の場合、次の進行に選択を移す
+            // sender が現在の進行画面と一致しない場合は、すでに次の進行画面が設定済みである。
+            // （例: HeatEnd 通知の 2b 処理で ExecuteProgressStep() が先に呼ばれ、
+            //   _currentProgressScreen が次の進行の画面に更新された後で、
+            //   前の進行画面の RaiseScreenCompleted() が非同期コールバックから遅れて発火するケース）
+            // この場合 _currentProgressScreen を null にしたり _currentProgressIndex を進めると
+            // 新しい進行画面が消えて黒画面になるため、何もせずに返る。
+            if (sender != null && sender != _currentProgressScreen)
+            {
+                _log?.LogAdd("OnProgressScreenCompleted: 古い画面からの通知のためスキップ", _log.DEBUG);
+                return;
+            }
+
+            _currentProgressScreen = null;
+            _currentProgressScreenId = string.Empty;
+
+            // 自動更新ON の場合、次の進行に選択を移して即時表示する
             if (_autoProgress)
             {
                 Dispatcher.Invoke(() =>
@@ -1098,6 +1112,23 @@ namespace DSDsp
                         _currentProgressIndex = nextIdx;
                         LstProgressItems.SelectedIndex = nextIdx;
                         _log?.LogAdd($"進行: 次の項目へ自動遷移 Index={nextIdx}", _log.INFO);
+
+                        // 次の進行画面を即時生成・表示する（STEP1 から実行）
+                        EnsureOffScreenWindowCreated();
+                        ExecuteProgressStep();
+
+                        // DSP_PRG_004/005 の場合、ExecuteProgressStep() が Advance() を1回呼んで
+                        // STEP1（ヘッダー表示）のみ完了した状態になる。
+                        // NotifyHeatChanged() でフェーズを補完してSTEP2→ヒート表示まで自動実行する。
+                        var nextScreenId = GetProgressScreenId();
+                        if ((nextScreenId is "DSP_PRG_004" or "DSP_PRG_005")
+                            && _currentProgressScreen != null)
+                        {
+                            _currentProgressScreen.NotifyHeatChanged();
+                            _log?.LogAdd(
+                                $"ScreenCompleted 自動遷移: NotifyHeatChanged で次進行のSTEP2+ヒート表示を補完 ({nextScreenId})",
+                                _log.INFO);
+                        }
                     }
                 });
             }
@@ -2931,6 +2962,20 @@ namespace DSDsp
                         EnsureOffScreenWindowCreated();
                         ExecuteProgressStep();
                         _log?.LogAdd($"HeatEnd: 次の進行へ自動遷移 Index={nextIdx}", _log.INFO);
+
+                        // DSP_PRG_004/005 の場合、ExecuteProgressStep() が Advance() を1回呼んで
+                        // STEP1（ヘッダー表示）のみ完了した状態になる。
+                        // そのままではSTEP2（タイトル・区分名・ヒート表示）が実行されず黒画面になるため、
+                        // NotifyHeatChanged() でフェーズを補完してSTEP2→ヒート表示まで自動実行する。
+                        var nextScreenId = GetProgressScreenId();
+                        if ((nextScreenId is "DSP_PRG_004" or "DSP_PRG_005")
+                            && _currentProgressScreen != null)
+                        {
+                            _currentProgressScreen.NotifyHeatChanged();
+                            _log?.LogAdd(
+                                $"HeatEnd 2b: NotifyHeatChanged で次進行のSTEP2+ヒート表示を補完 ({nextScreenId})",
+                                _log.INFO);
+                        }
                     }
                     else
                     {
