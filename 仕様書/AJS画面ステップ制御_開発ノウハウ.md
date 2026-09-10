@@ -79,7 +79,7 @@ protected void RaiseLastStepFadeOutCompleted()
 #### 派生クラスでの使い方（最終 Step のフェードアウト完了を通知する）
 
 ```csharp
-// 例: DSP_TIT_002
+// 例: DSP_TIT_002_B
 public override bool WaitsForLastStepFadeOut => true;
 
 public void Step3()  // 最終フェードアウトStep
@@ -418,16 +418,21 @@ AJS シナリオファイルに `SubScenario` セクションを追加するこ�
 
 | 大 | 小 | 備考 |
 |---|---|---|
-| DSP_TIT_002 | DSP_TIT_003 | 種目紹介 |
-| DSP_SOL_001 | DSP_SOL_002 | ソロ選手紹介 |
-| DSP_SOL_003 | DSP_SOL_004 | ソロ結果 GD |
-| DSP_SOL_005 | DSP_SOL_006 | ソロ結果 PD |
-| DSP_SOL_007 | DSP_SOL_008 | ソロ途中結果 |
-| DSP_GRP_001 | DSP_GRP_002 | グループ出場選手一覧 |
-| DSP_GRP_003 | DSP_GRP_004 | グループ結果一覧 |
-| DSP_DUE_001 | DSP_DUE_002 | デュエル選手紹介（2組以下） |
-| DSP_DUE_003 | DSP_DUE_004 | デュエル選手結果（2組以下） |
-| DSP_COM_001 | DSP_COM_002 | 途中総合結果一覧 |
+| DSP_TIT_002_B | DSP_TIT_002_S | 種目紹介 |
+| DSP_SOL_001_B | DSP_SOL_001_S | ソロ選手紹介 |
+| DSP_SOL_002_B | DSP_SOL_002_S | ソロ結果 GD |
+| DSP_SOL_003_B | DSP_SOL_003_S | ソロ結果 PD |
+| DSP_SOL_004_B | DSP_SOL_004_S | ソロ途中結果 |
+| DSP_GRP_001_B | DSP_GRP_001_S | グループ出場選手一覧 |
+| DSP_GRP_002_B | DSP_GRP_002_S | グループ結果一覧 |
+| DSP_DUE_001_B | DSP_DUE_001_S | デュエル選手紹介（2組以下） |
+| DSP_DUE_002_B | DSP_DUE_002_S | デュエル選手結果（2組以下） |
+| DSP_COM_001_B | DSP_COM_001_S | 途中総合結果一覧 |
+| DSP_PRG_001_B | DSP_PRG_001_S | 進行表示1面 |
+| DSP_PRG_003_B | DSP_PRG_003_S | 進行表示ヒート表 |
+| DSP_PRG_004_B | DSP_PRG_004_S | 決勝進出者 |
+| DSP_PRG_005_B | DSP_PRG_005_S | 決勝結果 |
+| DSP_PRG_008_B | DSP_PRG_008_S | ジャッジ紹介10人 |
 
 ---
 
@@ -461,23 +466,23 @@ AJS シナリオファイルに `SubScenario` セクションを追加するこ�
 **原因**: 同一役割の大/小ペア（上表参照）を両方 `true` にした。
 
 ```json
-"DSP_SOL_007": { "Enabled": true  },   ← ソロ途中結果 大
-"DSP_SOL_008": { "Enabled": true  }    ← ソロ途中結果 小  ← 両方 true はNG
+"DSP_SOL_004_B": { "Enabled": true  },   ← ソロ途中結果 大
+"DSP_SOL_004_S": { "Enabled": true  }    ← ソロ途中結果 小  ← 両方 true はNG
 ```
 
 **修正**: どちらか一方だけを `true` にする。
 
 ```json
-"DSP_SOL_007": { "Enabled": true  },   ← 大を使う
-"DSP_SOL_008": { "Enabled": false }    ← 小は使わない
+"DSP_SOL_004_B": { "Enabled": true  },   ← 大を使う
+"DSP_SOL_004_S": { "Enabled": false }    ← 小は使わない
 ```
 
 ### 9.3 【仕様】デュエル競技で「2組以下」と「3組以上」の画面サイズを混在させる
 
 **例**:
 ```json
-"DSP_DUE_004": { "Enabled": true  },  ← 小（2組以下用）
-"DSP_GRP_003": { "Enabled": true  }   ← 大（3組以上用）
+"DSP_DUE_002_S": { "Enabled": true  },  ← 小（2組以下用）
+"DSP_GRP_002_B": { "Enabled": true  }   ← 大（3組以上用）
 ```
 
 **これはエラーにならない**（大/小ペアの排他ルールの対象外）。
@@ -497,21 +502,20 @@ AJS シナリオファイルに `SubScenario` セクションを追加するこ�
 | `Scenarios/*.json` | シナリオ定義ファイル（`Screens` + `SubScenario.Screens`） |
 | `画面/DSDspScreenBase.cs` | 画面基底クラス（`TotalSteps`, `WaitsForLastStepFadeOut`, `RaiseLastStepFadeOutCompleted`） |
 | `画面/DSP_TIT_001_*.cs` | 変更対象外（`TotalSteps=4`, 即時遷移） |
-| `画面/DSP_TIT_002_*.cs` | `TotalSteps=3`, Step1→Step2→Step3 全て手動操作 |
-| `画面/DSP_TIT_003_*.cs` | `TotalSteps=3`, Step1→Step2→Step3 全て手動操作 |
-| `画面/DSP_SOL_001〜002_*.cs` | `TotalSteps=2`, case 0: Step1+Step2同時 |
-| `画面/DSP_SOL_003〜006_*.cs` | `TotalSteps=3`, case 0: Step1+Step2同時 |
-| `画面/DSP_SOL_007〜008_*.cs` | `TotalSteps=_ページ数==1?2:_ページ数*2+1`, ページネーション対応 |
-| `画面/DSP_GRP_001〜004_*.cs` | 同上 |
-| `画面/DSP_COM_001〜002_*.cs` | 同上 |
-| `画面/DSP_DUE_001〜002_*.cs` | `TotalSteps=2`, case 0: Step1+Step2同時 |
-| `画面/DSP_DUE_003〜004_*.cs` | `TotalSteps=3`, case 0: Step1+Step2同時 |
+| `画面/DSP_TIT_002_B_*.cs` / `DSP_TIT_002_S_*.cs` | `TotalSteps=3`, Step1→Step2→Step3 全て手動操作 |
+| `画面/DSP_SOL_001_B〜001_S_*.cs` | `TotalSteps=2`, case 0: Step1+Step2同時 |
+| `画面/DSP_SOL_002_B〜003_S_*.cs` | `TotalSteps=3`, case 0: Step1+Step2同時 |
+| `画面/DSP_SOL_004_B〜004_S_*.cs` | `TotalSteps=_ページ数==1?2:_ページ数*2+1`, ページネーション対応 |
+| `画面/DSP_GRP_001_B〜002_S_*.cs` | 同上 |
+| `画面/DSP_COM_001_B〜001_S_*.cs` | 同上 |
+| `画面/DSP_DUE_001_B〜001_S_*.cs` | `TotalSteps=2`, case 0: Step1+Step2同時 |
+| `画面/DSP_DUE_002_B〜002_S_*.cs` | `TotalSteps=3`, case 0: Step1+Step2同時 |
 
-## 11. ヒートフィルタリング機能（GRP_003 / GRP_004）
+## 11. ヒートフィルタリング機能（GRP_002_B / GRP_002_S）
 
 ### 11.1 概要
 
-`DSP_GRP_003_結果一覧_大` と `DSP_GRP_004_結果一覧_小` は、`ヒート番号` プロパティの値によって
+`DSP_GRP_002_B_結果一覧_大` と `DSP_GRP_002_S_結果一覧_小` は、`ヒート番号` プロパティの値によって
 表示する選手を切り替えるヒートフィルタリング機能を持つ。
 
 | ヒート番号 | 動作 |
@@ -610,7 +614,7 @@ var 当該ヒート選手 = ヒート番号 != 0
 
     "Final": {
       "_Comment": "決勝用。内容を変えたい画面のみ Enabled を変更する",
-      "Common": { "DSP_TIT_001": { "ScreenId": "DSP_TIT_001", "Enabled": true }, ... },
+      "Common": { "DSP_TIT_001": { "ScreenId": "DSP_TIT_001", "Enabled": true }, ... },  // DSP_TIT_001 はペアなし単独画面
       "Solo":   { ... },
       "Group":  { ... },
       "Duel":   { ... }
@@ -645,7 +649,7 @@ var roundName = GetRoundName(daMaster, kbnNo, roundNo);
 var resolvedScreens = scenario.Screens.ResolveByRoundName(roundName);
 
 // 以降は resolvedScreens.Common / Solo / Group / Duel を使用
-AddIfEnabled(result, resolvedScreens.Common, "DSP_TIT_001", ...);
+AddIfEnabled(result, resolvedScreens.Common, "DSP_TIT_001", ...);   // 単独画面はサフィックスなし
 ```
 
 `GetRoundName()` は `GetScrMtd()` と同じ構造で `DC_RndName_J` を取得するプライベートメソッド。
