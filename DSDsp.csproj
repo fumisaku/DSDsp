@@ -76,6 +76,20 @@
     <Compile Update="画面\DSP_PRG_006_S_選手紹介_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="画面\DSP_PRG_006_B_選手紹介_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Update="パーツ\PRG006_選手順位紹介_下_大.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Compile Update="パーツ\PRG006_選手順位紹介_下_大.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Update="画面\DSP_PRG_006_B_選手紹介_大.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Compile Update="画面\DSP_SOL_001_S_ソロ選手紹介_小.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

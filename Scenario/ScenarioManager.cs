@@ -22,6 +22,8 @@ namespace DSDsp.Scenario
             ["Common"] = new()
             {
                 ("DSP_COM_001_B", "DSP_COM_001_S"),
+                ("DSP_PRG_006_B", "DSP_PRG_006_S"),
+                ("DSP_PRG_008_B", "DSP_PRG_008_S"),
             },
             ["Solo"] = new()
             {

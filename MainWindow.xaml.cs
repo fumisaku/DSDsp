@@ -2283,6 +2283,7 @@ namespace DSDsp
             "DSP_DUE_002_S" => new 画面.DSP_DUE_002_S_DUE選手結果_小(),
             "DSP_COM_001_B" => new 画面.DSP_COM_001_B_総合結果一覧_大(),
             "DSP_COM_001_S" => new 画面.DSP_COM_001_S_総合結果一覧_小(),
+            "DSP_PRG_006_B" => new 画面.DSP_PRG_006_B_選手紹介_大(),
             "DSP_TIT_999" => new 画面.DSP_TIT_999_終了(),
             _ => null
         };
