@@ -74,6 +74,53 @@ namespace DSDsp.Messages
     }
 
     /// <summary>
+    /// AJSステップ進行通知（DSDsp → サーバー → 全DSDspブロードキャスト）
+    /// </summary>
+    public class DP_AJS_ADVANCE
+    {
+        /// <summary>現在のAJSインデックス（進行一覧上の位置）</summary>
+        public int AjsIndex { get; set; }
+
+        /// <summary>現在表示中の画面ID（例: "DSP_SOL_001_B"）</summary>
+        public string ScreenId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// ScreenGroup：大/小ペアの共通識別子。
+        /// ScreenIdの末尾 "_B" または "_S" を除いた前半部分（例: "DSP_SOL_001"）。
+        /// サフィックスなし画面の場合はScreenIdそのまま。
+        /// </summary>
+        public string ScreenGroup { get; set; } = string.Empty;
+
+        /// <summary>区分番号</summary>
+        public string KbnNo { get; set; } = string.Empty;
+
+        /// <summary>ラウンド番号</summary>
+        public string RndNo { get; set; } = string.Empty;
+
+        /// <summary>種目番号（DanceNo）</summary>
+        public int DncNo { get; set; }
+
+        /// <summary>ヒート番号（HeatNo）</summary>
+        public int HeatNo { get; set; }
+
+        /// <summary>現在のステップ番号（Advance()呼び出し前のステップ）</summary>
+        public int Step { get; set; }
+
+        /// <summary>
+        /// ScreenGroupを画面IDから計算するユーティリティメソッド。
+        /// "_B" または "_S" で終わる場合はそれを除いた前半を返す。
+        /// それ以外はscreenIdそのまま。
+        /// </summary>
+        public static string ComputeScreenGroup(string screenId)
+        {
+            if (screenId.EndsWith("_B", StringComparison.Ordinal) ||
+                screenId.EndsWith("_S", StringComparison.Ordinal))
+                return screenId[..^2];
+            return screenId;
+        }
+    }
+
+    /// <summary>
     /// エラー応答
     /// </summary>
     public class ErrorResponse

@@ -281,6 +281,7 @@ namespace DSDsp
                 _client.DV_ResultReceived += OnDV_ResultReceived;
                 _client.ErrorReceived += OnErrorReceived;
                 _client.HeatEndNotifyReceived += OnHeatEndNotifyReceived;
+                _client.AjsAdvanceReceived += OnAjsAdvanceReceived;
                 _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                 bool connected = await _client.ConnectAsync();
@@ -2128,6 +2129,17 @@ namespace DSDsp
 
             _log?.LogAdd($"AJS Advance: {item.ScreenId} Step={currentScreen.CurrentStep}", _log.INFO);
             currentScreen.Advance();
+
+            // 他のDSDspに同期通知を送信（接続中の場合のみ）
+            if (_client?.IsConnected == true)
+            {
+                var keyParts2  = key.Split('-');
+                var sendKbnNo  = keyParts2.Length == 2 ? keyParts2[0] : "";
+                var sendRndNo  = keyParts2.Length == 2 ? keyParts2[1] : "";
+                _ = _client.SendAjsAdvanceAsync(
+                    _currentAjsIndex, item.ScreenId, sendKbnNo, sendRndNo,
+                    item.DanceNo, item.HeatNo, currentScreen.CurrentStep);
+            }
         }
 
         /// <summary>
@@ -2650,6 +2662,7 @@ namespace DSDsp
                         _client.DV_ResultReceived -= OnDV_ResultReceived;
                         _client.ErrorReceived -= OnErrorReceived;
                         _client.HeatEndNotifyReceived -= OnHeatEndNotifyReceived;
+                        _client.AjsAdvanceReceived -= OnAjsAdvanceReceived;
                         _client.Dispose();
                         _client = null;
                     }
@@ -2661,6 +2674,7 @@ namespace DSDsp
                     _client.DV_ResultReceived += OnDV_ResultReceived;
                     _client.ErrorReceived += OnErrorReceived;
                     _client.HeatEndNotifyReceived += OnHeatEndNotifyReceived;
+                    _client.AjsAdvanceReceived += OnAjsAdvanceReceived;
                     _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                     bool connected = await _client.ConnectAsync();
@@ -3167,6 +3181,46 @@ namespace DSDsp
             {
                 MessageBox.Show($"サーバーエラー: {e.ErrorMessage}", "エラー", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            });
+        }
+
+        /// <summary>
+        /// DP_AJS_ADVANCE 受信ハンドラ：他の DSDsp からの AJS ステップ進行通知。
+        /// 自分の現在画面の ScreenGroup が一致する場合のみ Advance() を実行する。
+        /// </summary>
+        private void OnAjsAdvanceReceived(object? sender, Handlers.AjsAdvanceReceivedEventArgs e)
+        {
+            var payload = e.Payload;
+
+            Dispatcher.Invoke(() =>
+            {
+                // AJSタブが有効でなければ無視
+                if (_currentAjsProgressItems == null) return;
+                if (_currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count) return;
+
+                var currentItem = _currentAjsProgressItems[_currentAjsIndex];
+                var myGroup     = Messages.DP_AJS_ADVANCE.ComputeScreenGroup(currentItem.ScreenId);
+
+                // ScreenGroup が一致しない場合は無視
+                if (!string.Equals(myGroup, payload.ScreenGroup, StringComparison.Ordinal))
+                {
+                    _log?.LogAdd(
+                        $"AJS同期: ScreenGroup不一致 (受信={payload.ScreenGroup} / 自={myGroup}) — スキップ",
+                        _log.DEBUG);
+                    return;
+                }
+
+                var currentScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
+                if (currentScreen == null)
+                {
+                    _log?.LogAdd("AJS同期: 表示中の画面なし — スキップ", _log.DEBUG);
+                    return;
+                }
+
+                _log?.LogAdd(
+                    $"AJS同期 Advance: ScreenId={payload.ScreenId} Step={payload.Step}",
+                    _log.INFO);
+                currentScreen.Advance();
             });
         }
 

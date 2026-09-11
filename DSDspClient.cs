@@ -47,6 +47,8 @@ namespace DSDsp
         public event EventHandler<ErrorReceivedEventArgs>? ErrorReceived;
         /// <summary>MC_HEAT_NOTIFY（END）を受信したときに発火する。</summary>
         public event EventHandler<HeatEndNotifyEventArgs>? HeatEndNotifyReceived;
+        /// <summary>DP_AJS_ADVANCE（他DSDspからのAJSステップ進行通知）を受信したときに発火する。</summary>
+        public event EventHandler<AjsAdvanceReceivedEventArgs>? AjsAdvanceReceived;
 
         /// <summary>
         /// 複数競技会リストを受信したときに呼ばれるコールバック。
@@ -80,6 +82,7 @@ namespace DSDsp
             _messageHandler.DV_ResultReceived += (s, e) => DV_ResultReceived?.Invoke(s, e);
             _messageHandler.ErrorReceived += (s, e) => ErrorReceived?.Invoke(s, e);
             _messageHandler.HeatEndNotifyReceived += (s, e) => HeatEndNotifyReceived?.Invoke(s, e);
+            _messageHandler.AjsAdvanceReceived += (s, e) => AjsAdvanceReceived?.Invoke(s, e);
 
             _isDisposed = false;
 
@@ -284,6 +287,22 @@ namespace DSDsp
                 _dataManager.CmpNo,
                 kbnNo,
                 rndNo);
+        }
+
+        /// <summary>
+        /// DP_AJS_ADVANCE を送信（AJSステップが進んだことをサーバーに通知）
+        /// </summary>
+        public async Task<bool> SendAjsAdvanceAsync(
+            int ajsIndex, string screenId, string kbnNo, string rndNo,
+            int dncNo, int heatNo, int step)
+        {
+            if (!IsConnected) return false;
+            var settings = AppSettings.Instance.WebSocketSettings;
+            var cmpNo    = _dataManager.CmpNo ?? "";
+            return await _messageHandler.SendAjsAdvanceAsync(
+                settings.OrgCd, cmpNo,
+                ajsIndex, screenId, kbnNo, rndNo,
+                dncNo, heatNo, step);
         }
 
         /// <summary>

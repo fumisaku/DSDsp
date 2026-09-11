@@ -23,6 +23,8 @@ namespace DSDsp.Handlers
         public event EventHandler<ErrorReceivedEventArgs>? ErrorReceived;
         /// <summary>MC_HEAT_NOTIFY（イベント="END"）を受信したときに発火する。</summary>
         public event EventHandler<HeatEndNotifyEventArgs>? HeatEndNotifyReceived;
+        /// <summary>DP_AJS_ADVANCE（他DSDspからのAJSステップ進行通知）を受信したときに発火する。</summary>
+        public event EventHandler<AjsAdvanceReceivedEventArgs>? AjsAdvanceReceived;
 
         private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions =
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -82,6 +84,10 @@ namespace DSDsp.Handlers
 
                     case "MC_HEAT_NOTIFY":
                         await Handle_MC_HEAT_NOTIFY(parsed);
+                        break;
+
+                    case "DP_AJS_ADVANCE":
+                        await Handle_DP_AJS_ADVANCE(parsed);
                         break;
 
                     default:
@@ -349,6 +355,54 @@ namespace DSDsp.Handlers
             
             return await _wsClient.SendMessageAsync(message);
         }
+
+        /// <summary>
+        /// DP_AJS_ADVANCE を送信（自分のAJSステップが進んだことをサーバーに通知）
+        /// </summary>
+        public async Task<bool> SendAjsAdvanceAsync(
+            string orgCd, string cmpNo,
+            int ajsIndex, string screenId, string kbnNo, string rndNo,
+            int dncNo, int heatNo, int step)
+        {
+            var payload = new DP_AJS_ADVANCE
+            {
+                AjsIndex    = ajsIndex,
+                ScreenId    = screenId,
+                ScreenGroup = DP_AJS_ADVANCE.ComputeScreenGroup(screenId),
+                KbnNo       = kbnNo,
+                RndNo       = rndNo,
+                DncNo       = dncNo,
+                HeatNo      = heatNo,
+                Step        = step,
+            };
+            var json    = JsonSerializer.Serialize(payload);
+            var message = ParsedMessage.Build(orgCd, cmpNo, "DP_AJS_ADVANCE", json);
+            return await _wsClient.SendMessageAsync(message);
+        }
+
+        /// <summary>
+        /// DP_AJS_ADVANCE 受信処理（他DSDspからのブロードキャスト）
+        /// </summary>
+        private async Task Handle_DP_AJS_ADVANCE(ParsedMessage parsed)
+        {
+            try
+            {
+                var payload = JsonSerializer.Deserialize<DP_AJS_ADVANCE>(parsed.MsgDetail, _jsonOptions);
+                if (payload == null) return;
+
+                _log.LogAdd(
+                    $"DP_AJS_ADVANCE 受信: ScreenId={payload.ScreenId} " +
+                    $"Group={payload.ScreenGroup} Index={payload.AjsIndex} Step={payload.Step}",
+                    _log.DEBUG);
+
+                AjsAdvanceReceived?.Invoke(this, new AjsAdvanceReceivedEventArgs(payload));
+            }
+            catch (Exception ex)
+            {
+                _log.LogAdd($"DP_AJS_ADVANCE パースエラー: {ex.Message}", _log.WARNING);
+            }
+            await Task.CompletedTask;
+        }
     }
 
     /// <summary>
@@ -422,6 +476,19 @@ namespace DSDsp.Handlers
 
         [System.Text.Json.Serialization.JsonPropertyName("イベント")]
         public string? イベント { get; set; }
+    }
+
+    /// <summary>
+    /// DP_AJS_ADVANCE 受信イベント引数
+    /// </summary>
+    public class AjsAdvanceReceivedEventArgs : EventArgs
+    {
+        public DP_AJS_ADVANCE Payload { get; }
+
+        public AjsAdvanceReceivedEventArgs(DP_AJS_ADVANCE payload)
+        {
+            Payload = payload;
+        }
     }
 }
 
