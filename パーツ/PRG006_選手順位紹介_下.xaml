@@ -18,10 +18,15 @@
                     <TranslateTransform X="0" Y="0"/>
                 </Image.RenderTransform>
             </Image>
-            <Label x:Name="LB_区分名" Content="A級戦スタンダード" HorizontalContentAlignment="Left" Canvas.Left="20" Canvas.Top="40" HorizontalAlignment="Center" VerticalAlignment="Top" Width="372" Height="30" Foreground="DarkGoldenrod" FontWeight="Bold">
-                <Label.Effect>
-                    <DropShadowEffect Color="White" ShadowDepth="0" BlurRadius="3" Opacity="1" />
-                </Label.Effect>
+            <Label x:Name="LB_区分名" Content="A級戦スタンダード" HorizontalContentAlignment="Left" Canvas.Left="20" Canvas.Top="40" HorizontalAlignment="Center" VerticalAlignment="Top" Width="372" Height="30" FontWeight="Bold" Padding="0">
+                <Label.ContentTemplate>
+                    <DataTemplate>
+                        <local:OutlinedTextBlock
+                            Text="{Binding}"
+                            FontSize="12" FontWeight="Bold"
+                            Foreground="DarkGoldenrod" Stroke="White" StrokeThickness="1.5" />
+                    </DataTemplate>
+                </Label.ContentTemplate>
             </Label>
             <Label x:Name="LB_順位" Content="第3位" HorizontalContentAlignment="Left" Canvas.Left="48" Canvas.Top="65" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Width="332" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_選手名" Content="Label" HorizontalContentAlignment="Left" Canvas.Left="105" Canvas.Top="65" HorizontalAlignment="Center" VerticalAlignment="Top" Width="275" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
