@@ -18,8 +18,16 @@
                     <TranslateTransform X="0" Y="0"/>
                 </Image.RenderTransform>
             </Image>
-            <Label x:Name="LB_種目紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="43" Canvas.Top="35" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
-            <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="20" Canvas.Top="11" HorizontalAlignment="Left" VerticalAlignment="Center" Width="68" Height="30" Foreground="Gold" FontWeight="Bold"/>
+            <Label x:Name="LB_種目紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="43" Canvas.Top="35" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold">
+                <Label.Effect>
+                    <DropShadowEffect Color="Black" ShadowDepth="0" BlurRadius="3" Opacity="1" />
+                </Label.Effect>
+            </Label>
+            <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="20" Canvas.Top="11" HorizontalAlignment="Left" VerticalAlignment="Center" Width="68" Height="30" Foreground="DarkGoldenrod" FontWeight="Bold">
+                <Label.Effect>
+                    <DropShadowEffect Color="White" ShadowDepth="0" BlurRadius="3" Opacity="1" />
+                </Label.Effect>
+            </Label>
         </Canvas>
     </Grid>
 </UserControl>

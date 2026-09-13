@@ -344,6 +344,33 @@ namespace DSDsp.画面
             return DSDspDataHelper.Get採点方式ID(DA_Master, 区分番号, ラウンド番号);
         }
 
+        /// <summary>
+        /// OutlinedTextBlock 版オーバーロード。COM001_左上 に OutlinedTextBlock を使う画面向け。
+        /// </summary>
+        protected string SetCommonHeader(
+            パーツ.OutlinedTextBlock tb左上1,
+            パーツ.OutlinedTextBlock tb左上2,
+            System.Windows.Controls.Label lb右上)
+        {
+            if (DA_Master == null)
+            {
+                tb左上1.Text = "データなし";
+                tb左上2.Text = string.Empty;
+                lb右上.Content = string.Empty;
+                return string.Empty;
+            }
+
+            tb左上1.Text = DSDspDataHelper.Get競技会名(DA_Master);
+
+            string 区分名 = DSDspDataHelper.Get区分名(DA_Master, 区分番号);
+            string ラウンド名 = DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号);
+            tb左上2.Text = 区分名 + "　" + ラウンド名;
+
+            lb右上.Content = DSDspDataHelper.Get種目表示テキスト(DA_Master, 区分番号, ラウンド番号, 種目番号);
+
+            return DSDspDataHelper.Get採点方式ID(DA_Master, 区分番号, ラウンド番号);
+        }
+
         protected void CreateAndStartSlideAnimation(UIElement target, double fromOffset, double durationSeconds = 1.0)
         {
             var storyboard = new Storyboard();

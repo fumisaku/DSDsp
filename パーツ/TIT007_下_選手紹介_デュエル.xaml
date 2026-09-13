@@ -18,7 +18,11 @@
             <Label x:Name="LB_選手紹介_2" Content="選手名" HorizontalContentAlignment="Center" Canvas.Left="327" Canvas.Top="52" HorizontalAlignment="Center" VerticalAlignment="Top" Width="292" Height="30" Foreground="White" FontSize="14" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_所属_2" Content="所属" HorizontalContentAlignment="Center" Canvas.Left="327" Canvas.Top="67" HorizontalAlignment="Left" VerticalContentAlignment="Center" VerticalAlignment="Center" Width="292" Height="30" Foreground="White" FontSize="10" FontFamily="Segoe UI Semibold"/>
 
-            <Label x:Name="LB_演技順" Content="第１ヒート" HorizontalContentAlignment="Center" Canvas.Left="282" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="30" Foreground="Gold" FontWeight="Bold" Canvas.Top="31"/>
+            <Label x:Name="LB_演技順" Content="第１ヒート" HorizontalContentAlignment="Center" Canvas.Left="282" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="30" Foreground="DarkGoldenrod" FontWeight="Bold" Canvas.Top="31">
+                <Label.Effect>
+                    <DropShadowEffect Color="White" ShadowDepth="0" BlurRadius="3" Opacity="1" />
+                </Label.Effect>
+            </Label>
             <Image x:Name="IM_VS" Height="24" Source="..\イメージ\VSロゴ.png" Stretch="Fill" Width="33" Canvas.Left="299" Canvas.Top="89" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 
         </Canvas>

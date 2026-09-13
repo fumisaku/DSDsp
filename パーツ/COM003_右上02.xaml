@@ -8,7 +8,10 @@
              d:DesignHeight="387" d:DesignWidth="641">
     <Grid>
         <Canvas x:Name="Canvas_右上02" Margin="338,0,0,263" RenderTransformOrigin="0.493,0.491">
-            <Label x:Name ="LB_右上" Content="1組目　999 山田　太郎・加藤　愛子組" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="12"   Foreground="Gold"  Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-110" Canvas.Top="27" Width="381">
+            <Label x:Name ="LB_右上" Content="1組目　999 山田　太郎・加藤　愛子組" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="12"   Foreground="DarkGoldenrod"  Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-110" Canvas.Top="27" Width="381">
+                <Label.Effect>
+                    <DropShadowEffect Color="White" ShadowDepth="0" BlurRadius="3" Opacity="1" />
+                </Label.Effect>
                 <Label.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform/>
