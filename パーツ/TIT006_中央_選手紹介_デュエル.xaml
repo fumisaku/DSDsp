@@ -22,7 +22,7 @@
             <Label x:Name="LB_選手名P_2" Content="選手名" HorizontalContentAlignment="Center" Canvas.Left="326" Canvas.Top="143" HorizontalAlignment="Center" VerticalAlignment="Top" Width="292" Height="79" Foreground="White" FontSize="22" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_所属_2" Content="所属" HorizontalContentAlignment="Center" Canvas.Left="327" Canvas.Top="186" HorizontalAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Top" Width="292" Height="36" Foreground="White" FontSize="18" FontFamily="Segoe UI Semibold"/>
 
-            <Label x:Name="LB_演技順" Content="第１ヒート" HorizontalContentAlignment="Center" Canvas.Left="262" HorizontalAlignment="Left" VerticalAlignment="Top" Width="106" Height="30" Foreground="Gold" FontWeight="Bold" Canvas.Top="25" FontSize="18"/>
+            <Label x:Name="LB_演技順" Content="第１ヒート" HorizontalContentAlignment="Center" Canvas.Left="262" HorizontalAlignment="Left" VerticalAlignment="Top" Width="106" Height="30" Foreground="DarkGoldenrod" FontWeight="Bold" Canvas.Top="25" FontSize="18"/>
             <Image x:Name="IM_VS" Height="43" Source="..\イメージ\VSロゴ.png" Stretch="Fill" Width="44" Canvas.Left="293" Canvas.Top="245" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 
         </Canvas>

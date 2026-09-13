@@ -19,7 +19,7 @@
                     <TranslateTransform X="0" Y="0"/>
                 </Image.RenderTransform>
             </Image>
-            <Label x:Name="LB_区分名" Content="A級戦スタンダード" HorizontalContentAlignment="Left" Canvas.Left="40" Canvas.Top="80" HorizontalAlignment="Center" VerticalAlignment="Top" Width="744" Height="50" Foreground="Gold" FontWeight="Bold" FontSize="22"/>
+            <Label x:Name="LB_区分名" Content="A級戦スタンダード" HorizontalContentAlignment="Left" Canvas.Left="40" Canvas.Top="80" HorizontalAlignment="Center" VerticalAlignment="Top" Width="744" Height="50" Foreground="DarkGoldenrod" FontWeight="Bold" FontSize="22"/>
             <Label x:Name="LB_順位" Content="第3位" HorizontalContentAlignment="Left" Canvas.Left="96" Canvas.Top="130" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Width="664" Height="50" Foreground="White" FontSize="28" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_選手名" Content="Label" HorizontalContentAlignment="Left" Canvas.Left="210" Canvas.Top="130" HorizontalAlignment="Center" VerticalAlignment="Top" Width="550" Height="50" Foreground="White" FontSize="28" FontFamily="Segoe UI Semibold"/>
             <Label x:Name="LB_所属" Content="所属" HorizontalContentAlignment="Right" Canvas.Left="246" Canvas.Top="132" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="648" Height="50" Foreground="White" FontSize="24" FontFamily="Segoe UI Semibold"/>
