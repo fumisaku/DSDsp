@@ -8,10 +8,16 @@
               d:DesignHeight="387" d:DesignWidth="641">
     <Grid>
         <Canvas x:Name="Canvas_右上01" Margin="338,0,0,263" RenderTransformOrigin="0.493,0.491">
-            <Label x:Name ="LB_右上" Content="1種目目　グループ競技　スロー・フォックストロット" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="12"   Foreground="DarkGoldenrod"  Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-16" Canvas.Top="2" Width="299">
-                <Label.Effect>
-                    <DropShadowEffect Color="White" ShadowDepth="0" BlurRadius="3" Opacity="1" />
-                </Label.Effect>
+            <Label x:Name ="LB_右上" Content="1種目目　グループ競技　スロー・フォックストロット" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Center" Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-16" Canvas.Top="2" Width="299" Padding="0">
+                <Label.ContentTemplate>
+                    <DataTemplate>
+                        <local:OutlinedTextBlock
+                            Text="{Binding}"
+                            FontSize="12" FontWeight="Bold"
+                            Foreground="DarkGoldenrod" Stroke="White" StrokeThickness="1.5"
+                            HorizontalAlignment="Right" />
+                    </DataTemplate>
+                </Label.ContentTemplate>
                 <Label.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform/>
