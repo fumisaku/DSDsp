@@ -41,6 +41,10 @@ namespace DSDsp.パーツ
             DependencyProperty.Register(nameof(StrokeThickness), typeof(double), typeof(OutlinedTextBlock),
                 new FrameworkPropertyMetadata(1.5, FrameworkPropertyMetadataOptions.AffectsRender));
 
+        public static readonly DependencyProperty TextAlignmentProperty =
+            DependencyProperty.Register(nameof(TextAlignment), typeof(TextAlignment), typeof(OutlinedTextBlock),
+                new FrameworkPropertyMetadata(TextAlignment.Left, FrameworkPropertyMetadataOptions.AffectsRender));
+
         // ---- CLR ラッパー -----------------------------------------------------
 
         public string Text
@@ -87,6 +91,13 @@ namespace DSDsp.パーツ
             set => SetValue(StrokeThicknessProperty, value);
         }
 
+        /// <summary>テキストの水平揃え。デフォルト: Left</summary>
+        public TextAlignment TextAlignment
+        {
+            get => (TextAlignment)GetValue(TextAlignmentProperty);
+            set => SetValue(TextAlignmentProperty, value);
+        }
+
         // ---- 描画 -------------------------------------------------------------
 
         protected override void OnRender(DrawingContext drawingContext)
@@ -103,7 +114,15 @@ namespace DSDsp.パーツ
                 Foreground,
                 VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
-            var geometry = formattedText.BuildGeometry(new Point(0, 0));
+            // 右寄せ・中央寄せの場合は描画開始点をオフセット
+            double offsetX = TextAlignment switch
+            {
+                TextAlignment.Right  => ActualWidth - formattedText.Width - StrokeThickness,
+                TextAlignment.Center => (ActualWidth - formattedText.Width) / 2,
+                _                    => 0,
+            };
+
+            var geometry = formattedText.BuildGeometry(new Point(offsetX, 0));
 
             // 縁取りを先に描画（下レイヤー）
             drawingContext.DrawGeometry(null, new Pen(Stroke, StrokeThickness * 2) { LineJoin = PenLineJoin.Round }, geometry);

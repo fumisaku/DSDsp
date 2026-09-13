@@ -15,7 +15,7 @@
                             Text="{Binding}"
                             FontSize="12" FontWeight="Bold"
                             Foreground="DarkGoldenrod" Stroke="White" StrokeThickness="1.5"
-                            HorizontalAlignment="Right" />
+                            Width="381" HorizontalAlignment="Right" TextAlignment="Right" />
                     </DataTemplate>
                 </Label.ContentTemplate>
                 <Label.RenderTransform>
