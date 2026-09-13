@@ -23,10 +23,15 @@
                     <DropShadowEffect Color="Black" ShadowDepth="0" BlurRadius="3" Opacity="1" />
                 </Label.Effect>
             </Label>
-            <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="20" Canvas.Top="11" HorizontalAlignment="Left" VerticalAlignment="Center" Width="68" Height="30" Foreground="DarkGoldenrod" FontWeight="Bold">
-                <Label.Effect>
-                    <DropShadowEffect Color="White" ShadowDepth="0" BlurRadius="3" Opacity="1" />
-                </Label.Effect>
+            <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="20" Canvas.Top="11" HorizontalAlignment="Left" VerticalAlignment="Center" Width="68" Height="30" FontWeight="Bold" Padding="0">
+                <Label.ContentTemplate>
+                    <DataTemplate>
+                        <local:OutlinedTextBlock
+                            Text="{Binding}"
+                            FontSize="12" FontWeight="Bold"
+                            Foreground="DarkGoldenrod" Stroke="White" StrokeThickness="1.5" />
+                    </DataTemplate>
+                </Label.ContentTemplate>
             </Label>
         </Canvas>
     </Grid>
