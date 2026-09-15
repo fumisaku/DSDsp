@@ -38,10 +38,17 @@ namespace DSDsp.画面
 
         #region プロパティ
         /// <summary>
-        /// 総ステップ数（Step1(1) + Step2(1) + Step3(1) の3ステップ）
+        /// 総ステップ数。
+        /// 既定: Step1(1) + Step2(1) + Step3(1) = 3ステップ
+        /// Hold: Step1(1) + Step2(1) + 何もしない(1) + 停止(1) = 4ステップ
         /// </summary>
-        protected override int TotalSteps => 3;
+        protected override int TotalSteps => StepMode == "Hold" ? 4 : 3;
         public override bool WaitsForLastStepFadeOut => true;
+        /// <summary>
+        /// Hold モード時は最終ステップ完了後も停止して次の再生ボタンを待つ。
+        /// （S と同じタイミングで次画面へ遷移するため）
+        /// </summary>
+        public override bool HoldsAfterFadeOut => StepMode == "Hold";
         #endregion
 
         #region コンストラクタ
@@ -67,11 +74,28 @@ namespace DSDsp.画面
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
-            switch (_currentStep)
+            if (StepMode == "Hold")
             {
-                case 0: Step1(); break;
-                case 1: Step2(); break;
-                case 2: Step3(); break;
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1: Step2(); break;
+                    case 2: break; // 何もしない（種目表示したまま）
+                    case 3:
+                        // B（大画面）はフェードアウトせず種目名をそのまま表示し続ける
+                        // WaitsForLastStepFadeOut=true のため手動で完了を通知する
+                        RaiseScreenCompleted();
+                        break;
+                }
+            }
+            else
+            {
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1: Step2(); break;
+                    case 2: Step3(); break;
+                }
             }
         }
         #endregion

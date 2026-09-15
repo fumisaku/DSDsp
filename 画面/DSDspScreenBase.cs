@@ -110,6 +110,12 @@ namespace DSDsp.画面
         public bool IsLastHeatInDance { get; set; } = false;
 
         /// <summary>
+        /// ステップ動作モード。シナリオJSONの AjsScreenEntry.StepMode から設定される。
+        /// "" (既定) または "Hold"。
+        /// </summary>
+        public string StepMode { get; set; } = string.Empty;
+
+        /// <summary>
         /// HeatEnd 通知受信時に MainWindow から呼ばれる。
         /// 派生クラスは、フェーズが未完了であれば必要なステップを補完し、
         /// 次ヒートへの切り替えを自律的に処理する。

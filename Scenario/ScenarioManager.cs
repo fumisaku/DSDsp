@@ -612,6 +612,7 @@ namespace DSDsp.Scenario
                     HeatNo      = heatNo,
                     DanceCd     = danceCd,
                     Description = description,
+                    StepMode    = entry.StepMode,
                 });
             }
         }
@@ -639,6 +640,7 @@ namespace DSDsp.Scenario
                         HeatNo      = heatNo,
                         DanceCd     = danceCd,
                         Description = description,
+                        StepMode    = entry.StepMode,
                     });
                     return; // 最初の1件だけ追加
                 }
@@ -669,6 +671,7 @@ namespace DSDsp.Scenario
                         DanceCd        = danceCd,
                         Description    = description,
                         IsOverviewMode = true,
+                        StepMode       = entry.StepMode,
                     });
                     return;
                 }

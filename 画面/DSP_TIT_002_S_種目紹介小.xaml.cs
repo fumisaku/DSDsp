@@ -25,8 +25,12 @@ namespace DSDsp.画面
         #endregion
 
         #region プロパティ
-        /// <summary>総ステップ数（Step1(1) + Step2(1) + Step3(1) の3ステップ）</summary>
-        protected override int TotalSteps => 3;
+        /// <summary>
+        /// 総ステップ数。
+        /// 既定: Step1(1) + Step2(1) + Step3(1) = 3ステップ（→停止）
+        /// Hold: Step1(1) + Step2(1) + 何もしない(1) + Step3(1) = 4ステップ（→停止）
+        /// </summary>
+        protected override int TotalSteps => StepMode == "Hold" ? 4 : 3;
         public override bool WaitsForLastStepFadeOut => true;
         public override bool HoldsAfterFadeOut => true;
         #endregion
@@ -50,11 +54,24 @@ namespace DSDsp.画面
         /// <summary>現在のステップを実行</summary>
         protected override void ExecuteCurrentStep()
         {
-            switch (_currentStep)
+            if (StepMode == "Hold")
             {
-                case 0: Step1(); break;
-                case 1: Step2(); break;
-                case 2: Step3(); break;
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1: Step2(); break;
+                    case 2: break; // 何もしない（種目表示したまま）
+                    case 3: Step3(); break; // フェードアウト → 停止
+                }
+            }
+            else
+            {
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1: Step2(); break;
+                    case 2: Step3(); break;
+                }
             }
         }
         #endregion

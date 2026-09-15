@@ -2135,19 +2135,20 @@ namespace DSDsp
                 screen.IsOverviewMode    = item.IsOverviewMode;
                 screen.IsLastHeatInDance = item.IsLastHeatInDance;
                 screen.ChromaKeyMode     = _currentAjsScenario?.ChromaKeyMode ?? false;
+                screen.StepMode          = item.StepMode;
 
                 // ScreenCompleted を受け取ったら次の画面へ進む
                 screen.ScreenCompleted += OnAjsScreenCompleted;
 
                 _offScreenWindow?.ShowScreen(screen, item);
-                _log?.LogAdd($"AJS画面表示: {item.ScreenId} 種目{item.DanceNo} ヒート{item.HeatNo}", _log.INFO);
+                _log?.LogAdd($"AJS画面表示: {item.ScreenId} 種目{item.DanceNo} ヒート{item.HeatNo} StepMode={item.StepMode}", _log.INFO);
 
                 currentScreen = screen;
             }
 
             if (currentScreen == null) return;
 
-            _log?.LogAdd($"AJS Advance: {item.ScreenId} Step={currentScreen.CurrentStep}", _log.INFO);
+            _log?.LogAdd($"AJS Advance: {item.ScreenId} Step={currentScreen.CurrentStep} StepMode={currentScreen.StepMode} TotalSteps={currentScreen.CurrentStep}", _log.INFO);
             currentScreen.Advance();
 
             // 他のDSDspに同期通知を送信（接続中の場合のみ・受信による同期実行中は送信しない）

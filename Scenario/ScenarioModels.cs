@@ -128,6 +128,14 @@ namespace DSDsp.Scenario
 
         [JsonPropertyName("Enabled")]
         public bool Enabled { get; set; }
+
+        /// <summary>
+        /// ステップ動作モード。省略時は既定動作。
+        /// "Hold" を指定すると、Step0で同時実行していたステップを分割し、
+        /// _B（大画面）は中間に「何もしない」ステップを追加する。
+        /// </summary>
+        [JsonPropertyName("StepMode")]
+        public string StepMode { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -321,6 +329,12 @@ namespace DSDsp.Scenario
         /// true の場合、このヒートの DSP_SOL_007 等のフェードアウト後に COM002 右上をクリアする。
         /// </summary>
         public bool IsLastHeatInDance { get; set; } = false;
+
+        /// <summary>
+        /// ステップ動作モード。AjsScreenEntry.StepMode から引き継がれる。
+        /// "" (既定) または "Hold"。
+        /// </summary>
+        public string StepMode { get; set; } = string.Empty;
 
         public override string ToString()
         {

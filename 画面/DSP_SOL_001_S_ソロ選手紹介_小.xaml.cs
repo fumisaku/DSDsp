@@ -28,9 +28,11 @@ namespace DSDsp.画面
 
         #region オーバーライド
         /// <summary>
-        /// ステップ数（Step1+Step2同時(1) + Step3(1) の2ステップ）
+        /// 総ステップ数。
+        /// 既定: Step1+Step2同時(1) + Step3(1) = 2ステップ
+        /// Hold: Step1(1) + Step2(1) + 何もしない(1) + Step3(1) = 4ステップ（→停止）
         /// </summary>
-        protected override int TotalSteps => 2;
+        protected override int TotalSteps => StepMode == "Hold" ? 4 : 2;
         public override bool WaitsForLastStepFadeOut => true;
         public override bool HoldsAfterFadeOut => true;
         #endregion
@@ -45,15 +47,28 @@ namespace DSDsp.画面
         #region オーバーライドメソッド
         protected override void ExecuteCurrentStep()
         {
-            switch (_currentStep)
+            if (StepMode == "Hold")
             {
-                case 0:
-                    Step1();
-                    Step2();
-                    break;
-                case 1:
-                    Step3();
-                    break;
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1: Step2(); break;
+                    case 2: break; // 何もしない（選手名表示したまま）
+                    case 3: Step3(); break; // フェードアウト＋右上に名前 → 停止
+                }
+            }
+            else
+            {
+                switch (_currentStep)
+                {
+                    case 0:
+                        Step1();
+                        Step2();
+                        break;
+                    case 1:
+                        Step3();
+                        break;
+                }
             }
         }
 
