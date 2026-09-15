@@ -46,6 +46,9 @@ namespace DSDsp
         // プログラムによる LstAjsProgress.SelectedIndex 変更時に SelectionChanged を無視するフラグ
         private bool _suppressAjsSelectionChanged = false;
 
+        // DP_AJS_ADVANCE 受信による同期実行中フラグ（再ブロードキャスト防止）
+        private bool _isReceivingAjsAdvance = false;
+
         // プログラムによる LstAjsSubProgress.SelectedIndex 変更時に SelectionChanged を無視するフラグ
         private bool _suppressAjsSubSelectionChanged = false;
 
@@ -2068,20 +2071,37 @@ namespace DSDsp
         /// </summary>
         private void ExecuteAjsStep()
         {
+            var dbgPrefix = _isReceivingAjsAdvance ? "[AJS同期受信]" : "[AJS手動]";
             EnsureOffScreenWindowCreated();
 
             if (_currentAjsProgressItems == null || _currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count)
             {
-                _log?.LogAdd("AJS項目が選択されていません", _log.WARNING);
+                _log?.LogAdd($"{dbgPrefix} ExecuteAjsStep 中断: items={_currentAjsProgressItems?.Count.ToString() ?? "null"} index={_currentAjsIndex}", _log.WARNING);
                 return;
             }
 
-            if (CmbAjsCategory.SelectedItem == null) return;
+            if (CmbAjsCategory.SelectedItem == null)
+            {
+                _log?.LogAdd($"{dbgPrefix} ExecuteAjsStep 中断: CmbAjsCategory.SelectedItem == null", _log.WARNING);
+                return;
+            }
             var displayText = CmbAjsCategory.SelectedItem.ToString();
-            if (string.IsNullOrEmpty(displayText)) return;
-            if (!_ajsCategoryKeys.TryGetValue(displayText, out var key)) return;
+            if (string.IsNullOrEmpty(displayText))
+            {
+                _log?.LogAdd($"{dbgPrefix} ExecuteAjsStep 中断: CmbAjsCategory displayText 空", _log.WARNING);
+                return;
+            }
+            if (!_ajsCategoryKeys.TryGetValue(displayText, out var key))
+            {
+                _log?.LogAdd($"{dbgPrefix} ExecuteAjsStep 中断: _ajsCategoryKeys にキーなし displayText={displayText}", _log.WARNING);
+                return;
+            }
             var keyParts = key.Split('-');
-            if (keyParts.Length != 2) return;
+            if (keyParts.Length != 2)
+            {
+                _log?.LogAdd($"{dbgPrefix} ExecuteAjsStep 中断: keyParts.Length != 2 key={key}", _log.WARNING);
+                return;
+            }
             var kbnNo   = keyParts[0];
             var roundNo = keyParts[1];
 
@@ -2130,8 +2150,8 @@ namespace DSDsp
             _log?.LogAdd($"AJS Advance: {item.ScreenId} Step={currentScreen.CurrentStep}", _log.INFO);
             currentScreen.Advance();
 
-            // 他のDSDspに同期通知を送信（接続中の場合のみ）
-            if (_client?.IsConnected == true)
+            // 他のDSDspに同期通知を送信（接続中の場合のみ・受信による同期実行中は送信しない）
+            if (_client?.IsConnected == true && !_isReceivingAjsAdvance)
             {
                 var keyParts2  = key.Split('-');
                 var sendKbnNo  = keyParts2.Length == 2 ? keyParts2[0] : "";
@@ -3194,33 +3214,62 @@ namespace DSDsp
 
             Dispatcher.Invoke(() =>
             {
+                _log?.LogAdd(
+                    $"[AJS同期受信] DP_AJS_ADVANCE 受信: ScreenId={payload.ScreenId} AjsIndex={payload.AjsIndex} Step={payload.Step}" +
+                    $" / 自: items={_currentAjsProgressItems?.Count.ToString() ?? "null"} index={_currentAjsIndex}" +
+                    $" CmbCategory={(CmbAjsCategory.SelectedItem?.ToString() ?? "null")}",
+                    _log.INFO);
+
                 // AJSタブが有効でなければ無視
-                if (_currentAjsProgressItems == null) return;
-                if (_currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count) return;
-
-                var currentItem = _currentAjsProgressItems[_currentAjsIndex];
-                var myGroup     = Messages.DP_AJS_ADVANCE.ComputeScreenGroup(currentItem.ScreenId);
-
-                // ScreenGroup が一致しない場合は無視
-                if (!string.Equals(myGroup, payload.ScreenGroup, StringComparison.Ordinal))
+                if (_currentAjsProgressItems == null)
                 {
-                    _log?.LogAdd(
-                        $"AJS同期: ScreenGroup不一致 (受信={payload.ScreenGroup} / 自={myGroup}) — スキップ",
-                        _log.DEBUG);
+                    _log?.LogAdd("[AJS同期受信] スキップ: _currentAjsProgressItems == null", _log.WARNING);
                     return;
                 }
 
-                var currentScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
-                if (currentScreen == null)
+                // 受信した AjsIndex が有効範囲外なら無視
+                if (payload.AjsIndex < 0 || payload.AjsIndex >= _currentAjsProgressItems.Count)
                 {
-                    _log?.LogAdd("AJS同期: 表示中の画面なし — スキップ", _log.DEBUG);
+                    _log?.LogAdd($"[AJS同期受信] スキップ: AjsIndex={payload.AjsIndex} 範囲外 (Count={_currentAjsProgressItems.Count})", _log.WARNING);
+                    return;
+                }
+
+                // ScreenGroup が一致するか確認（現在インデックスと受信インデックスの両方で確認）
+                var receivedItem  = _currentAjsProgressItems[payload.AjsIndex];
+                var receivedGroup = Messages.DP_AJS_ADVANCE.ComputeScreenGroup(receivedItem.ScreenId);
+                if (!string.Equals(receivedGroup, payload.ScreenGroup, StringComparison.Ordinal))
+                {
+                    _log?.LogAdd(
+                        $"[AJS同期受信] スキップ: ScreenGroup不一致 (受信={payload.ScreenGroup} / 対応={receivedGroup})",
+                        _log.WARNING);
                     return;
                 }
 
                 _log?.LogAdd(
-                    $"AJS同期 Advance: ScreenId={payload.ScreenId} Step={payload.Step}",
+                    $"[AJS同期受信] Advance実行: ScreenId={payload.ScreenId} AjsIndex={payload.AjsIndex} Step={payload.Step}",
                     _log.INFO);
-                currentScreen.Advance();
+
+                // 送信側と同じ AjsIndex に合わせてからステップを実行する
+                // （画面未生成の場合も含め ExecuteAjsStep() で画面生成・Advance まで一括処理）
+                if (_currentAjsIndex != payload.AjsIndex)
+                {
+                    _log?.LogAdd($"[AJS同期受信] インデックス同期: {_currentAjsIndex} → {payload.AjsIndex}", _log.INFO);
+                    _suppressAjsSelectionChanged = true;
+                    _currentAjsIndex = payload.AjsIndex;
+                    LstAjsProgress.SelectedIndex = _currentAjsIndex;
+                    _suppressAjsSelectionChanged = false;
+                }
+
+                // 再ブロードキャスト防止フラグを立てて ExecuteAjsStep() を呼ぶ
+                _isReceivingAjsAdvance = true;
+                try
+                {
+                    ExecuteAjsStep();
+                }
+                finally
+                {
+                    _isReceivingAjsAdvance = false;
+                }
             });
         }
 
