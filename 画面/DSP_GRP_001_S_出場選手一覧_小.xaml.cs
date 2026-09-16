@@ -530,6 +530,10 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル1, sbOut, 0);
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル2, sbOut, 0);
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, sbOut, 0);
+            if (StepMode == "Auto")
+            {
+                sbOut.Completed += (s, e) => RaiseScreenCompleted();
+            }
             sbOut.Begin();
         }
 

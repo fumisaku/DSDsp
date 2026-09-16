@@ -43,7 +43,14 @@ namespace DSDsp.画面
         /// Hold: Step1(1) + Step2(1) + 何もしない(1) + 停止(1) = 4ステップ
         /// Auto: Step1(1) + Step2(1) + [5秒タイマー後 Step3自動実行] = 3ステップ
         /// </summary>
-        protected override int TotalSteps => StepMode == "Hold" ? 4 : 3;
+        protected override int TotalSteps
+        {
+            get
+            {
+                if (StepMode == "Auto") return 1;
+                return StepMode == "Hold" ? 4 : 3;
+            }
+        }
         public override bool WaitsForLastStepFadeOut => true;
         /// <summary>Hold モード時は最終ステップ完了後も停止して次の再生ボタンを待つ。</summary>
         public override bool HoldsAfterFadeOut => StepMode == "Hold";
@@ -74,6 +81,8 @@ namespace DSDsp.画面
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
+            StopAutoTimer(); // 手動操作やステップ移行の際は既存の自動タイマーを停止する
+
             if (StepMode == "Hold")
             {
                 switch (_currentStep)
@@ -92,13 +101,13 @@ namespace DSDsp.画面
             {
                 switch (_currentStep)
                 {
-                    case 0: Step1(); break;
-                    case 1:
+                    case 0:
+                        Step1();
                         Step2();
                         // 5秒後に自動でStep3（フェードアウト）を実行
                         StartAutoTimer(() => Step3());
                         break;
-                    case 2: Step3(); break; // 手動再生が来た場合（タイマー前）
+                    case 1: Step3(); break; // 手動再生が来た場合（タイマー前）
                 }
             }
             else
