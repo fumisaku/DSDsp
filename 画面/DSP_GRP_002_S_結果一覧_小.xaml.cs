@@ -588,7 +588,14 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, fadeOutStoryboard, 0);
 
             // Auto モード：フェードアウト完了後に 5秒保持してから次画面へ
-            fadeOutStoryboard.Completed += (s, e) => StartAutoTimer(() => RaiseScreenCompleted());
+            // Auto モード かつ タイマー抑制なし の場合のみ待機、それ以外は即完了
+            fadeOutStoryboard.Completed += (s, e) =>
+            {
+                if (StepMode == "Auto" && !SuppressAutoTimer)
+                    StartAutoTimer(() => RaiseScreenCompleted());
+                else
+                    RaiseScreenCompleted();
+            };
             fadeOutStoryboard.Begin();
         }
 
