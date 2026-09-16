@@ -967,7 +967,13 @@ namespace DSDsp
                 ShowProgressInterrupt(text);
         }
 
-        private void TglAutoGroupDisplay_Click(object sender, RoutedEventArgs e) { }
+        private void TglAutoGroupDisplay_Click(object sender, RoutedEventArgs e)
+        {
+            // 見た目の切り替えは ControlTemplate.Triggers (IsChecked) で完結しているため、
+            // ここではロジック側の処理のみ行う（将来の拡張用）
+            bool isOn = TglAutoGroupDisplay.IsChecked == true;
+            _log?.LogAdd($"グループ競技自動表示: {(isOn ? "ON" : "OFF")}", _log.INFO);
+        }
 
         // ---- 進行一覧の構築 ----
 
@@ -3034,6 +3040,10 @@ namespace DSDsp
             {
                 UpdateResultReadyLabel();
 
+                // ── AJS グループ競技 Auto モード：DSP_GRP_001_B が HoldsAfterFadeOut 停止中なら
+                //    該当ヒートの採点集計完了を確認して DSP_GRP_002 へ自動遷移する ──
+                TryAdvanceAjsGrp001IfResultReady();
+
                 // 表彰式タブが選択中であれば、区分選択済みステータスを更新してプレビューを表示
                 if (TabControl.SelectedIndex == 2 && _awardSelectedCategory != null)
                 {
@@ -3042,12 +3052,54 @@ namespace DSDsp
                 }
 
                 // オナーダンスタブが選択中であれば、入賞者リストを更新する
-                if (TabControl.SelectedIndex == 3 && _honorSelectedCategory != null)  // ← オナーダンスは index=3
+                if (TabControl.SelectedIndex == 3 && _honorSelectedCategory != null)
                 {
                     UpdateHonorStatus("区分選択済み — 入賞者を選択してください");
                     LoadHonorPlayerList(_honorSelectedCategory.Value.KbnNo, _honorSelectedCategory.Value.RndNo);
                 }
             });
+        }
+
+        /// <summary>
+        /// AJS グループ競技 Auto モード専用。
+        /// DSP_GRP_001_B が HoldsAfterFadeOut 停止中（選手一覧を表示したまま）のとき、
+        /// 現在のヒートの採点集計完了（DV_Result の ヒート別全ジャッジSEND済 = true）を確認し、
+        /// 完了していれば ExecuteAjsStep() で DSP_GRP_002 へ自動遷移する。
+        /// </summary>
+        private void TryAdvanceAjsGrp001IfResultReady()
+        {
+            // AJS タブが有効でなければスキップ
+            if (_currentAjsProgressItems == null) return;
+            if (_currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count) return;
+
+            // 現在停止中の画面が DSP_GRP_001_B かつ Auto モードかチェック
+            var currentScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
+            if (currentScreen == null) return;
+            if (currentScreen.StepMode != "Auto") return;
+
+            var item = _currentAjsProgressItems[_currentAjsIndex];
+            // 停止中の画面（HoldsAfterFadeOut で待機）が DSP_GRP_001_B であることを確認
+            // _currentAjsIndex は OnAjsScreenCompleted で ++ 済み（次の画面を指す）なので
+            // 停止中の画面は _offScreenWindow?.CurrentScreen
+            if (!item.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
+
+            // 対応する DV_Result で採点集計完了を確認
+            var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+            var dvResult = dm?.DV_Result;
+            if (dvResult == null) return;
+
+            // 停止中の画面の種目番号・ヒート番号を取得（OnAjsScreenCompleted で ++ 前のアイテム）
+            // _currentAjsIndex は ++ 済みなので、停止中の画面は index-1 のアイテム
+            int stopIndex = _currentAjsIndex - 1;
+            if (stopIndex < 0 || stopIndex >= _currentAjsProgressItems.Count) return;
+            var stopItem = _currentAjsProgressItems[stopIndex];
+            if (!stopItem.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
+
+            bool ready = 画面.DSDspDataHelper.IsHeatResultReady(dvResult, stopItem.DanceNo, stopItem.HeatNo);
+            if (!ready) return;
+
+            _log?.LogAdd($"AJS Auto: DSP_GRP_001 停止中 → 採点集計完了確認 (種目{stopItem.DanceNo} ヒート{stopItem.HeatNo}) → DSP_GRP_002 へ自動遷移", _log.INFO);
+            ExecuteAjsStep();
         }
 
         /// <summary>結果プレビューリストを更新する</summary>
@@ -3233,6 +3285,33 @@ namespace DSDsp
                 {
                     _log?.LogAdd($"[AJS同期受信] スキップ: AjsIndex={payload.AjsIndex} 範囲外 (Count={_currentAjsProgressItems.Count})", _log.WARNING);
                     return;
+                }
+
+                // 受信した AjsIndex が現在のインデックスより古い（自動遷移等で既に先に進んでいる）場合はスキップ
+                // 例: TIT_001(index=0) が即完了→TIT_002(index=1)へ自動遷移した後に
+                //     遅れて届いた index=0 の電文を処理してしまうと1ステップ逆戻りするため。
+                if (payload.AjsIndex < _currentAjsIndex)
+                {
+                    _log?.LogAdd(
+                        $"[AJS同期受信] スキップ(古い電文): AjsIndex={payload.AjsIndex} < _currentAjsIndex={_currentAjsIndex}",
+                        _log.INFO);
+                    return;
+                }
+
+                // 同じインデックスで既にそのステップ以上に進んでいる場合もスキップ
+                // 例: index=0 の電文が index=1 より後に届き、かつ受信側が index=0 処理時に
+                //     自動遷移で index=1 まで進んだ場合、同じ画面に余分な Advance() が入るため。
+                if (payload.AjsIndex == _currentAjsIndex)
+                {
+                    var csCheck = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
+                    var tagMatch = _offScreenWindow?.CurrentScreenTag == (object)_currentAjsProgressItems[_currentAjsIndex];
+                    if (csCheck != null && tagMatch && csCheck.CurrentStep >= payload.Step)
+                    {
+                        _log?.LogAdd(
+                            $"[AJS同期受信] スキップ(進捗済み): AjsIndex={payload.AjsIndex} step={csCheck.CurrentStep} >= {payload.Step}",
+                            _log.INFO);
+                        return;
+                    }
                 }
 
                 // ScreenGroup が一致するか確認（現在インデックスと受信インデックスの両方で確認）

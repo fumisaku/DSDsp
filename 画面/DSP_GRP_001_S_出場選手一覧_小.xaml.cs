@@ -45,11 +45,17 @@ namespace DSDsp.画面
         ///   1ページ: Step0(表示) + Step1(FO) = 2 ただし Step1 はページング完了後のLSTステップへ続く
         ///   複数ページ: Step0 + ページ数×2-1(ページング) + 1(LST) = ページ数×2+1
         ///   + クロマキー/全画面によるLSTステップ数
+        ///   Auto モード: ページング完了後 5秒表示→フェードアウト→HoldsAfterFadeOut で待機
         /// </summary>
         protected override int TotalSteps
         {
             get
             {
+                // Auto モード：LST ステップを持たずページング分だけ
+                if (StepMode == "Auto")
+                {
+                    return _ページ数 == 1 ? 1 : _ページ数 * 2;
+                }
                 int 基本 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
                 int 追加 = (_全ヒート数 >= 2 && ChromaKeyMode) ? 2 : 1;
                 return 基本 + 追加;
@@ -58,6 +64,10 @@ namespace DSDsp.画面
 
         // フェードアウトアニメーション完了後に RaiseScreenCompleted() を呼ぶため true
         public override bool WaitsForLastStepFadeOut => true;
+        /// <summary>Auto モード時は 5秒後フェードアウト完了後に停止（DV_Result 待ち）。</summary>
+        public override bool HoldsAfterFadeOut => StepMode == "Auto";
+        /// <summary>Auto モード時の表示保持秒数（5秒）。</summary>
+        public override int AutoTimerSeconds => StepMode == "Auto" ? 5 : 0;
         #endregion
 
         #region コンストラクタ
@@ -148,6 +158,13 @@ namespace DSDsp.画面
         /// </summary>
         private void OnページングComplete()
         {
+            // Auto モード：5秒後にフェードアウト→HoldsAfterFadeOut で DV_Result 待ち
+            if (StepMode == "Auto")
+            {
+                StartAutoTimer(() => Step5_タイトルフェードアウト());
+                return;
+            }
+
             // _currentStep を LST ステップに合わせてから実行
             // Advance() は後で ++ するが、ここでは画面側から直接 _currentStep を進める
             int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;

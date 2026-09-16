@@ -35,6 +35,7 @@ namespace DSDsp.画面
         protected パーツ.COM000_PartsMain? _partsMain;
         protected DispatcherTimer? _timer;
         private   DispatcherTimer? _clockTimer;
+        private   DispatcherTimer? _autoTimer;   // Auto モード用ワンショットタイマー
         protected int _currentStep = 0;
         protected bool _disposed = false;
 
@@ -126,6 +127,12 @@ namespace DSDsp.画面
         /// <summary>タイマー間隔（秒）- 派生クラスでオーバーライド可能</summary>
         protected virtual int TimerIntervalSeconds => 10;
 
+        /// <summary>
+        /// Auto モード時に最終ステップ完了後から RaiseScreenCompleted() を呼ぶまでの待機秒数。
+        /// StepMode == "Auto" の画面でオーバーライドする。0 以下の場合は待機なしで即完了。
+        /// </summary>
+        public virtual int AutoTimerSeconds => 0;
+
         /// <summary>ステップ数 - 派生クラスでオーバーライド必須</summary>
         protected abstract int TotalSteps { get; }
 
@@ -148,6 +155,38 @@ namespace DSDsp.画面
         /// HoldsAfterFadeOut=true でフェードアウト完了後の停止時に MainWindow から呼ばれる。
         /// </summary>
         public virtual void OnHoldsAfterFadeOut() { }
+
+        /// <summary>
+        /// Auto モード用ワンショットタイマーを開始する。
+        /// AutoTimerSeconds 秒後に onFired を UIスレッドで実行する。
+        /// 既存タイマーがあれば先に停止する。
+        /// </summary>
+        public void StartAutoTimer(Action onFired)
+        {
+            StopAutoTimer();
+            if (AutoTimerSeconds <= 0)
+            {
+                onFired();
+                return;
+            }
+            _autoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(AutoTimerSeconds) };
+            _autoTimer.Tick += (s, e) =>
+            {
+                StopAutoTimer();
+                onFired();
+            };
+            _autoTimer.Start();
+        }
+
+        /// <summary>Auto モード用ワンショットタイマーを停止する。</summary>
+        public void StopAutoTimer()
+        {
+            if (_autoTimer != null)
+            {
+                _autoTimer.Stop();
+                _autoTimer = null;
+            }
+        }
         #endregion
 
         #region コンストラクタ
@@ -409,6 +448,7 @@ namespace DSDsp.画面
             {
                 StopTimer();
                 StopClock();
+                StopAutoTimer();
                 _partsMain = null;
             }
             _disposed = true;

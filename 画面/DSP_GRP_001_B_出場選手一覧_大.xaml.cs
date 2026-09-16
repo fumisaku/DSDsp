@@ -64,18 +64,28 @@ namespace DSDsp.画面
         ///   全ヒート数≥2 かつ クロマキーモード: +2（Step5=LST005フェードイン+タイトルFO, Step6=LST005+LST006フェードアウト）
         ///   全ヒート数≥2 かつ 全画面モード:     +1（Step6=タイトル+LST006フェードアウトのみ）
         ///   全ヒート数＜2:                       +1（Step5=タイトルフェードアウトのみ）
+        ///   Auto モード: フェードアウトなし（ページング完了後に即 RaiseScreenCompleted）
         /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
         /// </summary>
         protected override int TotalSteps
         {
             get
             {
+                // Auto モード：LST ステップを持たずページング分だけ
+                if (StepMode == "Auto")
+                {
+                    return _ページ数 == 1 ? 1 : _ページ数 * 2;
+                }
                 int 基本 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
                 int 追加 = (_全ヒート数 >= 2 && ChromaKeyMode) ? 2 : 1;
                 return 基本 + 追加;
             }
         }
         public override bool WaitsForLastStepFadeOut => true;
+        /// <summary>
+        /// Auto モード時も HoldsAfterFadeOut=true：
+        /// DV_Result 受信まで B は選手一覧を表示し続ける（MainWindow が監視して DSP_GRP_002 へ遷移）。
+        /// </summary>
         public override bool HoldsAfterFadeOut => true;
         #endregion
 
@@ -167,6 +177,13 @@ namespace DSDsp.画面
 
         private void OnページングComplete()
         {
+            // Auto モード：フェードアウトせず即完了（B は選手一覧を表示したまま待機）
+            if (StepMode == "Auto")
+            {
+                RaiseScreenCompleted();
+                return;
+            }
+
             int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
             _currentStep = 基本ステップ数;
 

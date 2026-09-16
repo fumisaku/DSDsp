@@ -29,10 +29,14 @@ namespace DSDsp.画面
         /// 総ステップ数。
         /// 既定: Step1(1) + Step2(1) + Step3(1) = 3ステップ（→停止）
         /// Hold: Step1(1) + Step2(1) + 何もしない(1) + Step3(1) = 4ステップ（→停止）
+        /// Auto: Step1(1) + Step2(1) + [5秒タイマー後 Step3自動実行] = 3ステップ（→停止）
         /// </summary>
         protected override int TotalSteps => StepMode == "Hold" ? 4 : 3;
         public override bool WaitsForLastStepFadeOut => true;
-        public override bool HoldsAfterFadeOut => true;
+        /// <summary>Hold モード時のみフェードアウト後に停止して次の再生ボタンを待つ。Auto/通常は即遷移。</summary>
+        public override bool HoldsAfterFadeOut => StepMode == "Hold";
+        /// <summary>Auto モード時の表示保持秒数（5秒）。</summary>
+        public override int AutoTimerSeconds => StepMode == "Auto" ? 5 : 0;
         #endregion
 
         #region コンストラクタ
@@ -62,6 +66,19 @@ namespace DSDsp.画面
                     case 1: Step2(); break;
                     case 2: break; // 何もしない（種目表示したまま）
                     case 3: Step3(); break; // フェードアウト → 停止
+                }
+            }
+            else if (StepMode == "Auto")
+            {
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1:
+                        Step2();
+                        // 5秒後に自動でStep3（フェードアウト→停止）を実行
+                        StartAutoTimer(() => Step3());
+                        break;
+                    case 2: Step3(); break; // 手動再生が来た場合（タイマー前）
                 }
             }
             else
@@ -164,7 +181,13 @@ namespace DSDsp.画面
         public void Step3()
         {
             EnsurePartsMainInitialized();
-            if (_partsMain == null) return;
+
+            // PartsMain が初期化できなかった場合でも画面完了を通知して止まらないようにする
+            if (_partsMain == null)
+            {
+                RaiseScreenCompleted();
+                return;
+            }
 
             var sb = new Storyboard();
             _partsMain.フェードアウト(true, PartsTIT003.LB_種目順,  sb, 0);

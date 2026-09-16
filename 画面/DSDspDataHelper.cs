@@ -1096,6 +1096,35 @@ namespace DSDsp.画面
             };
         }
 
+        /// <summary>
+        /// DV_Result の種目結果から、指定した種目番号・ヒート番号の全ジャッジSENDが完了しているか返す。
+        /// 「ヒート別全ジャッジSEND済」の該当ヒートが true であれば採点集計完了とみなす。
+        /// </summary>
+        public static bool IsHeatResultReady(JsonNode? dvResult, int danceNo, int heatNo)
+        {
+            if (dvResult == null) return false;
+            var 種目結果 = dvResult["種目結果"]?.AsArray();
+            if (種目結果 == null) return false;
+
+            foreach (var item in 種目結果)
+            {
+                int 種目順 = item?["種目順"]?.GetValue<int>() ?? 0;
+                if (種目順 != danceNo) continue;
+
+                var sendMap = item?["ヒート別全ジャッジSEND済"]?.AsObject();
+                if (sendMap == null) return false;
+
+                // キーは int（ヒート番号）として格納されている
+                foreach (var kv in sendMap)
+                {
+                    if (int.TryParse(kv.Key, out int h) && h == heatNo)
+                        return kv.Value?.GetValue<bool>() == true;
+                }
+                return false;
+            }
+            return false;
+        }
+
         // ────────────────────────────────────────────────
         // ジャッジ情報ヘルパー
         // ────────────────────────────────────────────────

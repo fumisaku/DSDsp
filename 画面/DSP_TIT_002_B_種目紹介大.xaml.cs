@@ -41,14 +41,14 @@ namespace DSDsp.画面
         /// 総ステップ数。
         /// 既定: Step1(1) + Step2(1) + Step3(1) = 3ステップ
         /// Hold: Step1(1) + Step2(1) + 何もしない(1) + 停止(1) = 4ステップ
+        /// Auto: Step1(1) + Step2(1) + [5秒タイマー後 Step3自動実行] = 3ステップ
         /// </summary>
         protected override int TotalSteps => StepMode == "Hold" ? 4 : 3;
         public override bool WaitsForLastStepFadeOut => true;
-        /// <summary>
-        /// Hold モード時は最終ステップ完了後も停止して次の再生ボタンを待つ。
-        /// （S と同じタイミングで次画面へ遷移するため）
-        /// </summary>
+        /// <summary>Hold モード時は最終ステップ完了後も停止して次の再生ボタンを待つ。</summary>
         public override bool HoldsAfterFadeOut => StepMode == "Hold";
+        /// <summary>Auto モード時の表示保持秒数（5秒）。</summary>
+        public override int AutoTimerSeconds => StepMode == "Auto" ? 5 : 0;
         #endregion
 
         #region コンストラクタ
@@ -86,6 +86,19 @@ namespace DSDsp.画面
                         // WaitsForLastStepFadeOut=true のため手動で完了を通知する
                         RaiseScreenCompleted();
                         break;
+                }
+            }
+            else if (StepMode == "Auto")
+            {
+                switch (_currentStep)
+                {
+                    case 0: Step1(); break;
+                    case 1:
+                        Step2();
+                        // 5秒後に自動でStep3（フェードアウト）を実行
+                        StartAutoTimer(() => Step3());
+                        break;
+                    case 2: Step3(); break; // 手動再生が来た場合（タイマー前）
                 }
             }
             else
@@ -209,19 +222,21 @@ namespace DSDsp.画面
         /// </summary>
         public void Step3()
         {
-            // TIT002 の LB_Title1 と LB_Title2 をクリア
-            // TIT002 の IM_1 と IM_2 をフェードアウト
-
             EnsurePartsMainInitialized();
 
-            if (_partsMain == null) return;
+            // PartsMain が初期化できなかった場合でも画面完了を通知して止まらないようにする
+            if (_partsMain == null)
+            {
+                RaiseScreenCompleted();
+                return;
+            }
 
             var fadeOutStoryboard = new Storyboard();
-            _partsMain.フェードアウト(true, PartsTIT002.LB_種目順, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT002.LB_種目順,      fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsTIT002.LB_種目カテゴリ, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT002.LB_種目紹介, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT002.IM_種目1, fadeOutStoryboard, 0);
-            _partsMain.フェードアウト(true, PartsTIT002.IM_種目2, fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT002.LB_種目紹介,    fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT002.IM_種目1,        fadeOutStoryboard, 0);
+            _partsMain.フェードアウト(true, PartsTIT002.IM_種目2,        fadeOutStoryboard, 0);
 
             fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();

@@ -57,9 +57,12 @@ namespace DSDsp.画面
         /// <summary>
         /// 総ステップ数：Step1+Step2+Step3(1) + Step4(1) + [Step3+Step4] × (ページ数-1) + Step5(1)
         /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
+        /// Auto モード：Step5 のフェードアウト完了後に 5秒保持してから RaiseScreenCompleted。
         /// </summary>
         protected override int TotalSteps => _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
         public override bool WaitsForLastStepFadeOut => true;
+        /// <summary>Auto モード時の表示保持秒数（5秒）。</summary>
+        public override int AutoTimerSeconds => StepMode == "Auto" ? 5 : 0;
         #endregion
 
         #region コンストラクタ
@@ -589,7 +592,8 @@ namespace DSDsp.画面
 
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
-            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
+            // Auto モード：フェードアウト完了後に 5秒保持してから次画面へ
+            fadeOutStoryboard.Completed += (s, e) => StartAutoTimer(() => RaiseScreenCompleted());
             fadeOutStoryboard.Begin();
         }
 

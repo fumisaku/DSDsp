@@ -35,7 +35,8 @@
       "DSP_COM_001_S": {
         "ScreenId": "DSP_COM_001_S",
         "Description": "途中総合結果一覧 小（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
-        "Enabled": true
+        "Enabled": true,
+          "StepMode": "Auto"
       }
     },
 
@@ -108,7 +109,7 @@
         "ScreenId": "DSP_TIT_002_S",
         "Description": "種目紹介 小（各種目の先頭で1回表示）",
         "Enabled": true,
-        "StepMode": "Hold"
+        "StepMode": "Auto"
       },
       "DSP_GRP_001_B": {
         "ScreenId": "DSP_GRP_001_B",
@@ -118,7 +119,8 @@
       "DSP_GRP_001_S": {
         "ScreenId": "DSP_GRP_001_S",
         "Description": "グループ出場選手一覧 小（ヒート毎）",
-        "Enabled": true
+        "Enabled": true,
+          "StepMode": "Auto"
       },
       "DSP_GRP_002_B": {
         "ScreenId": "DSP_GRP_002_B",
@@ -128,7 +130,8 @@
       "DSP_GRP_002_S": {
         "ScreenId": "DSP_GRP_002_S",
         "Description": "グループ結果一覧 小（ヒート毎）",
-        "Enabled": true
+        "Enabled": true,
+          "StepMode": "Auto"
       }
     },
 
@@ -141,7 +144,8 @@
       "DSP_TIT_002_S": {
         "ScreenId": "DSP_TIT_002_S",
         "Description": "種目紹介 小（各種目の先頭で1回表示）",
-        "Enabled": true
+        "Enabled": true,
+          "StepMode": "Auto"
       },
       "DSP_GRP_001_B": {
         "ScreenId": "DSP_GRP_001_B",
@@ -151,7 +155,8 @@
       "DSP_GRP_001_S": {
         "ScreenId": "DSP_GRP_001_S",
         "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
-        "Enabled": true
+        "Enabled": true,
+          "StepMode": "Auto"
       },
       "DSP_DUE_001_B": {
         "ScreenId": "DSP_DUE_001_B",
@@ -181,7 +186,8 @@
       "DSP_GRP_002_S": {
         "ScreenId": "DSP_GRP_002_S",
         "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
-        "Enabled": true
+        "Enabled": true,
+          "StepMode": "Auto"
       },
       "DSP_SOL_004_B": {
         "ScreenId": "DSP_SOL_004_B",
@@ -212,7 +218,8 @@
         "DSP_COM_001_S": {
           "ScreenId": "DSP_COM_001_S",
           "Description": "途中総合結果一覧 小（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         }
       },
 
@@ -285,7 +292,7 @@
           "ScreenId": "DSP_TIT_002_S",
           "Description": "種目紹介 小（各種目の先頭で1回表示）",
           "Enabled": true,
-        "StepMode": "Hold"
+          "StepMode": "Auto"
         },
         "DSP_GRP_001_B": {
           "ScreenId": "DSP_GRP_001_B",
@@ -295,7 +302,8 @@
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
           "Description": "グループ出場選手一覧 小（ヒート毎）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_GRP_002_B": {
           "ScreenId": "DSP_GRP_002_B",
@@ -305,7 +313,8 @@
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
           "Description": "グループ結果一覧 小（ヒート毎）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         }
       },
 
@@ -318,7 +327,8 @@
         "DSP_TIT_002_S": {
           "ScreenId": "DSP_TIT_002_S",
           "Description": "種目紹介 小（各種目の先頭で1回表示）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_GRP_001_B": {
           "ScreenId": "DSP_GRP_001_B",
@@ -328,7 +338,8 @@
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
           "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_DUE_001_B": {
           "ScreenId": "DSP_DUE_001_B",
@@ -358,7 +369,8 @@
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
           "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_SOL_004_B": {
           "ScreenId": "DSP_SOL_004_B",
@@ -390,7 +402,8 @@
         "DSP_COM_001_S": {
           "ScreenId": "DSP_COM_001_S",
           "Description": "途中総合結果一覧 小（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         }
       },
 
@@ -463,7 +476,7 @@
           "ScreenId": "DSP_TIT_002_S",
           "Description": "種目紹介 小（各種目の先頭で1回表示）",
           "Enabled": true,
-        "StepMode": "Hold"
+          "StepMode": "Auto"
         },
         "DSP_GRP_001_B": {
           "ScreenId": "DSP_GRP_001_B",
@@ -473,7 +486,8 @@
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
           "Description": "グループ出場選手一覧 小（ヒート毎）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_GRP_002_B": {
           "ScreenId": "DSP_GRP_002_B",
@@ -483,7 +497,8 @@
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
           "Description": "グループ結果一覧 小（ヒート毎）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         }
       },
 
@@ -496,7 +511,8 @@
         "DSP_TIT_002_S": {
           "ScreenId": "DSP_TIT_002_S",
           "Description": "種目紹介 小（各種目の先頭で1回表示）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_GRP_001_B": {
           "ScreenId": "DSP_GRP_001_B",
@@ -506,7 +522,8 @@
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
           "Description": "デュエルヒート表 小（各種目の先頭で1回表示）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_DUE_001_B": {
           "ScreenId": "DSP_DUE_001_B",
@@ -536,7 +553,8 @@
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
           "Description": "デュエル選手結果（3組以上） 小（ヒート毎・出場選手3組以上の場合）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Auto"
         },
         "DSP_SOL_004_B": {
           "ScreenId": "DSP_SOL_004_B",
