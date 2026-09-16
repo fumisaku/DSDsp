@@ -139,7 +139,7 @@ namespace DSDsp.画面
             if (p < _ページ数)
             {
                 if (pos == 0)
-                    Step3(DV_Result, p * 8);
+                    Step3(DV_Result, p * 10);
                 else
                     Step4(p == _ページ数 - 1 ? (Action)OnページングComplete : null);
                 return;
@@ -201,7 +201,7 @@ namespace DSDsp.画面
             PartsLST004.LB_タイトル2.Visibility = Visibility.Collapsed;
             PartsLST004.LB_タイトル3.Visibility = Visibility.Collapsed;
 
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 10; i++)
             {
                 _明細IM![i].Visibility  = Visibility.Collapsed;
                 _順位LB![i].Visibility  = Visibility.Collapsed;
@@ -218,27 +218,32 @@ namespace DSDsp.画面
             _明細IM = new[]
             {
                 PartsLST004.IM_明細1, PartsLST004.IM_明細2, PartsLST004.IM_明細3, PartsLST004.IM_明細4,
-                PartsLST004.IM_明細5, PartsLST004.IM_明細6, PartsLST004.IM_明細7, PartsLST004.IM_明細8
+                PartsLST004.IM_明細5, PartsLST004.IM_明細6, PartsLST004.IM_明細7, PartsLST004.IM_明細8,
+                PartsLST004.IM_明細9, PartsLST004.IM_明細10
             };
             _順位LB = new[]
             {
                 PartsLST004.LB_結果1_順位, PartsLST004.LB_結果2_順位, PartsLST004.LB_結果3_順位, PartsLST004.LB_結果4_順位,
-                PartsLST004.LB_結果5_順位, PartsLST004.LB_結果6_順位, PartsLST004.LB_結果7_順位, PartsLST004.LB_結果8_順位
+                PartsLST004.LB_結果5_順位, PartsLST004.LB_結果6_順位, PartsLST004.LB_結果7_順位, PartsLST004.LB_結果8_順位,
+                PartsLST004.LB_結果9_順位, PartsLST004.LB_結果10_順位
             };
             _背番号LB = new[]
             {
                 PartsLST004.LB_結果1_背番号, PartsLST004.LB_結果2_背番号, PartsLST004.LB_結果3_背番号, PartsLST004.LB_結果4_背番号,
-                PartsLST004.LB_結果5_背番号, PartsLST004.LB_結果6_背番号, PartsLST004.LB_結果7_背番号, PartsLST004.LB_結果8_背番号
+                PartsLST004.LB_結果5_背番号, PartsLST004.LB_結果6_背番号, PartsLST004.LB_結果7_背番号, PartsLST004.LB_結果8_背番号,
+                PartsLST004.LB_結果9_背番号, PartsLST004.LB_結果10_背番号
             };
             _選手名LB = new[]
             {
                 PartsLST004.LB_結果1_選手名, PartsLST004.LB_結果2_選手名, PartsLST004.LB_結果3_選手名, PartsLST004.LB_結果4_選手名,
-                PartsLST004.LB_結果5_選手名, PartsLST004.LB_結果6_選手名, PartsLST004.LB_結果7_選手名, PartsLST004.LB_結果8_選手名
+                PartsLST004.LB_結果5_選手名, PartsLST004.LB_結果6_選手名, PartsLST004.LB_結果7_選手名, PartsLST004.LB_結果8_選手名,
+                PartsLST004.LB_結果9_選手名, PartsLST004.LB_結果10_選手名
             };
             _所属LB = new[]
             {
                 PartsLST004.LB_結果1_得点, PartsLST004.LB_結果2_得点, PartsLST004.LB_結果3_得点, PartsLST004.LB_結果4_得点,
-                PartsLST004.LB_結果5_得点, PartsLST004.LB_結果6_得点, PartsLST004.LB_結果7_得点, PartsLST004.LB_結果8_得点
+                PartsLST004.LB_結果5_得点, PartsLST004.LB_結果6_得点, PartsLST004.LB_結果7_得点, PartsLST004.LB_結果8_得点,
+                PartsLST004.LB_結果9_得点, PartsLST004.LB_結果10_得点
             };
 
             非表示();
@@ -255,7 +260,7 @@ namespace DSDsp.画面
             else
                 _総表示件数 = DSDspDataHelper.Get背番号リストFromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号).Count;
 
-            _ページ数 = Math.Max(1, (int)Math.Ceiling(_総表示件数 / 8.0));
+            _ページ数 = Math.Max(1, (int)Math.Ceiling(_総表示件数 / 10.0));
 
             _背番号 = DSDspDataHelper.Get背番号FromHeat(DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
             var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, _背番号, 区分番号);
@@ -380,7 +385,7 @@ namespace DSDsp.画面
                 表示データリスト = 全背番号リスト.Select((no, idx) => (string.Empty, no)).ToList();
             }
 
-            var 表示対象 = 表示データリスト.Skip(開始インデックス).Take(8).ToList();
+            var 表示対象 = 表示データリスト.Skip(開始インデックス).Take(10).ToList();
             int 表示件数 = 表示対象.Count;
             if (表示件数 == 0) return;
 
