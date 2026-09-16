@@ -88,6 +88,8 @@ namespace DSDsp.画面
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
+            StopAutoTimer(); // 手動操作やステップ移行の際は既存の自動タイマーを停止する
+
             // ステップ割り当て:
             //   case 0       → Step1 + Step2 + Step3(p=0) 自動実行
             //   case 1       → Step4(p=0)
@@ -100,6 +102,7 @@ namespace DSDsp.画面
                 Step2();
                 // Step1+Step2の直後に1ページ目のStep3を自動実行
                 Step3(DV_Result, 0);
+                StartAutoPageTimer(0);
                 return;
             }
 
@@ -587,16 +590,39 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル2, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, fadeOutStoryboard, 0);
 
-            // Auto モード：フェードアウト完了後に 5秒保持してから次画面へ
-            // Auto モード かつ タイマー抑制なし の場合のみ待機、それ以外は即完了
-            fadeOutStoryboard.Completed += (s, e) =>
-            {
-                if (StepMode == "Auto" && !SuppressAutoTimer)
-                    StartAutoTimer(() => RaiseScreenCompleted());
-                else
-                    RaiseScreenCompleted();
-            };
+            // 表示待機は事前に確保されているため、フェードアウト完了後は即時完了を通知する
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
+        }
+
+        /// <summary>
+        /// Auto モード用の自動ページングおよび最終フェードアウトタイマー
+        /// </summary>
+        private void StartAutoPageTimer(int pageIndex)
+        {
+            if (StepMode != "Auto" || SuppressAutoTimer) return;
+
+            if (pageIndex < _ページ数 - 1)
+            {
+                StartAutoTimer(() =>
+                {
+                    Step4(() =>
+                    {
+                        Step3(DV_Result, (pageIndex + 1) * 10);
+                        StartAutoPageTimer(pageIndex + 1);
+                    });
+                });
+            }
+            else
+            {
+                StartAutoTimer(() =>
+                {
+                    Step4(() =>
+                    {
+                        Step5();
+                    });
+                });
+            }
         }
 
 
