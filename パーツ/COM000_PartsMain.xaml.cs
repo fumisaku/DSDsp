@@ -63,7 +63,7 @@ namespace DSDsp.パーツ
                         ? new Duration(TimeSpan.FromMilliseconds(800))
                         : new Duration(TimeSpan.FromMilliseconds(100)),
                     BeginTime = TimeSpan.FromMilliseconds(beginTime),
-                    From = 1.0,
+                    From = obj.Opacity,   // 現在の Opacity から開始（途中のフェードイン状態でも跳び上がらない）
                     To = 0.0,
                     DecelerationRatio = 0.8,
                 };

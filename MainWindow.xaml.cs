@@ -2142,6 +2142,8 @@ namespace DSDsp
                 screen.IsLastHeatInDance = item.IsLastHeatInDance;
                 screen.ChromaKeyMode     = _currentAjsScenario?.ChromaKeyMode ?? false;
                 screen.StepMode          = item.StepMode;
+                // グループ競技自動表示 OFF のとき Auto タイマーを抑制（画面が自動で進まない）
+                screen.SuppressAutoTimer = (TglAutoGroupDisplay?.IsChecked == false);
 
                 // ScreenCompleted を受け取ったら次の画面へ進む
                 screen.ScreenCompleted += OnAjsScreenCompleted;
@@ -2198,6 +2200,16 @@ namespace DSDsp
             {
                 s.OnHoldsAfterFadeOut();
                 _log?.LogAdd($"AJS: HoldsAfterFadeOut 停止 Index={_currentAjsIndex}", _log.INFO);
+                return;
+            }
+
+            // グループ競技自動表示 OFF のとき、次の画面が GRP 系（DSP_GRP_001/002）なら自動遷移を止める。
+            // ユーザーが再生ボタンを押したときに ExecuteAjsStep() が呼ばれる。
+            var nextItem = _currentAjsProgressItems?[_currentAjsIndex];
+            bool nextIsGrp = nextItem?.ScreenId.StartsWith("DSP_GRP_", StringComparison.OrdinalIgnoreCase) == true;
+            if (nextIsGrp && TglAutoGroupDisplay?.IsChecked == false)
+            {
+                _log?.LogAdd($"AJS: グループ自動表示 OFF のため停止 Index={_currentAjsIndex} ({nextItem?.ScreenId})", _log.INFO);
                 return;
             }
 

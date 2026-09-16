@@ -36,6 +36,9 @@ namespace DSDsp.画面
         private int _総表示件数  = 0;
         private int _ページ数    = 1;
         private int _全ヒート数  = 0;
+        // Step4（選手一覧FO）後に OnページングComplete() が呼ばれたかを示すフラグ。
+        // Autoモードでも再生ボタン後は即時 Step6 を実行するために使用。
+        private bool _afterStep4 = false;
 
         #endregion
 
@@ -158,17 +161,12 @@ namespace DSDsp.画面
         /// </summary>
         private void OnページングComplete()
         {
-            // Auto モード：5秒後にフェードアウト→HoldsAfterFadeOut で DV_Result 待ち
-            if (StepMode == "Auto")
-            {
-                StartAutoTimer(() => Step5_タイトルフェードアウト());
-                return;
-            }
-
-            // _currentStep を LST ステップに合わせてから実行
-            // Advance() は後で ++ するが、ここでは画面側から直接 _currentStep を進める
             int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
             _currentStep = 基本ステップ数;
+
+            // この呼び出しが「Step4（再生ボタン）後」かを判定してからフラグを立てる
+            bool isAfterStep4 = _afterStep4;
+            _afterStep4 = true;  // 次回呼び出しは必ず「Step4後」とみなす
 
             if (_全ヒート数 >= 2)
             {
@@ -180,12 +178,21 @@ namespace DSDsp.画面
                 }
                 else
                 {
-                    Step6_フェードアウト();
+                    // Auto モード かつ 初回表示後（Step4前）かつ タイマー抑制なし の場合のみ待機。
+                    // 再生ボタン（Step4）後、または SuppressAutoTimer=true（自動表示OFF）は即時 Step6。
+                    if (StepMode == "Auto" && !isAfterStep4 && !SuppressAutoTimer)
+                        StartAutoTimer(() => Step6_フェードアウト());
+                    else
+                        Step6_フェードアウト();
                 }
             }
             else
             {
-                Step5_タイトルフェードアウト();
+                // Auto モード かつ Step4 前 かつ タイマー抑制なし の場合のみ待機
+                if (StepMode == "Auto" && !isAfterStep4 && !SuppressAutoTimer)
+                    StartAutoTimer(() => Step5_タイトルフェードアウト());
+                else
+                    Step5_タイトルフェードアウト();
             }
         }
         #endregion
@@ -513,14 +520,23 @@ namespace DSDsp.画面
             }
             else
             {
-                if (PartsLST006.Visibility == Visibility.Visible)
-                    _partsMain.フェードアウト(true, PartsLST006, fadeOutStoryboard, 0);
+                // LST006（次ヒート）はフェードアウトせず表示したまま維持する
                 _partsMain.フェードアウト(true, PartsLST004.IM_タイトル1, fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, PartsLST004.IM_タイトル2, fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, PartsLST004.IM_タイトル3, fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, PartsLST004.LB_タイトル1, fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, PartsLST004.LB_タイトル2, fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, PartsLST004.LB_タイトル3, fadeOutStoryboard, 0);
+
+                // 全画面モード：タイトル消去と同時に LST005（現在ヒート）を左下にフェードイン表示
+                if (_全ヒート数 >= 2)
+                {
+                    PartsLST005.Visibility = Visibility.Visible;
+                    PartsLST005.Opacity = 0;
+                    var sbIn = new Storyboard();
+                    _partsMain.フェードイン(true, PartsLST005, sbIn, 0);
+                    sbIn.Begin();
+                }
             }
 
             fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
