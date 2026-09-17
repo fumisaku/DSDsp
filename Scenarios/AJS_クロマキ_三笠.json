@@ -1,5 +1,5 @@
 ﻿{
-  "ScenarioName": "AJS_クロマキ_Youtube",
+  "ScenarioName": "AJS_クロマキ_三笠",
   "ScenarioType": "AJS",
   "Description": "AJS採点方式の画面進行シナリオ定義ファイル。区分・種目順・ヒート順をDS_Statusから取得し、画面進行一覧を動的生成する。\nScreens.Final / Screens.SemiFinal に決勝・準決勝専用の定義を記述できる。\nラウンド名が「決勝」→ Final、「準決勝」→ SemiFinal のセクションを優先使用する。\nFinal/SemiFinalが未定義またはすべて空の場合は Screens 直下のフラットな定義を使用する（後方互換）。",
 
@@ -139,7 +139,7 @@
         "Description": "グループ結果一覧 大（ヒート毎）",
         "Enabled": true,
         "StepMode": "Auto",
-        "AutoTimerSeconds": 5
+        "AutoTimerSeconds": 7
       },
       "DSP_GRP_002_S": {
         "ScreenId": "DSP_GRP_002_S",
@@ -347,7 +347,7 @@
           "Description": "グループ結果一覧 大（ヒート毎）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 7
         },
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
@@ -446,7 +446,7 @@
         "DSP_COM_001_B": {
           "ScreenId": "DSP_COM_001_B",
           "Description": "途中総合結果一覧 大（各種目終了後に表示。1種目目終了後と最終種目終了後は表示しない）",
-          "Enabled": true,
+          "Enabled": false,
           "StepMode": "Auto"
         },
         "DSP_COM_001_S": {
@@ -546,7 +546,7 @@
           "Description": "グループ結果一覧 大（ヒート毎）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 7
         },
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",

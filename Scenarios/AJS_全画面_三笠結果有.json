@@ -116,7 +116,8 @@
         "Description": "グループ出場選手一覧 大（ヒート毎）",
         "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 5,
+          "WaitsForResult": true
       },
       "DSP_GRP_001_S": {
         "ScreenId": "DSP_GRP_001_S",
@@ -128,7 +129,7 @@
         "Description": "グループ結果一覧 大（ヒート毎）",
         "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 7
       },
       "DSP_GRP_002_S": {
         "ScreenId": "DSP_GRP_002_S",
@@ -154,7 +155,8 @@
         "Description": "デュエルヒート表 大（各種目の先頭で1回表示。全ヒート選手一覧をヒート番号付きで表示）",
         "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 5,
+          "WaitsForResult": true
       },
       "DSP_GRP_001_S": {
         "ScreenId": "DSP_GRP_001_S",
@@ -303,7 +305,8 @@
           "Description": "グループ出場選手一覧 大（ヒート毎）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 5,
+          "WaitsForResult": true
         },
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
@@ -315,7 +318,7 @@
           "Description": "グループ結果一覧 大（ヒート毎）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 7
         },
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
@@ -341,7 +344,8 @@
           "Description": "デュエルヒート表 大（各種目の先頭で1回表示）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 5,
+          "WaitsForResult": true
         },
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
@@ -491,7 +495,8 @@
           "Description": "グループ出場選手一覧 大（ヒート毎）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 5,
+          "WaitsForResult": true
         },
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",
@@ -503,7 +508,7 @@
           "Description": "グループ結果一覧 大（ヒート毎）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 7
         },
         "DSP_GRP_002_S": {
           "ScreenId": "DSP_GRP_002_S",
@@ -529,7 +534,8 @@
           "Description": "デュエルヒート表 大（各種目の先頭で1回表示）",
           "Enabled": true,
           "StepMode": "Auto",
-          "AutoTimerSeconds": 5
+          "AutoTimerSeconds": 5,
+          "WaitsForResult": true
         },
         "DSP_GRP_001_S": {
           "ScreenId": "DSP_GRP_001_S",

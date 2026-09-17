@@ -3124,14 +3124,14 @@ namespace DSDsp
             // _currentAjsIndex は ++ 済みで次の画面（DSP_GRP_002_B 等）を指している。
             if (currentScreen.StepMode != "Auto") return;
 
-            var item = _currentAjsProgressItems[_currentAjsIndex];
-            if (!item.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
-
-            // 停止中の画面の種目番号・ヒート番号を取得（index-1 のアイテム）
+            // 停止中の画面（index-1）が DSP_GRP_001 であり、現在インデックス（index）が結果画面（DSP_GRP_002）を指しているか確認
             int stopIndex = _currentAjsIndex - 1;
             if (stopIndex < 0 || stopIndex >= _currentAjsProgressItems.Count) return;
             var stopItem = _currentAjsProgressItems[stopIndex];
             if (!stopItem.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
+
+            var nextItem = _currentAjsProgressItems[_currentAjsIndex];
+            if (!nextItem.ScreenId.StartsWith("DSP_GRP_002", StringComparison.OrdinalIgnoreCase)) return;
 
             bool ready = 画面.DSDspDataHelper.IsHeatResultReady(dvResult, stopItem.DanceNo, stopItem.HeatNo);
             if (!ready) return;
