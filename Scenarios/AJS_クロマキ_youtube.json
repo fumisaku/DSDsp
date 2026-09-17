@@ -50,7 +50,7 @@
         "ScreenId": "DSP_TIT_002_S",
         "Description": "種目紹介 小（各種目の先頭で1回表示）",
         "Enabled": true,
-          "StepMode": "Auto"
+        "StepMode": "Hold"
       },
       "DSP_SOL_001_B": {
         "ScreenId": "DSP_SOL_001_B",
@@ -60,7 +60,8 @@
       "DSP_SOL_001_S": {
         "ScreenId": "DSP_SOL_001_S",
         "Description": "ソロ選手紹介 小（ヒート毎）",
-        "Enabled": true
+        "Enabled": true,
+        "StepMode": "Hold"
       },
       "DSP_SOL_002_B": {
         "ScreenId": "DSP_SOL_002_B",
@@ -108,7 +109,7 @@
         "ScreenId": "DSP_TIT_002_S",
         "Description": "種目紹介 小（各種目の先頭で1回表示）",
         "Enabled": true,
-          "StepMode": "Auto"
+        "StepMode": "Auto"
       },
       "DSP_GRP_001_B": {
         "ScreenId": "DSP_GRP_001_B",
@@ -232,7 +233,7 @@
           "ScreenId": "DSP_TIT_002_S",
           "Description": "種目紹介 小（各種目の先頭で1回表示）",
           "Enabled": true,
-          "StepMode": "Auto"
+        "StepMode": "Hold"
         },
         "DSP_SOL_001_B": {
           "ScreenId": "DSP_SOL_001_B",
@@ -242,7 +243,8 @@
         "DSP_SOL_001_S": {
           "ScreenId": "DSP_SOL_001_S",
           "Description": "ソロ選手紹介 小（ヒート毎）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Hold"
         },
         "DSP_SOL_002_B": {
           "ScreenId": "DSP_SOL_002_B",
@@ -415,7 +417,7 @@
           "ScreenId": "DSP_TIT_002_S",
           "Description": "種目紹介 小（各種目の先頭で1回表示）",
           "Enabled": true,
-          "StepMode": "Auto"
+        "StepMode": "Hold"
         },
         "DSP_SOL_001_B": {
           "ScreenId": "DSP_SOL_001_B",
@@ -425,7 +427,8 @@
         "DSP_SOL_001_S": {
           "ScreenId": "DSP_SOL_001_S",
           "Description": "ソロ選手紹介 小（ヒート毎）",
-          "Enabled": true
+          "Enabled": true,
+          "StepMode": "Hold"
         },
         "DSP_SOL_002_B": {
           "ScreenId": "DSP_SOL_002_B",

@@ -64,7 +64,8 @@ namespace DSDsp.画面
         ///   全ヒート数≥2 かつ クロマキーモード: +2（Step5=LST005フェードイン+タイトルFO, Step6=LST005+LST006フェードアウト）
         ///   全ヒート数≥2 かつ 全画面モード:     +1（Step6=タイトル+LST006フェードアウトのみ）
         ///   全ヒート数＜2:                       +1（Step5=タイトルフェードアウトのみ）
-        ///   Auto モード: フェードアウトなし（ページング完了後に即 RaiseScreenCompleted）
+        ///   Auto モード（全画面）: ページング完了後 5秒→フェードアウト→LST005表示→RaiseScreenCompleted
+        ///   Auto モード（クロマキ）: ページング完了後、Step5（LST005フェードイン＋タイトルFO）を実行して HoldsAfterFadeOut で待機
         /// Step1・Step2・1ページ目Step3は同時実行のため、通常より2ステップ少ない。
         /// </summary>
         protected override int TotalSteps
@@ -84,9 +85,11 @@ namespace DSDsp.画面
         public override bool WaitsForLastStepFadeOut => true;
         /// <summary>
         /// Auto モード時も HoldsAfterFadeOut=true：
-        /// DV_Result 受信まで B は選手一覧を表示し続ける（MainWindow が監視して DSP_GRP_002 へ遷移）。
+        /// DV_Result 受信まで B は表示（全画面時は選手一覧、クロマキ時は左下LST005）を維持し、MainWindow が監視して DSP_GRP_002 へ遷移する。
         /// </summary>
         public override bool HoldsAfterFadeOut => true;
+        /// <summary>Auto モード時の表示保持秒数（5秒）。</summary>
+        public override int AutoTimerSeconds => StepMode == "Auto" ? 5 : 0;
         #endregion
 
         #region コンストラクタ
@@ -113,32 +116,37 @@ namespace DSDsp.画面
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
+            StopAutoTimer(); // 手動操作やステップ移行の際は既存の自動タイマーを停止する
+
             int 基本ステップ数   = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
             int 最初のLSTステップ = 基本ステップ数;
 
-            // ── LST ステップ ──
-            if (_全ヒート数 >= 2)
+            // ── LST ステップ（手動モード専用）──
+            if (StepMode != "Auto")
             {
-                if (_currentStep == 最初のLSTステップ)
+                if (_全ヒート数 >= 2)
                 {
-                    if (ChromaKeyMode)
-                        Step5_LST005フェードイン();
-                    else
+                    if (_currentStep == 最初のLSTステップ)
+                    {
+                        if (ChromaKeyMode)
+                            Step5_LST005フェードイン();
+                        else
+                            Step6_フェードアウト();
+                        return;
+                    }
+                    if (_currentStep == 最初のLSTステップ + 1)
+                    {
                         Step6_フェードアウト();
-                    return;
+                        return;
+                    }
                 }
-                if (_currentStep == 最初のLSTステップ + 1)
+                else
                 {
-                    Step6_フェードアウト();
-                    return;
-                }
-            }
-            else
-            {
-                if (_currentStep == 最初のLSTステップ)
-                {
-                    Step5_タイトルフェードアウト();
-                    return;
+                    if (_currentStep == 最初のLSTステップ)
+                    {
+                        Step5_タイトルフェードアウト();
+                        return;
+                    }
                 }
             }
 
@@ -148,6 +156,7 @@ namespace DSDsp.画面
                 Step1();
                 Step2();
                 Step3(DV_Result, 0);
+                StartAutoPageTimer(0);
                 return;
             }
 
@@ -165,9 +174,13 @@ namespace DSDsp.画面
             if (p < _ページ数)
             {
                 if (pos == 0)
+                {
                     Step3(DV_Result, p * 8);
+                }
                 else
+                {
                     Step4(p == _ページ数 - 1 ? (Action)OnページングComplete : null);
+                }
                 return;
             }
 
@@ -177,31 +190,73 @@ namespace DSDsp.画面
 
         private void OnページングComplete()
         {
-            // Auto モード：フェードアウトせず即完了（B は選手一覧を表示したまま待機）
+            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+
             if (StepMode == "Auto")
+            {
+                // Auto モード: 5秒待機後にフェードアウト→LST005表示→RaiseScreenCompleted
+                // （タイマーは StartAutoPageTimer の最終ページで起動済みのため、ここでは何もしない）
+                // ※ StartAutoPageTimer の最終ページコールバックから直接フェードアウト処理が呼ばれる
+                return;
+            }
+
+            // 手動モード: 全画面モードの場合、選手一覧FO完了時に画面完了
+            if (!ChromaKeyMode || _全ヒート数 < 2)
             {
                 RaiseScreenCompleted();
                 return;
             }
 
-            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            // クロマキーかつ全ヒート数 >= 2 の場合、次の再生ボタンで Step5_LST005フェードイン（タイトルFO＋LST005フェードイン）へ進む
             _currentStep = 基本ステップ数;
+        }
 
-            if (_全ヒート数 >= 2)
+        /// <summary>
+        /// Auto モード用の自動ページングおよび最終フェードアウトタイマー。
+        /// DSP_GRP_001_S と同じパターン（5秒表示 → FO → LST005表示 → RaiseScreenCompleted）。
+        /// </summary>
+        private void StartAutoPageTimer(int pageIndex)
+        {
+            if (StepMode != "Auto" || SuppressAutoTimer) return;
+
+            if (pageIndex < _ページ数 - 1)
             {
-                if (ChromaKeyMode)
+                // まだ次のページがある：5秒後に現ページをFOして次ページを表示
+                StartAutoTimer(() =>
                 {
-                    Step5_LST005フェードイン();
-                    _currentStep = 基本ステップ数 + 1;
-                }
-                else
-                {
-                    Step6_フェードアウト();
-                }
+                    Step4(() =>
+                    {
+                        Step3(DV_Result, (pageIndex + 1) * 8);
+                        StartAutoPageTimer(pageIndex + 1);
+                    });
+                });
             }
             else
             {
-                Step5_タイトルフェードアウト();
+                // 最終ページ：5秒後にフェードアウト→LST005表示→完了通知
+                StartAutoTimer(() =>
+                {
+                    Step4(() =>
+                    {
+                        if (_全ヒート数 >= 2)
+                        {
+                            if (ChromaKeyMode)
+                            {
+                                Step5_LST005フェードイン();
+                                int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+                                _currentStep = 基本ステップ数 + 1;
+                            }
+                            else
+                            {
+                                Step6_フェードアウト();
+                            }
+                        }
+                        else
+                        {
+                            Step5_タイトルフェードアウト();
+                        }
+                    });
+                });
             }
         }
         #endregion
@@ -670,6 +725,10 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, sbOut, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, sbOut, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, sbOut, 0);
+            if (StepMode == "Auto")
+            {
+                sbOut.Completed += (s, e) => RaiseScreenCompleted();
+            }
             sbOut.Begin();
         }
 
