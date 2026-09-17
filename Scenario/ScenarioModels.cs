@@ -144,6 +144,14 @@ namespace DSDsp.Scenario
         /// </summary>
         [JsonPropertyName("WaitsForResult")]
         public bool WaitsForResult { get; set; } = false;
+
+        /// <summary>
+        /// Auto タイマーの表示保持秒数を上書きする。
+        /// 省略（-1）のときは各画面クラスのデフォルト値（通常5秒）を使用する。
+        /// 例: "AutoTimerSeconds": 10 → 10秒後に自動フェードアウト
+        /// </summary>
+        [JsonPropertyName("AutoTimerSeconds")]
+        public int AutoTimerSeconds { get; set; } = -1;
     }
 
     /// <summary>
@@ -350,6 +358,12 @@ namespace DSDsp.Scenario
         /// AjsScreenEntry.WaitsForResult から引き継がれる。
         /// </summary>
         public bool WaitsForResult { get; set; } = false;
+
+        /// <summary>
+        /// Auto タイマーの表示保持秒数を上書きする（-1 = 画面クラスのデフォルト値を使用）。
+        /// AjsScreenEntry.AutoTimerSeconds から引き継がれる。
+        /// </summary>
+        public int AutoTimerSeconds { get; set; } = -1;
 
         public override string ToString()
         {

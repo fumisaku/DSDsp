@@ -607,13 +607,14 @@ namespace DSDsp.Scenario
             {
                 result.Add(new AjsProgressItem
                 {
-                    ScreenId       = screenId,
-                    DanceNo        = danceNo,
-                    HeatNo         = heatNo,
-                    DanceCd        = danceCd,
-                    Description    = description,
-                    StepMode       = entry.StepMode,
-                    WaitsForResult = entry.WaitsForResult,
+                    ScreenId         = screenId,
+                    DanceNo          = danceNo,
+                    HeatNo           = heatNo,
+                    DanceCd          = danceCd,
+                    Description      = description,
+                    StepMode         = entry.StepMode,
+                    WaitsForResult   = entry.WaitsForResult,
+                    AutoTimerSeconds = entry.AutoTimerSeconds,
                 });
             }
         }
@@ -636,13 +637,14 @@ namespace DSDsp.Scenario
                 {
                     result.Add(new AjsProgressItem
                     {
-                        ScreenId       = screenId,
-                        DanceNo        = danceNo,
-                        HeatNo         = heatNo,
-                        DanceCd        = danceCd,
-                        Description    = description,
-                        StepMode       = entry.StepMode,
-                        WaitsForResult = entry.WaitsForResult,
+                        ScreenId         = screenId,
+                        DanceNo          = danceNo,
+                        HeatNo           = heatNo,
+                        DanceCd          = danceCd,
+                        Description      = description,
+                        StepMode         = entry.StepMode,
+                        WaitsForResult   = entry.WaitsForResult,
+                        AutoTimerSeconds = entry.AutoTimerSeconds,
                     });
                     return; // 最初の1件だけ追加
                 }
@@ -667,14 +669,15 @@ namespace DSDsp.Scenario
                 {
                     result.Add(new AjsProgressItem
                     {
-                        ScreenId       = screenId,
-                        DanceNo        = danceNo,
-                        HeatNo         = 0,
-                        DanceCd        = danceCd,
-                        Description    = description,
-                        IsOverviewMode = true,
-                        StepMode       = entry.StepMode,
-                        WaitsForResult = entry.WaitsForResult,
+                        ScreenId         = screenId,
+                        DanceNo          = danceNo,
+                        HeatNo           = 0,
+                        DanceCd          = danceCd,
+                        Description      = description,
+                        IsOverviewMode   = true,
+                        StepMode         = entry.StepMode,
+                        WaitsForResult   = entry.WaitsForResult,
+                        AutoTimerSeconds = entry.AutoTimerSeconds,
                     });
                     return;
                 }

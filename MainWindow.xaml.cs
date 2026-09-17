@@ -2142,7 +2142,8 @@ namespace DSDsp
                 screen.IsLastHeatInDance = item.IsLastHeatInDance;
                 screen.ChromaKeyMode     = (_currentAjsScenario?.ChromaKeyMode == true) || (_currentAjsScenario?.Background?.GetBackgroundType() == Scenario.AjsBackgroundType.ChromaKey);
                 screen.StepMode          = item.StepMode;
-                screen.WaitsForResult    = item.WaitsForResult;
+                screen.WaitsForResult            = item.WaitsForResult;
+                screen.AutoTimerSecondsOverride  = item.AutoTimerSeconds;
                 // グループ競技自動表示 OFF のとき Auto タイマーを抑制（画面が自動で進まない）
                 screen.SuppressAutoTimer = (TglAutoGroupDisplay?.IsChecked == false);
 

@@ -140,6 +140,13 @@ namespace DSDsp.画面
         public virtual int AutoTimerSeconds => 0;
 
         /// <summary>
+        /// シナリオ側から個別に上書きする自動タイマー秒数。
+        /// 0以上のとき AutoTimerSeconds より優先される。
+        /// -1（デフォルト）のときは AutoTimerSeconds を使用する。
+        /// </summary>
+        public int AutoTimerSecondsOverride { get; set; } = -1;
+
+        /// <summary>
         /// true のとき <see cref="StartAutoTimer"/> はタイマーを起動せず即時発火する。
         /// MainWindow がグループ競技自動表示 OFF 時にセットする。
         /// </summary>
@@ -179,12 +186,13 @@ namespace DSDsp.画面
             // タイマー抑制フラグが立っているときはタイマーを起動しない（手動再生を待つ）
             if (SuppressAutoTimer) return;
             // 秒数 0 以下の場合は即時発火
-            if (AutoTimerSeconds <= 0)
+            var seconds = AutoTimerSecondsOverride >= 0 ? AutoTimerSecondsOverride : AutoTimerSeconds;
+            if (seconds <= 0)
             {
                 onFired();
                 return;
             }
-            _autoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(AutoTimerSeconds) };
+            _autoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(seconds) };
             _autoTimer.Tick += (s, e) =>
             {
                 StopAutoTimer();
