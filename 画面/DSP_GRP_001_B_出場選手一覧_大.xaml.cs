@@ -72,8 +72,10 @@ namespace DSDsp.画面
         {
             get
             {
-                // Auto モード：LST ステップを持たずページング分だけ
-                if (StepMode == "Auto")
+                // Auto モード かつ タイマー抑制なし（グループ自動表示ON）のみページング分だけ
+                // SuppressAutoTimer=true（グループ自動表示OFF）のときは手動操作で LST ステップまで進むため
+                // 通常の基本+追加ステップ数を返す
+                if (StepMode == "Auto" && !SuppressAutoTimer)
                 {
                     return _ページ数 == 1 ? 1 : _ページ数 * 2;
                 }
@@ -192,23 +194,33 @@ namespace DSDsp.画面
         {
             int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
 
-            if (StepMode == "Auto")
+            if (StepMode == "Auto" && !SuppressAutoTimer)
             {
-                // Auto モード: 5秒待機後にフェードアウト→LST005表示→RaiseScreenCompleted
-                // （タイマーは StartAutoPageTimer の最終ページで起動済みのため、ここでは何もしない）
-                // ※ StartAutoPageTimer の最終ページコールバックから直接フェードアウト処理が呼ばれる
+                // Auto モード かつ タイマー抑制なし:
+                // StartAutoPageTimer の最終ページコールバックから直接フェードアウト処理が呼ばれるため何もしない
                 return;
             }
 
-            // 手動モード: 全画面モードの場合、選手一覧FO完了時に画面完了
-            if (!ChromaKeyMode || _全ヒート数 < 2)
-            {
-                RaiseScreenCompleted();
-                return;
-            }
-
-            // クロマキーかつ全ヒート数 >= 2 の場合、次の再生ボタンで Step5_LST005フェードイン（タイトルFO＋LST005フェードイン）へ進む
+            // 手動操作時（StepMode != "Auto" または SuppressAutoTimer=true）:
+            // LST ステップへ進むために _currentStep を設定し、フェードアウトを実行する
             _currentStep = 基本ステップ数;
+
+            if (_全ヒート数 >= 2)
+            {
+                if (ChromaKeyMode)
+                {
+                    Step5_LST005フェードイン();
+                    _currentStep = 基本ステップ数 + 1;
+                }
+                else
+                {
+                    Step6_フェードアウト();
+                }
+            }
+            else
+            {
+                Step5_タイトルフェードアウト();
+            }
         }
 
         /// <summary>
