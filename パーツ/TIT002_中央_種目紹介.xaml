@@ -1,10 +1,10 @@
-﻿<UserControl x:Class="DSDsp.パーツ.TIT002_中央_種目紹介"
+<UserControl x:Class="DSDsp.パーツ.TIT002_中央_種目紹介"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:DSDsp.パーツ"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
               d:DesignHeight="387" d:DesignWidth="641">
     <Grid>
         <Canvas x:Name="COM_種目紹介" Margin="58,103,58,94" Background="Transparent">
@@ -19,7 +19,13 @@
                 </Image.RenderTransform>
             </Image>
             <Label x:Name="LB_種目紹介" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="44" Canvas.Top="97" HorizontalAlignment="Center" VerticalAlignment="Top" Width="417" Height="40" Foreground="White" FontSize="24" FontFamily="Segoe UI Semibold" RenderTransformOrigin="0.492,2.971"/>
-            <Label x:Name="LB_種目順" Content="8種目目" HorizontalContentAlignment="Center" Canvas.Left="60" Canvas.Top="40" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="30" Foreground="DarkGoldenrod" FontWeight="Bold" FontSize="16"/>
+            <local:OutlinedTextBlock x:Name="LB_種目順"
+                Text="8種目目"
+                Canvas.Left="60" Canvas.Top="44"
+                Width="68" Height="26"
+                FontSize="16" FontWeight="Bold"
+                Foreground="DarkGoldenrod" Stroke="White" StrokeThickness="1.5"
+                TextAlignment="Center"/>
             <Label x:Name="LB_種目カテゴリ" Content="Label" HorizontalContentAlignment="Center" Canvas.Left="130" Canvas.Top="67" Width="242" Height="40" Foreground="White" FontSize="18" FontFamily="Segoe UI Semibold" RenderTransformOrigin="0.492,2.971" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         </Canvas>
     </Grid>

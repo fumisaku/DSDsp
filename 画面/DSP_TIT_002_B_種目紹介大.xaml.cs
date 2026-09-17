@@ -201,7 +201,7 @@ namespace DSDsp.画面
             CreateAndStartSlideAnimation(PartsTIT002.IM_種目2, SLIDE_FROM_LEFT);
  
             // タイトルテキストの設定とフォントサイズの自動調整
-            PartsTIT002.LB_種目順.Content = 種目順.ToString() + "種目目";
+            PartsTIT002.LB_種目順.Text = 種目順.ToString() + "種目目";
             PartsTIT002.LB_種目カテゴリ.Content = 種目カテゴリ;
             PartsTIT002.LB_種目紹介.Content = 種目名;
 
