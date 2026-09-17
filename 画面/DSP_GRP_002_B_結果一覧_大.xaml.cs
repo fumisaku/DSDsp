@@ -88,6 +88,8 @@ namespace DSDsp.画面
         /// </summary>
         protected override void ExecuteCurrentStep()
         {
+            StopAutoTimer(); // 手動操作やステップ移行の際は既存の自動タイマーを停止する
+
             // ステップ割り当て:
             //   case 0       → Step1 + Step2 + Step3(p=0) 自動実行
             //   case 1       → Step4(p=0)
@@ -100,6 +102,7 @@ namespace DSDsp.画面
                 Step2();
                 // Step1+Step2の直後に1ページ目のStep3を自動実行
                 Step3(DV_Result, 0);
+                StartAutoPageTimer(0);
                 return;
             }
 
@@ -575,7 +578,9 @@ namespace DSDsp.画面
         }
 
         /// <summary>
-        /// Step5: タイトルをフェードアウト
+        /// Step5: タイトルをフェードアウト。完了後は即 RaiseScreenCompleted()。
+        /// Auto モードの5秒待機は StartAutoPageTimer で事前に担保されているため、
+        /// ここでは待機しない（§12.28 参照）。
         /// </summary>
         public void Step5()
         {
@@ -589,19 +594,43 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル1, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル2, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル3, fadeOutStoryboard, 0);
-
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_減点, fadeOutStoryboard, 0);
             _partsMain.フェードアウト(true, PartsLST001.LB_タイトル_Total, fadeOutStoryboard, 0);
-            // Auto モード：フェードアウト完了後に 5秒保持してから次画面へ
-            // Auto モード かつ タイマー抑制なし の場合のみ待機、それ以外は即完了
-            fadeOutStoryboard.Completed += (s, e) =>
-            {
-                if (StepMode == "Auto" && !SuppressAutoTimer)
-                    StartAutoTimer(() => RaiseScreenCompleted());
-                else
-                    RaiseScreenCompleted();
-            };
+            fadeOutStoryboard.Completed += (s, e) => RaiseScreenCompleted();
             fadeOutStoryboard.Begin();
+        }
+
+        /// <summary>
+        /// Auto モード用の自動ページングおよび最終フェードアウトタイマー。
+        /// DSP_GRP_002_S と同じパターン（5秒表示 → FO → Step5 → RaiseScreenCompleted）。
+        /// </summary>
+        private void StartAutoPageTimer(int pageIndex)
+        {
+            if (StepMode != "Auto" || SuppressAutoTimer) return;
+
+            if (pageIndex < _ページ数 - 1)
+            {
+                // まだ次のページがある：5秒後に現ページをFOして次ページを表示
+                StartAutoTimer(() =>
+                {
+                    Step4(() =>
+                    {
+                        Step3(DV_Result, (pageIndex + 1) * 8);
+                        StartAutoPageTimer(pageIndex + 1);
+                    });
+                });
+            }
+            else
+            {
+                // 最終ページ：5秒後にフェードアウト→タイトルFO→完了通知
+                StartAutoTimer(() =>
+                {
+                    Step4(() =>
+                    {
+                        Step5();
+                    });
+                });
+            }
         }
 
         /// <summary>
