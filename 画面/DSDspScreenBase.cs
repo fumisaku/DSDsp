@@ -117,6 +117,12 @@ namespace DSDsp.画面
         public string StepMode { get; set; } = string.Empty;
 
         /// <summary>
+        /// true のとき、Auto タイマーによる自動フェードアウトを行わず、
+        /// サーバーからの採点集計完了通知（DV_Result 受信）があるまで画面を表示し続ける。
+        /// </summary>
+        public bool WaitsForResult { get; set; } = false;
+
+        /// <summary>
         /// HeatEnd 通知受信時に MainWindow から呼ばれる。
         /// 派生クラスは、フェーズが未完了であれば必要なステップを補完し、
         /// 次ヒートへの切り替えを自律的に処理する。

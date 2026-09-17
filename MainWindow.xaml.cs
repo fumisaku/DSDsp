@@ -2140,8 +2140,9 @@ namespace DSDsp
                 screen.ヒート番号        = item.HeatNo;
                 screen.IsOverviewMode    = item.IsOverviewMode;
                 screen.IsLastHeatInDance = item.IsLastHeatInDance;
-                screen.ChromaKeyMode     = _currentAjsScenario?.ChromaKeyMode ?? false;
+                screen.ChromaKeyMode     = (_currentAjsScenario?.ChromaKeyMode == true) || (_currentAjsScenario?.Background?.GetBackgroundType() == Scenario.AjsBackgroundType.ChromaKey);
                 screen.StepMode          = item.StepMode;
+                screen.WaitsForResult    = item.WaitsForResult;
                 // グループ競技自動表示 OFF のとき Auto タイマーを抑制（画面が自動で進まない）
                 screen.SuppressAutoTimer = (TglAutoGroupDisplay?.IsChecked == false);
 
@@ -2264,6 +2265,8 @@ namespace DSDsp
                 screen.種目番号       = item.DanceNo;
                 screen.ヒート番号     = item.HeatNo;
                 screen.IsOverviewMode = item.IsOverviewMode;
+                screen.ChromaKeyMode  = true; // SUB画面は常に透明/クロマキ重ね合わせ
+                screen.StepMode       = item.StepMode;
 
                 screen.ScreenCompleted += OnAjsSubScreenCompleted;
 
@@ -3084,24 +3087,41 @@ namespace DSDsp
             if (_currentAjsProgressItems == null) return;
             if (_currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count) return;
 
-            // 現在停止中の画面が DSP_GRP_001_B かつ Auto モードかチェック
             var currentScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
             if (currentScreen == null) return;
-            if (currentScreen.StepMode != "Auto") return;
 
-            var item = _currentAjsProgressItems[_currentAjsIndex];
-            // 停止中の画面（HoldsAfterFadeOut で待機）が DSP_GRP_001_B であることを確認
-            // _currentAjsIndex は OnAjsScreenCompleted で ++ 済み（次の画面を指す）なので
-            // 停止中の画面は _offScreenWindow?.CurrentScreen
-            if (!item.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
-
-            // 対応する DV_Result で採点集計完了を確認
             var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
             var dvResult = dm?.DV_Result;
             if (dvResult == null) return;
 
-            // 停止中の画面の種目番号・ヒート番号を取得（OnAjsScreenCompleted で ++ 前のアイテム）
-            // _currentAjsIndex は ++ 済みなので、停止中の画面は index-1 のアイテム
+            // ── WaitsForResult パス ──
+            // DSP_GRP_001_B が WaitsForResult=true で選手一覧を表示中（RaiseScreenCompleted 未呼び出し）。
+            // _currentAjsIndex はまだ ++ 前で DSP_GRP_001_B のアイテムを指している。
+            if (currentScreen.WaitsForResult &&
+                currentScreen.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase))
+            {
+                var waitItem = _currentAjsProgressItems[_currentAjsIndex];
+                if (!waitItem.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
+
+                bool waitReady = 画面.DSDspDataHelper.IsHeatResultReady(dvResult, waitItem.DanceNo, waitItem.HeatNo);
+                if (!waitReady) return;
+
+                _log?.LogAdd($"AJS WaitsForResult: DSP_GRP_001 表示中 → 採点集計完了 (種目{waitItem.DanceNo} ヒート{waitItem.HeatNo}) → フェードアウト開始", _log.INFO);
+                // フェードアウト（Step4 → OnページングComplete → Step6/Step5）を手動で起動する
+                // ExecuteAjsStep() を呼ぶことで Advance() が実行され、ページングステップが進む
+                ExecuteAjsStep();
+                return;
+            }
+
+            // ── Auto / HoldsAfterFadeOut 停止パス ──
+            // DSP_GRP_001_B が HoldsAfterFadeOut 停止中（RaiseScreenCompleted 済み・_currentAjsIndex ++ 済み）。
+            // _currentAjsIndex は ++ 済みで次の画面（DSP_GRP_002_B 等）を指している。
+            if (currentScreen.StepMode != "Auto") return;
+
+            var item = _currentAjsProgressItems[_currentAjsIndex];
+            if (!item.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase)) return;
+
+            // 停止中の画面の種目番号・ヒート番号を取得（index-1 のアイテム）
             int stopIndex = _currentAjsIndex - 1;
             if (stopIndex < 0 || stopIndex >= _currentAjsProgressItems.Count) return;
             var stopItem = _currentAjsProgressItems[stopIndex];

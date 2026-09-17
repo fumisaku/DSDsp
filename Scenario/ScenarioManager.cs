@@ -607,12 +607,13 @@ namespace DSDsp.Scenario
             {
                 result.Add(new AjsProgressItem
                 {
-                    ScreenId    = screenId,
-                    DanceNo     = danceNo,
-                    HeatNo      = heatNo,
-                    DanceCd     = danceCd,
-                    Description = description,
-                    StepMode    = entry.StepMode,
+                    ScreenId       = screenId,
+                    DanceNo        = danceNo,
+                    HeatNo         = heatNo,
+                    DanceCd        = danceCd,
+                    Description    = description,
+                    StepMode       = entry.StepMode,
+                    WaitsForResult = entry.WaitsForResult,
                 });
             }
         }
@@ -635,12 +636,13 @@ namespace DSDsp.Scenario
                 {
                     result.Add(new AjsProgressItem
                     {
-                        ScreenId    = screenId,
-                        DanceNo     = danceNo,
-                        HeatNo      = heatNo,
-                        DanceCd     = danceCd,
-                        Description = description,
-                        StepMode    = entry.StepMode,
+                        ScreenId       = screenId,
+                        DanceNo        = danceNo,
+                        HeatNo         = heatNo,
+                        DanceCd        = danceCd,
+                        Description    = description,
+                        StepMode       = entry.StepMode,
+                        WaitsForResult = entry.WaitsForResult,
                     });
                     return; // 最初の1件だけ追加
                 }
@@ -672,6 +674,7 @@ namespace DSDsp.Scenario
                         Description    = description,
                         IsOverviewMode = true,
                         StepMode       = entry.StepMode,
+                        WaitsForResult = entry.WaitsForResult,
                     });
                     return;
                 }

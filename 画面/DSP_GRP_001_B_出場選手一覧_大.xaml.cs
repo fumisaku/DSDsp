@@ -72,10 +72,10 @@ namespace DSDsp.画面
         {
             get
             {
-                // Auto モード かつ タイマー抑制なし（グループ自動表示ON）のみページング分だけ
-                // SuppressAutoTimer=true（グループ自動表示OFF）のときは手動操作で LST ステップまで進むため
-                // 通常の基本+追加ステップ数を返す
-                if (StepMode == "Auto" && !SuppressAutoTimer)
+                // Auto モード かつ タイマー抑制なし（グループ自動表示ON）かつ採点待ちなし のみページング分だけ
+                // SuppressAutoTimer=true（グループ自動表示OFF）または WaitsForResult=true のときは
+                // 手動操作 or 採点完了トリガーで LST ステップまで進むため通常の基本+追加ステップ数を返す
+                if (StepMode == "Auto" && !SuppressAutoTimer && !WaitsForResult)
                 {
                     return _ページ数 == 1 ? 1 : _ページ数 * 2;
                 }
@@ -123,8 +123,8 @@ namespace DSDsp.画面
             int 基本ステップ数   = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
             int 最初のLSTステップ = 基本ステップ数;
 
-            // ── LST ステップ（手動モード専用）──
-            if (StepMode != "Auto")
+            // ── LST ステップ（手動モード / WaitsForResult / SuppressAutoTimer 時）──
+            if (StepMode != "Auto" || SuppressAutoTimer || WaitsForResult)
             {
                 if (_全ヒート数 >= 2)
                 {
@@ -194,14 +194,14 @@ namespace DSDsp.画面
         {
             int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
 
-            if (StepMode == "Auto" && !SuppressAutoTimer)
+            if (StepMode == "Auto" && !SuppressAutoTimer && !WaitsForResult)
             {
-                // Auto モード かつ タイマー抑制なし:
+                // Auto モード かつ タイマー抑制なし かつ 採点待ちなし:
                 // StartAutoPageTimer の最終ページコールバックから直接フェードアウト処理が呼ばれるため何もしない
                 return;
             }
 
-            // 手動操作時（StepMode != "Auto" または SuppressAutoTimer=true）:
+            // 手動操作時 / SuppressAutoTimer=true / WaitsForResult=true:
             // LST ステップへ進むために _currentStep を設定し、フェードアウトを実行する
             _currentStep = 基本ステップ数;
 
@@ -229,7 +229,8 @@ namespace DSDsp.画面
         /// </summary>
         private void StartAutoPageTimer(int pageIndex)
         {
-            if (StepMode != "Auto" || SuppressAutoTimer) return;
+            // WaitsForResult=true のときは採点完了通知まで自動タイマーを起動しない
+            if (StepMode != "Auto" || SuppressAutoTimer || WaitsForResult) return;
 
             if (pageIndex < _ページ数 - 1)
             {

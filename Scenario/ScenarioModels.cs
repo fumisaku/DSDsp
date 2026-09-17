@@ -136,6 +136,14 @@ namespace DSDsp.Scenario
         /// </summary>
         [JsonPropertyName("StepMode")]
         public string StepMode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// true のとき、Auto タイマーによる自動フェードアウトを行わず、
+        /// サーバーからの採点集計完了通知（DV_Result 受信）があるまで画面を表示し続ける。
+        /// DSP_GRP_001_B の全画面モードで使用。
+        /// </summary>
+        [JsonPropertyName("WaitsForResult")]
+        public bool WaitsForResult { get; set; } = false;
     }
 
     /// <summary>
@@ -335,6 +343,13 @@ namespace DSDsp.Scenario
         /// "" (既定) または "Hold"。
         /// </summary>
         public string StepMode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// true のとき、Auto タイマーによる自動フェードアウトを行わず、
+        /// サーバーからの採点集計完了通知があるまで画面を表示し続ける。
+        /// AjsScreenEntry.WaitsForResult から引き継がれる。
+        /// </summary>
+        public bool WaitsForResult { get; set; } = false;
 
         public override string ToString()
         {
