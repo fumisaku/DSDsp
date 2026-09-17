@@ -1188,6 +1188,8 @@ namespace DSDsp
                     }
                 }
 
+                // ItemsSource差し替え前に選択をリセットし、SelectedIndex=0が変化として確実に発火するようにする
+                CmbAjsCategory.SelectedIndex = -1;
                 CmbAjsCategory.ItemsSource = displayTexts;
                 if (displayTexts.Count > 0)
                     CmbAjsCategory.SelectedIndex = 0;
@@ -1244,6 +1246,9 @@ namespace DSDsp
                 if (_currentAjsProgressItems != null)
                 {
                     LstAjsProgress.ItemsSource = _currentAjsProgressItems;
+                    // 一覧表示後に先頭アイテムをデフォルト選択する
+                    if (_currentAjsProgressItems.Count > 0)
+                        LstAjsProgress.SelectedIndex = 0;
                     _log?.LogAdd($"AJS画面進行一覧生成: {_currentAjsProgressItems.Count}件 (区分={kbnNo}, ラウンド={roundNo})", _log.INFO);
                     UpdateResultReadyLabel();
                 }
