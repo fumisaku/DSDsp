@@ -643,10 +643,11 @@ namespace DSDsp.画面
 
         /// <summary>
         /// DS_Status から指定区分・ラウンドの次の進行番号情報を最大 maxCount 件取得する。
-        /// SortOrder 昇順で、現在の区分・ラウンドのすべてのエントリ（複数 DGrp 対応）より後のものを返す。
-        /// 同一区分・ラウンドが複数 DGrp で複数 PRGRS を持つ場合でも、それら全体をスキップして
-        /// 次の異なる区分・ラウンドの最初のエントリを返す。
-        /// currentDGrpNo が指定された場合、同一区分・ラウンド内のそのエントリの SortOrder 以降を起点とする。
+        /// SortOrder 昇順で、現在 DGrp エントリより後のものを返す。
+        /// currentDGrpNo が指定された場合、そのエントリの SortOrder より後を起点とし、
+        /// 同一区分・ラウンドの後続 DGrp エントリも「次の競技」として含める。
+        /// 指定がない場合は現在の KbnNo+RndNo のエントリを全てスキップする従来動作。
+        /// 別区分・ラウンドが同一 KbnNo+RndNo を持つ場合は最初のエントリのみ追加する。
         /// </summary>
         public static List<(string PrgNo, string KbnNo, string RndNo, string? PStaTM)> Get次進行情報リスト(
             JsonNode? dsStatus, string currentKbnNo, string currentRndNo, int maxCount = 3,
@@ -694,7 +695,8 @@ namespace DSDsp.画面
             }
 
             bool seenCurrent = false;
-            var seenKbnRnd = new HashSet<string>();
+            // 別区分・ラウンドの重複排除キー（同一KbnRnd+DGrpNoが異なるケースは別エントリ扱い）
+            var seenKbnRndDGrp = new HashSet<string>();
             foreach (var p in allPrgrs)
             {
                 bool isCurrent = (p.KbnNo == currentKbnNo && p.RndNo == currentRndNo);
@@ -704,8 +706,8 @@ namespace DSDsp.画面
                     // DGrpNo 指定あり: 現在エントリの SortOrder 以下はすべてスキップ
                     if (p.SortOrder <= currentSortOrder)
                         continue;
-                    // SortOrder 超過後は isCurrent（同一KbnRndの後続DGrp）もスキップ
-                    if (isCurrent) continue;
+                    // SortOrder 超過後: 同一KbnRndの後続DGrp（例: 004=DGrp2）は「次の競技」として含める
+                    // → isCurrent でもスキップしない
                     seenCurrent = true;
                 }
                 else
@@ -719,10 +721,10 @@ namespace DSDsp.画面
                     if (!seenCurrent) continue;
                 }
 
-                // 現在の区分・ラウンドを通過した後の別区分・ラウンド
-                // 同一 KbnNo+RndNo の最初のエントリのみを結果に追加（DGrp複数対応）
-                var key = $"{p.KbnNo}-{p.RndNo}";
-                if (seenKbnRnd.Add(key))
+                // PrgNo 単位で重複排除（同一PrgNoが複数フロアに存在するケース対策）
+                // 同一KbnRnd+DGrpNoの組み合わせを重複チェックキーとして使う
+                var key = $"{p.KbnNo}-{p.RndNo}-{p.DGrpNo}";
+                if (seenKbnRndDGrp.Add(key))
                 {
                     result.Add((p.PrgNo, p.KbnNo, p.RndNo, p.PStaTM));
                     if (result.Count >= maxCount) break;

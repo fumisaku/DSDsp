@@ -79,7 +79,16 @@ namespace DSDsp.画面
                 string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
                 string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
                 string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
-                tb2.Text = $"{prgNo}　{kbnName}　{rndName}";
+                // 複数DGrpがある場合は種目GRP名を挿入する
+                if (DA_Master != null && DSDspDataHelper.GetDGRP数(DA_Master, 区分番号, ラウンド番号) >= 2 && !string.IsNullOrEmpty(DGrpNo))
+                {
+                    string dgrpName = DSDspDataHelper.GetDGRP名(DA_Master, 区分番号, ラウンド番号, DGrpNo);
+                    tb2.Text = $"{prgNo}　{kbnName}　{dgrpName}　{rndName}";
+                }
+                else
+                {
+                    tb2.Text = $"{prgNo}　{kbnName}　{rndName}";
+                }
                 tb2.Visibility = Visibility.Visible;
             }
 
@@ -95,7 +104,7 @@ namespace DSDsp.画面
             if (PartsCOM003.FindName("LB_右上") is Label lbRight03)
             {
                 string 種目テキスト = DA_Master != null
-                    ? string.Join("  ", DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号).Select(d => d.DncCd))
+                    ? string.Join("  ", DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号, DGrpNo).Select(d => d.DncCd))
                     : string.Empty;
                 lbRight03.Content = 種目テキスト;
                 lbRight03.Visibility = Visibility.Visible;
@@ -118,7 +127,18 @@ namespace DSDsp.画面
             {
                 string nk = DSDspDataHelper.Get区分名(DA_Master, next.Value.KbnNo);
                 string nr = DSDspDataHelper.Getラウンド名(DA_Master, next.Value.KbnNo, next.Value.RndNo);
-                string text = $"{next.Value.PrgNo}　{nk}　{nr}";
+                // 次の競技が複数DGrpを持つラウンドの場合は種目GRP名を挿入する
+                string nextDGrpNo = DSDspDataHelper.GetDGrpNoFromPrgNo(DS_Status, next.Value.PrgNo);
+                string text;
+                if (DSDspDataHelper.GetDGRP数(DA_Master, next.Value.KbnNo, next.Value.RndNo) >= 2 && !string.IsNullOrEmpty(nextDGrpNo))
+                {
+                    string ng = DSDspDataHelper.GetDGRP名(DA_Master, next.Value.KbnNo, next.Value.RndNo, nextDGrpNo);
+                    text = $"{next.Value.PrgNo}　{nk}　{ng}　{nr}";
+                }
+                else
+                {
+                    text = $"{next.Value.PrgNo}　{nk}　{nr}";
+                }
                 SetLabelContent(p, "LB_明細1", text);
                 // LB_明細1 幅は LST006 パーツに依存（小画面のため実効幅150程度）
                 if (p.FindName("LB_明細1") is Label lb)

@@ -124,14 +124,24 @@ namespace DSDsp.画面
             string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
             string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
             string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
-            string 現テキスト = $"{prgNo}　{kbnName}　{rndName}";
+            // 複数DGrpがある場合は種目GRP名を挿入する
+            string 現テキスト;
+            if (DA_Master != null && DSDspDataHelper.GetDGRP数(DA_Master, 区分番号, ラウンド番号) >= 2 && !string.IsNullOrEmpty(DGrpNo))
+            {
+                string dgrpName = DSDspDataHelper.GetDGRP名(DA_Master, 区分番号, ラウンド番号, DGrpNo);
+                現テキスト = $"{prgNo}　{kbnName}　{dgrpName}　{rndName}";
+            }
+            else
+            {
+                現テキスト = $"{prgNo}　{kbnName}　{rndName}";
+            }
             SetLabelContent(p, "LB_明細_現", 現テキスト);
             // LB_明細_現: Canvas.Left=23, Width=478。種目LBがCanvas.Left=429から始まるため実効幅=406
             if (p.FindName("LB_明細_現") is Label lb現)
                 _partsMain?.フォントサイズ自動調整(lb現, 現テキスト, 406, 16, 8, FontFamilyName);
 
             string 種目テキスト = DA_Master != null
-                ? string.Join("  ", DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号).Select(d => d.DncCd))
+                ? string.Join("  ", DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号, DGrpNo).Select(d => d.DncCd))
                 : string.Empty;
             SetLabelContent(p, "LB_種目_現", 種目テキスト);
             // LB_種目_現: Canvas.Left=429, 右端まで約90px, FontSize=12
@@ -147,7 +157,18 @@ namespace DSDsp.画面
                     var next = nextList[i - 1];
                     string nk = DSDspDataHelper.Get区分名(DA_Master, next.KbnNo);
                     string nr = DSDspDataHelper.Getラウンド名(DA_Master, next.KbnNo, next.RndNo);
-                    string 次テキスト = $"{next.PrgNo}　{nk}　{nr}";
+                    // 次の競技が複数DGrpを持つラウンドの場合は種目GRP名を挿入する
+                    string nextDGrpNo = DSDspDataHelper.GetDGrpNoFromPrgNo(DS_Status, next.PrgNo);
+                    string 次テキスト;
+                    if (DSDspDataHelper.GetDGRP数(DA_Master, next.KbnNo, next.RndNo) >= 2 && !string.IsNullOrEmpty(nextDGrpNo))
+                    {
+                        string ng = DSDspDataHelper.GetDGRP名(DA_Master, next.KbnNo, next.RndNo, nextDGrpNo);
+                        次テキスト = $"{next.PrgNo}　{nk}　{ng}　{nr}";
+                    }
+                    else
+                    {
+                        次テキスト = $"{next.PrgNo}　{nk}　{nr}";
+                    }
                     SetLabelContent(p, $"LB_明細_次{i}", 次テキスト);
                     // LB_明細_次1/2/3: 時刻LBが右端にあるため実効幅394
                     if (p.FindName($"LB_明細_次{i}") is Label lb次)
