@@ -107,15 +107,23 @@ namespace DSDsp.画面
             if (PartsCOM003.FindName("LB_右上") is Label lb003クリア)
                 lb003クリア.Content = string.Empty;
 
-            if (PartsCOM001.FindName("TB_左上1") is TextBlock tb1)
-                tb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
+            if (PartsCOM001.FindName("TB_左上1") is パーツ.OutlinedTextBlock otb1)
+                otb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
 
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
+            // COM001: 区分名[+種目GRP名]+ラウンド名 (TB_左上2) — OutlinedTextBlock 型（進行番号不要）
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2)
             {
-                string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
                 string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
                 string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
-                tb2.Text = $"{prgNo}　{kbnName}　{rndName}";
+                if (DA_Master != null && DSDspDataHelper.GetDGRP数(DA_Master, 区分番号, ラウンド番号) >= 2 && !string.IsNullOrEmpty(DGrpNo))
+                {
+                    string dgrpName = DSDspDataHelper.GetDGRP名(DA_Master, 区分番号, ラウンド番号, DGrpNo);
+                    otb2.Text = $"{kbnName}　{dgrpName}　{rndName}";
+                }
+                else
+                {
+                    otb2.Text = $"{kbnName}　{rndName}";
+                }
             }
 
             if (PartsCOM002.FindName("LB_右上") is Label lbRight)
@@ -127,7 +135,7 @@ namespace DSDsp.画面
                 string 種目テキスト = string.Empty;
                 if (DA_Master != null)
                 {
-                    var danceList = DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号);
+                    var danceList = DSDspDataHelper.Get全種目リスト(DA_Master, 区分番号, ラウンド番号, DGrpNo);
                     種目テキスト = string.Join("  ", danceList.Select(d => d.DncCd));
                 }
                 lb003.Content = 種目テキスト;
@@ -150,10 +158,20 @@ namespace DSDsp.画面
             SetVisible(p, "IM_タイトル1", true);
             SetVisible(p, "LB_タイトル1", true);
 
-            // LB_タイトル2: 区分名+ラウンド名（Width=168, FontSize=10）
+            // LB_タイトル2: 進行番号+区分名[+種目GRP名]+ラウンド名（Width=168, FontSize=10）
+            string prgNo  = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
             string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
             string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
-            string title2 = $"{kbnName}　{rndName}";
+            string title2;
+            if (DA_Master != null && DSDspDataHelper.GetDGRP数(DA_Master, 区分番号, ラウンド番号) >= 2 && !string.IsNullOrEmpty(DGrpNo))
+            {
+                string dgrpName = DSDspDataHelper.GetDGRP名(DA_Master, 区分番号, ラウンド番号, DGrpNo);
+                title2 = $"{prgNo}　{kbnName}　{dgrpName}　{rndName}";
+            }
+            else
+            {
+                title2 = $"{prgNo}　{kbnName}　{rndName}";
+            }
             SetLabelContent(p, "LB_タイトル2", title2);
             if (p.FindName("LB_タイトル2") is Label lbTitle2)
                 _partsMain?.フォントサイズ自動調整(lbTitle2, title2, 160, 10, 4, FontFamilyName);

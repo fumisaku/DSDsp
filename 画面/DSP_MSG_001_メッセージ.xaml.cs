@@ -77,9 +77,9 @@ namespace DSDsp.画面
         private void ShowMessage()
         {
             // COM001: 競技会名
-            if (PartsCOM001.FindName("TB_左上1") is TextBlock tb1)
+            if (PartsCOM001.FindName("TB_左上1") is パーツ.OutlinedTextBlock tb1)
                 tb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock tb2)
                 tb2.Text = string.Empty;
 
             // COM002: 現在時刻

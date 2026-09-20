@@ -117,12 +117,24 @@ namespace DSDsp.画面
             }
 
             // COM001: 競技会名
-            if (PartsCOM001.FindName("TB_左上1") is TextBlock tb1)
-                tb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
+            if (PartsCOM001.FindName("TB_左上1") is パーツ.OutlinedTextBlock otb1)
+                otb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
 
-            // TB_左上2 はブランク
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
-                tb2.Text = string.Empty;
+            // COM001: 区分名[+種目GRP名]+ラウンド名 (TB_左上2)
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2)
+            {
+                string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
+                string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
+                if (DA_Master != null && DSDspDataHelper.GetDGRP数(DA_Master, 区分番号, ラウンド番号) >= 2 && !string.IsNullOrEmpty(DGrpNo))
+                {
+                    string dgrpName = DSDspDataHelper.GetDGRP名(DA_Master, 区分番号, ラウンド番号, DGrpNo);
+                    otb2.Text = $"{kbnName}　{dgrpName}　{rndName}";
+                }
+                else
+                {
+                    otb2.Text = $"{kbnName}　{rndName}";
+                }
+            }
 
             // COM002: 現在時刻
             if (PartsCOM002.FindName("LB_右上") is Label lbRight)

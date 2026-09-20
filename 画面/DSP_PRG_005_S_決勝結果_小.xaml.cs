@@ -164,13 +164,15 @@ namespace DSDsp.画面
         /// <summary>STEP1: COM001, COM002, COM003 を設定し選手リストを構築</summary>
         private void Step1()
         {
-            // COM001: 競技会名
-            if (PartsCOM001.FindName("TB_左上1") is TextBlock tb1)
-                tb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
-
-            // COM001: TB_左上2 = 区分名
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
-                tb2.Text = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : string.Empty;
+            // COM001: 競技会名 + 区分名+ラウンド名 — OutlinedTextBlock 型
+            if (PartsCOM001.FindName("TB_左上1") is パーツ.OutlinedTextBlock otb1)
+                otb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2_step1)
+            {
+                string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
+                string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
+                otb2_step1.Text = $"{kbnName}　{rndName}";
+            }
 
             // COM002: 「表彰式」（固定）
             if (PartsCOM002.FindName("LB_右上") is Label lbRight)
@@ -299,8 +301,8 @@ namespace DSDsp.画面
             }
 
             // COM001 の TB_左上2 をクリア
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
-                tb2.Text = string.Empty;
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2)
+                otb2.Text = string.Empty;
 
             _step2Visible = false;
             RaiseScreenCompleted();

@@ -99,10 +99,10 @@ namespace DSDsp.画面
             if (PartsCOM001.FindName("IM_JDSFマーク") is System.Windows.Controls.Image im)
                 im.Source = new BitmapImage(
                     new Uri("pack://application:,,,/DSDsp;component/イメージ/JDSFマーク.png"));
-            if (PartsCOM001.FindName("TB_左上1") is System.Windows.Controls.TextBlock tb1)
-                tb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
-            if (PartsCOM001.FindName("TB_左上2") is System.Windows.Controls.TextBlock tb2)
-                tb2.Text = string.Empty;
+            if (PartsCOM001.FindName("TB_左上1") is パーツ.OutlinedTextBlock otb1)
+                otb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2)
+                otb2.Text = string.Empty;
 
             // COM002: ジャッジ紹介
             if (PartsCOM002.FindName("LB_右上") is Label lbRight)

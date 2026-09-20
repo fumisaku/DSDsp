@@ -71,25 +71,24 @@ namespace DSDsp.画面
             // ラベルクリア
             SetLabelContent(PartsLST006, "LB_明細1", string.Empty);
 
-            if (PartsCOM001.FindName("TB_左上1") is TextBlock tb1)
-                tb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
+            if (PartsCOM001.FindName("TB_左上1") is パーツ.OutlinedTextBlock otb1)
+                otb1.Text = DA_Master != null ? DSDspDataHelper.Get競技会名(DA_Master) : string.Empty;
 
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
+            // COM001: 区分名[+種目GRP名]+ラウンド名 (TB_左上2)（進行番号不要）
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2)
             {
-                string prgNo   = DSDspDataHelper.Get現在進行番号(DS_Status, 区分番号, ラウンド番号, DGrpNo);
                 string kbnName = DA_Master != null ? DSDspDataHelper.Get区分名(DA_Master, 区分番号) : "";
                 string rndName = DA_Master != null ? DSDspDataHelper.Getラウンド名(DA_Master, 区分番号, ラウンド番号) : "";
-                // 複数DGrpがある場合は種目GRP名を挿入する
                 if (DA_Master != null && DSDspDataHelper.GetDGRP数(DA_Master, 区分番号, ラウンド番号) >= 2 && !string.IsNullOrEmpty(DGrpNo))
                 {
                     string dgrpName = DSDspDataHelper.GetDGRP名(DA_Master, 区分番号, ラウンド番号, DGrpNo);
-                    tb2.Text = $"{prgNo}　{kbnName}　{dgrpName}　{rndName}";
+                    otb2.Text = $"{kbnName}　{dgrpName}　{rndName}";
                 }
                 else
                 {
-                    tb2.Text = $"{prgNo}　{kbnName}　{rndName}";
+                    otb2.Text = $"{kbnName}　{rndName}";
                 }
-                tb2.Visibility = Visibility.Visible;
+                otb2.Visibility = Visibility.Visible;
             }
 
             if (PartsCOM002.FindName("LB_右上") is Label lbRight)
@@ -206,8 +205,8 @@ namespace DSDsp.画面
         /// <summary>STEP4: COM001のTB_左上2、COM002、COM003 を非表示 → ScreenCompleted</summary>
         private void Step4()
         {
-            if (PartsCOM001.FindName("TB_左上2") is TextBlock tb2)
-                tb2.Visibility = Visibility.Collapsed;
+            if (PartsCOM001.FindName("TB_左上2") is パーツ.OutlinedTextBlock otb2)
+                otb2.Visibility = Visibility.Collapsed;
             if (PartsCOM002.FindName("Canvas_右上01") is UIElement cv002)
                 cv002.Visibility = Visibility.Collapsed;
             if (PartsCOM003.FindName("LB_右上") is Label lb003)
