@@ -2137,7 +2137,9 @@ namespace DSDsp
                 var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
                 if (dm?.DA_Master != null) screen.DA_Master = dm.DA_Master;
                 if (dm?.DS_Status != null) screen.DS_Status = dm.DS_Status;
-                if (dm?.DV_Result != null) screen.DV_Result = dm.DV_Result;
+                // DV_Result は区分・ラウンドで絞り込んだものを渡す（JsonArray全体を渡すと種目結果が取れない）
+                var dvForScreen = GetDvResultFor(kbnNo, roundNo);
+                if (dvForScreen != null) screen.DV_Result = dvForScreen;
 
                 screen.区分番号          = kbnNo;
                 screen.ラウンド番号       = roundNo;

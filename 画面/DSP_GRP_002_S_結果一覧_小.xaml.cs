@@ -228,10 +228,9 @@ namespace DSDsp.画面
             int 件数;
             if (ヒート番号 != 0)
             {
-                var 当該ヒート選手 = DSDspDataHelper.Get背番号リストFromHeat(
-                    DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+                // DV_Result の ヒート番号 フィールドで絞り込む（DS_Status のヒート割当と独立）
                 件数 = 種目結果?["選手結果"]?.AsArray()
-                    ?.Where(p => 当該ヒート選手.Contains(p?["背番号"]?.ToString() ?? ""))
+                    ?.Where(p => p?["ヒート番号"]?.GetValue<int>() == ヒート番号)
                     .Count() ?? 0;
             }
             else
@@ -411,10 +410,9 @@ namespace DSDsp.画面
             IEnumerable<JsonNode?> フィルタ後リスト = 選手結果リスト.Where(p => p != null);
             if (ヒート番号 != 0)
             {
-                var 当該ヒート選手セット = DSDspDataHelper.Get背番号リストFromHeat(
-                    DS_Status, 区分番号, ラウンド番号, 種目番号, ヒート番号);
+                // DV_Result の ヒート番号 フィールドで絞り込む（DS_Status のヒート割当と独立）
                 フィルタ後リスト = フィルタ後リスト
-                    .Where(p => 当該ヒート選手セット.Contains(p!["背番号"]?.ToString() ?? ""));
+                    .Where(p => p!["ヒート番号"]?.GetValue<int>() == ヒート番号);
             }
 
             // 順位昇順で並べ、開始インデックスから最大8件を取得
