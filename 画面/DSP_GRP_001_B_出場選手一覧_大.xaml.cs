@@ -614,11 +614,11 @@ namespace DSDsp.画面
                 _得点LB[i].Opacity = 0;
             }
 
-            // _得点LB[i]のWidthを変更し、Canvas.Left を 422 → 322 に変更
+            // _得点LB[i]のWidthを変更し、Canvas.Left を右端付近に移動（所属名が長い場合に対応）
             foreach (var lb in _得点LB)
             {
-                lb.Width = 130;
-                Canvas.SetLeft(lb, 372);
+                lb.Width = 155;
+                Canvas.SetLeft(lb, 400);
             }
             
 
@@ -641,7 +641,7 @@ namespace DSDsp.画面
                 _partsMain.フォントサイズ自動調整(
                     label: _得点LB[i],
                     text: _得点LB[i].Content?.ToString() ?? "",
-                    maxWidth: 120,
+                    maxWidth: 145,
                     maxFontSize: 16,
                     minFontSize: 6,
                     fontFamilyName: FONT_FAMILY_NAME);
