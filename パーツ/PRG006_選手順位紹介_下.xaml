@@ -5,15 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DSDsp.パーツ"
              mc:Ignorable="d" 
-             d:DesignHeight="387" d:DesignWidth="641">
+             d:DesignHeight="387" d:DesignWidth="688">
     <Grid>
-        <Canvas x:Name="COM_種目紹介" Margin="58,249,58,7" Background="Transparent">
-            <Image x:Name="IM_種目2" Height="29" Source="..\イメージ\CHR169_種目紹介2.png" Stretch="Fill" Width="441" Canvas.Left="32" Canvas.Top="63" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Canvas x:Name="COM_種目紹介" Margin="58,283,58,-27" Background="Transparent">
+            <Image x:Name="IM_種目2" Height="29" Source="..\イメージ\CHR169_種目紹介2.png" Stretch="Fill" Width="530" Canvas.Left="32" Canvas.Top="63" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <Image.RenderTransform>
                     <TranslateTransform X="0" Y="0"/>
                 </Image.RenderTransform>
             </Image>
-            <Image x:Name="IM_種目1" Height="29" Source="..\イメージ\CHR169_種目紹介1.png" Stretch="Fill" Width="443" Canvas.Left="37" Canvas.Top="68" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Image x:Name="IM_種目1" Height="29" Source="..\イメージ\CHR169_種目紹介1.png" Stretch="Fill" Width="530" Canvas.Left="37" Canvas.Top="68" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <Image.RenderTransform>
                     <TranslateTransform X="0" Y="0"/>
                 </Image.RenderTransform>
@@ -29,9 +29,9 @@
                 </Label.ContentTemplate>
             </Label>
             <Label x:Name="LB_順位" Content="第3位" HorizontalContentAlignment="Left" Canvas.Left="48" Canvas.Top="65" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Width="332" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
-            <Label x:Name="LB_選手名" Content="Label" HorizontalContentAlignment="Left" Canvas.Left="105" Canvas.Top="65" HorizontalAlignment="Center" VerticalAlignment="Top" Width="275" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
-            <Label x:Name="LB_所属" Content="所属" HorizontalContentAlignment="Right" Canvas.Left="123" Canvas.Top="66" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="324" Height="30" Foreground="White" FontSize="14" FontFamily="Segoe UI Semibold"/>
-            <Label x:Name="LB_得点" Content="999.99" HorizontalContentAlignment="Right" Canvas.Left="108" Canvas.Top="65" HorizontalAlignment="Center" VerticalAlignment="Top" VerticalContentAlignment="Center" Width="345" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
+            <Label x:Name="LB_選手名" Content="Label" HorizontalContentAlignment="Left" Canvas.Left="105" Canvas.Top="65" HorizontalAlignment="Left" VerticalAlignment="Center" Width="324" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
+            <Label x:Name="LB_所属" Content="所属" HorizontalContentAlignment="Right" Canvas.Left="206" Canvas.Top="66" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="324" Height="30" Foreground="White" FontSize="14" FontFamily="Segoe UI Semibold"/>
+            <Label x:Name="LB_得点" Content="999.99" HorizontalContentAlignment="Right" Canvas.Left="184" Canvas.Top="65" HorizontalAlignment="Left" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="345" Height="30" Foreground="White" FontSize="16" FontFamily="Segoe UI Semibold"/>
         </Canvas>
     </Grid>
 </UserControl>

@@ -5,9 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DSDsp.パーツ"
              mc:Ignorable="d" 
-             d:DesignHeight="387" d:DesignWidth="641">
+             d:DesignHeight="387" d:DesignWidth="688">
     <Grid>
-        <Canvas x:Name="SOL_選手結果_PD" Margin="39,108,28,40" Background="Transparent">
+        <Canvas x:Name="SOL_選手結果_PD" Margin="58,108,9,40" Background="Transparent">
 
             <Image x:Name="IM_種目2" Height="108" Source="..\イメージ\CHR169_タイトル2.png" Stretch="Fill" Width="537" Canvas.Left="22" Canvas.Top="12" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <Image.RenderTransform>

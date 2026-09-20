@@ -7,7 +7,7 @@
              xmlns:parts="clr-namespace:DSDsp.パーツ"
              xmlns:frame="clr-namespace:DSDsp.フレーム"
              mc:Ignorable="d"
-        Height="387" Width="641"
+        Height="387" Width="688"
         HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -40,7 +40,7 @@
                    Grid.ColumnSpan="2"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
-                   Margin="0,16,0,0"/>
+                   Margin="0,-14,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

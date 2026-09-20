@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:DSDsp.フレーム"
              mc:Ignorable="d"
-             Height="387" Width="641">
+             Height="387" Width="688">
     <Grid>
         <!-- Frame コントロールは Loaded 時にナビゲーション遷移フェードインを実行するため
              VisualBrush でミラー表示するとスクリーン側で背景がフェードインしてしまう。

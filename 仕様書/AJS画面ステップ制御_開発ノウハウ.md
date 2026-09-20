@@ -360,7 +360,7 @@ AJS シナリオファイルに `SubScenario` セクションを追加するこ�
 
 ```
 ┌─ DisplayWindow（オフスクリーン）────────────────┐
-│  ┌─ LayeredContentGrid（641×387）─────────────┐  │
+│  ┌─ LayeredContentGrid（688×387）─────────────┐  │
 │  │  ┌─ ContentGrid（Background=Black）───────┐│  │
 │  │  │  メイン画面                             ││  │
 │  │  └────────────────────────────────────────┘│  │

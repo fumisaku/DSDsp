@@ -7,7 +7,7 @@
              xmlns:parts="clr-namespace:DSDsp.パーツ"
              xmlns:frame="clr-namespace:DSDsp.フレーム"
              mc:Ignorable="d"
-        Height="387" Width="641">
+        Height="387" Width="688">
     <Grid RenderTransformOrigin="0.161,0.542">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="379*"/>
@@ -37,7 +37,7 @@
         <!-- DUE選手紹介_小 -->
         <parts:TIT007_下_選手紹介_デュエル x:Name="PartsTIT007"
                    HorizontalAlignment="Left"
-                   VerticalAlignment="Top" Margin="0,37,0,0"/>
+                   VerticalAlignment="Top" Margin="0,12,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

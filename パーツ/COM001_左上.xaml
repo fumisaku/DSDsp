@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:DSDsp.パーツ"
              mc:Ignorable="d"
-             d:DesignHeight="387" d:DesignWidth="641">
+             d:DesignHeight="387" d:DesignWidth="688">
     <Grid>
         <Canvas x:Name="Canvas_左上" Margin="0,0,348,285">
             <Image x:Name ="IM_JDSFマーク" Panel.ZIndex ="1" Height="30" Source="/イメージ/JDSFマーク.png" Stretch="Fill" Width="30" Canvas.Left="4" Canvas.Top="10" HorizontalAlignment="Center" VerticalAlignment="Top" />

@@ -163,7 +163,7 @@ namespace DSDsp
             // Hidden にすると WPF のレンダリングが停止して VisualBrush が古い状態を映すため。
             _offScreenWindow.Left = -10000;
             _offScreenWindow.Top  = -10000;
-            _offScreenWindow.Width  = 641;
+            _offScreenWindow.Width  = 688;
             _offScreenWindow.Height = 387;
 
             _offScreenWindow.Show();   // Visible のまま維持

@@ -5,9 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DSDsp.パーツ"
              mc:Ignorable="d" 
-              d:DesignHeight="387" d:DesignWidth="641" >
+              d:DesignHeight="387" d:DesignWidth="688" >
     <Grid>
-        <Canvas x:Name="COM_Title" Margin="0,107,0,120">
+        <Canvas x:Name="COM_Title" Margin="31,107,-31,120">
             <Canvas Height="63" Width="610" Background="Transparent" Canvas.Top="-58" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="10"  />
             <Image x:Name="IM_1" Source="..\イメージ\CHR169_タイトル2.png" Panel.ZIndex ="2" Stretch="Fill" Visibility="Visible" Height="88" Canvas.Left="50" Canvas.Top="11" Width="530"  Opacity="100" HorizontalAlignment="Left" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                 <Image.RenderTransform>

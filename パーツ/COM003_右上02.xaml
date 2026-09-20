@@ -5,10 +5,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DSDsp.パーツ"
              mc:Ignorable="d" 
-             d:DesignHeight="387" d:DesignWidth="641">
+             d:DesignHeight="387" d:DesignWidth="688">
     <Grid>
         <Canvas x:Name="Canvas_右上02" Margin="338,0,0,263" RenderTransformOrigin="0.493,0.491">
-            <Label x:Name ="LB_右上" Content="1組目　999 山田　太郎・加藤　愛子組" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Top" Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-110" Canvas.Top="27" Width="381" Padding="0">
+            <Label x:Name ="LB_右上" Content="1組目　999 山田　太郎・加藤　愛子組" HorizontalContentAlignment="Right" HorizontalAlignment="Left" VerticalAlignment="Center" Height="42" FontWeight="Bold" RenderTransformOrigin="0.5,0.5" Canvas.Left="-65" Canvas.Top="27" Width="381" Padding="0">
                 <Label.ContentTemplate>
                     <DataTemplate>
                         <local:OutlinedTextBlock

@@ -7,7 +7,7 @@
              xmlns:parts="clr-namespace:DSDsp.パーツ"
              xmlns:frame="clr-namespace:DSDsp.フレーム"
              mc:Ignorable="d"
-        Height="387" Width="641">
+        Height="387" Width="688">
     <Grid RenderTransformOrigin="0.161,0.542">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="379*"/>
@@ -19,8 +19,7 @@
         <!-- 左上パーツ: JDSFロゴと競技会名 -->
         <parts:COM001_左上 x:Name="PartsCOM001"
                    HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Margin="0,0,0,0"/>
+                   VerticalAlignment="Top"/>
 
         <!-- 右上パーツ: 種目名 -->
         <parts:COM002_右上01 x:Name="PartsCOM002"
@@ -36,10 +35,8 @@
 
         <!-- DUE選手結果_小 -->
         <parts:DUE002_デュエル選手結果_小 x:Name="PartsDUE002"
-                   Grid.ColumnSpan="2"
                    HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Margin="0,57,0,0"/>
+                   VerticalAlignment="Center" Margin="3,-45,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

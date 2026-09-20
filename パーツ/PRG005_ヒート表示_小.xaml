@@ -5,9 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DSDsp.パーツ"
              mc:Ignorable="d" 
-                         d:DesignHeight="387" d:DesignWidth="641">
+                         d:DesignHeight="387" d:DesignWidth="688">
     <Grid>
-        <Canvas x:Name="CV_内部" Margin="7,70,445,60" Background="Transparent"  RenderTransformOrigin="0.5,0.5">
+        <Canvas x:Name="CV_内部" Margin="7,85,445,45" Background="Transparent"  RenderTransformOrigin="0.5,0.5">
             <Canvas.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform/>
