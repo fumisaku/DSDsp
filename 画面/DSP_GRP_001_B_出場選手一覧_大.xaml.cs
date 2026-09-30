@@ -86,10 +86,12 @@ namespace DSDsp.画面
         }
         public override bool WaitsForLastStepFadeOut => true;
         /// <summary>
-        /// Auto モード時も HoldsAfterFadeOut=true：
-        /// DV_Result 受信まで B は表示（全画面時は選手一覧、クロマキ時は左下LST005）を維持し、MainWindow が監視して DSP_GRP_002 へ遷移する。
+        /// WaitsForResult=false（Auto タイマー）のときのみ HoldsAfterFadeOut=true：
+        /// フェードアウト後にクロマキは LST005 を表示したまま採点完了を待つ。
+        /// WaitsForResult=true（全画面）のときは採点完了後にフェードアウトするので
+        /// そのまま即 GRP_002 へ進む（HoldsAfterFadeOut 不要）。
         /// </summary>
-        public override bool HoldsAfterFadeOut => true;
+        public override bool HoldsAfterFadeOut => !WaitsForResult;
         /// <summary>Auto モード時の表示保持秒数（5秒）。</summary>
         public override int AutoTimerSeconds => StepMode == "Auto" ? 5 : 0;
         #endregion
@@ -680,6 +682,27 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// WaitsForResult=true でページング2ページ目以降（Step≥2）で止まっている場合に、
+        /// 直ちに OnページングComplete へジャンプしてフェードアウトを開始する。
+        /// Step=1 は「選手一覧表示完了直後」または「1ページ目フェードアウト中」であり、
+        /// この場合は通常の ExecuteAjsStep()→Advance()→Step4(OnPageComplete) フローで処理するため
+        /// SkipToFadeOut の対象外とする（_currentStep < 2 の場合は何もしない）。
+        /// </summary>
+        public override void SkipToFadeOut()
+        {
+            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            // 既にフェードアウトフェーズ以降（OnページングComplete 実行済み）なら何もしない
+            if (_currentStep >= 基本ステップ数) return;
+            // Step=0 または Step=1（1ページ目表示直後/FO中）は通常フローで処理するため除外
+            if (_currentStep < 2) return;
+            // _currentStep を基本ステップ数に設定してから OnページングComplete を直接呼ぶ
+            // これにより Step6_フェードアウト() が実行され RaiseScreenCompleted() が呼ばれる
+            StopAutoTimer();
+            _currentStep = 基本ステップ数;
+            OnページングComplete();
+        }
+
+        /// <summary>
         /// Step4: 直前の Step3 で表示した行だけフェードアウト。
         /// 表示していない行（Opacity=0）には触れず、一瞬見えてしまう現象を防ぐ。
         /// LST006 の非表示は Step6 に移動したため、ここでは行わない。
@@ -688,7 +711,7 @@ namespace DSDsp.画面
         public void Step4(Action? onCompleted = null)
         {
             EnsurePartsMainInitialized();
-            if (_partsMain == null) return;
+            if (_partsMain == null) return;  // 初期化失敗時は何もしない（onCompleted も呼ばない）
 
             var fadeOutStoryboard = new Storyboard();
 
@@ -703,6 +726,14 @@ namespace DSDsp.画面
                 _partsMain.フェードアウト(true, _所属LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _減点LB[i], fadeOutStoryboard, 0);
                 _partsMain.フェードアウト(true, _得点LB[i], fadeOutStoryboard, 0);
+            }
+
+            // アニメーションが0件の場合（_前回表示件数=0）は空Storyboardを Begin() しても
+            // Completed が発火しないため、onCompleted を即時呼び出す。
+            if (_前回表示件数 == 0)
+            {
+                onCompleted?.Invoke();
+                return;
             }
 
             if (onCompleted != null)

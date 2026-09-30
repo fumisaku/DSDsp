@@ -2141,6 +2141,7 @@ namespace DSDsp
                 var dvForScreen = GetDvResultFor(kbnNo, roundNo);
                 if (dvForScreen != null) screen.DV_Result = dvForScreen;
 
+                screen.ScreenId          = item.ScreenId;
                 screen.区分番号          = kbnNo;
                 screen.ラウンド番号       = roundNo;
                 screen.種目番号          = item.DanceNo;
@@ -2167,6 +2168,27 @@ namespace DSDsp
 
             _log?.LogAdd($"AJS Advance: {item.ScreenId} Step={currentScreen.CurrentStep} StepMode={currentScreen.StepMode} TotalSteps={currentScreen.CurrentStep}", _log.INFO);
             currentScreen.Advance();
+
+            // WaitsForResult=true の画面（GRP_001_B 等）が Step=0 を実行した直後、
+            // 他台からの DP_AJS_ADVANCE 受信による同期実行時かつ既存画面への再 Advance の場合のみ、
+            // 既に DV_Result が受信済みであれば採点完了として即時自律進行を試みる。
+            // （通常は DV_Result 受信時に TryAdvance が呼ばれるが、GRP_001_B 表示前に
+            //   DV_Result が届いていた場合は受信トリガーが発火しないため、ここで補完する）
+            // 注意:
+            //   ・手動操作（_isReceivingAjsAdvance=false）の場合は呼ばない（送信側は自分でFO開始）
+            //   ・isNewScreen=true（新規表示）の場合は呼ばない。
+            //     新規表示 = 選手一覧を今表示したばかりで採点完了を待つ状態。
+            //     A台が FO 電文（Step=1）を送信してきた時、B台は画面を新規生成してStep=0を実行する。
+            //     この直後に TryAdvance を呼ぶと採点済みデータで即FO開始してしまうため不可。
+            //     FO 同期は次に届く forward 電文（GRP_002_B 等）の WaitsForResult ガード→TryAdvance 経由で行う。
+            if (_isReceivingAjsAdvance &&
+                !isNewScreen &&
+                currentScreen.WaitsForResult &&
+                currentScreen.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase) &&
+                currentScreen.CurrentStep == 1)  // Advance() 後 = Step0完了
+            {
+                TryAdvanceAjsGrp001IfResultReady();
+            }
 
             // 他のDSDspに同期通知を送信（接続中の場合のみ・受信による同期実行中は送信しない）
             if (_client?.IsConnected == true && !_isReceivingAjsAdvance)
@@ -3114,6 +3136,17 @@ namespace DSDsp
                 bool waitReady = 画面.DSDspDataHelper.IsHeatResultReady(dvResult, waitItem.DanceNo, waitItem.HeatNo);
                 if (!waitReady) return;
 
+                if (currentScreen.CurrentStep >= 2)
+                {
+                    // ページング2ページ目以降（Step≥2）で止まっている場合:
+                    // _currentStep を基本ステップ数に設定して OnページングComplete へ強制スキップ。
+                    // （WaitsForResult=true かつページ数≥2 の場合、2ページ目表示後にタイマーなしで止まる）
+                    // Step=1 は「表示直後」または「1ページ目FO中」のため通常の ExecuteAjsStep() で処理。
+                    _log?.LogAdd($"AJS WaitsForResult: DSP_GRP_001 ページング途中(Step={currentScreen.CurrentStep}) → SkipToFadeOut", _log.INFO);
+                    currentScreen.SkipToFadeOut();
+                    return;
+                }
+
                 _log?.LogAdd($"AJS WaitsForResult: DSP_GRP_001 表示中 → 採点集計完了 (種目{waitItem.DanceNo} ヒート{waitItem.HeatNo}) → フェードアウト開始", _log.INFO);
                 // フェードアウト（Step4 → OnページングComplete → Step6/Step5）を手動で起動する
                 // ExecuteAjsStep() を呼ぶことで Advance() が実行され、ページングステップが進む
@@ -3124,6 +3157,11 @@ namespace DSDsp
             // ── Auto / HoldsAfterFadeOut 停止パス ──
             // DSP_GRP_001_B が HoldsAfterFadeOut 停止中（RaiseScreenCompleted 済み・_currentAjsIndex ++ 済み）。
             // _currentAjsIndex は ++ 済みで次の画面（DSP_GRP_002_B 等）を指している。
+            // 判別方法: CurrentScreenTag が _currentAjsProgressItems[_currentAjsIndex] と一致しない
+            //           = 画面は旧 GRP_001_B のまま、インデックスは次を指している = 停止中
+            var currentTag = _offScreenWindow?.CurrentScreenTag;
+            bool isHoldingStopped = (currentTag != (object)_currentAjsProgressItems[_currentAjsIndex]);
+            if (!isHoldingStopped) return;
             if (currentScreen.StepMode != "Auto") return;
 
             // 停止中の画面（index-1）が DSP_GRP_001 であり、現在インデックス（index）が結果画面（DSP_GRP_002）を指しているか確認
@@ -3338,6 +3376,52 @@ namespace DSDsp
                     return;
                 }
 
+                // HoldsAfterFadeOut 停止中（CurrentScreenTag != 現在インデックスのアイテム）かつ
+                // 受信インデックスが現在より先の場合、送信側が停止中の GRP_002_B を飛ばして進んでいる。
+                // この場合、まず現在インデックス（GRP_002_B 等）を即時実行してから同期する。
+                {
+                    bool tagMatchesCurrent =
+                        _offScreenWindow?.CurrentScreenTag == (object)_currentAjsProgressItems[_currentAjsIndex];
+                    if (!tagMatchesCurrent && payload.AjsIndex > _currentAjsIndex)
+                    {
+                        _log?.LogAdd(
+                            $"[AJS同期受信] HoldsAfterFadeOut停止中に先の電文: 現在index={_currentAjsIndex} を先に実行してから同期",
+                            _log.INFO);
+                        // 現在インデックスの画面（GRP_002_B 等）を即時実行
+                        _isReceivingAjsAdvance = true;
+                        try { ExecuteAjsStep(); }
+                        finally { _isReceivingAjsAdvance = false; }
+                        // 実行後は通常の同期処理に続く（payload.AjsIndex への同期・Advance）
+                    }
+                }
+
+                // 現在の画面が WaitsForResult=true（採点結果待ち）の GRP_001_B の場合、
+                // 送信側が採点完了で GRP_002_B へ forward 同期しようとしている電文を拒否する。
+                // ただし以下の場合は除外:
+                //   ・HoldsAfterFadeOut 停止中（tagMatchesCurrentIndex=false）: 旧 GRP_001_B が残っているだけ
+                //   ・payload.AjsIndex == _currentAjsIndex: 同じ GRP_001_B の Advance（フェードアウト進行）は同期する
+                //   ・CurrentStep >= 2: フェードアウト開始済み（Step=1=選手一覧表示中も「未開始」扱い）→ forward 同期を通す
+                //   ※ Advance() 後カウンタ: Step=0実行→_currentStep=1（表示中）, Step=1実行→_currentStep=2（FO中）
+                {
+                    var csWait = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
+                    bool tagMatchesCurrentIndex =
+                        _offScreenWindow?.CurrentScreenTag == (object)_currentAjsProgressItems[_currentAjsIndex];
+                    if (csWait != null &&
+                        csWait.WaitsForResult &&
+                        csWait.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase) &&
+                        tagMatchesCurrentIndex &&          // HoldsAfterFadeOut 停止中は除外
+                        csWait.CurrentStep <= 1 &&         // 表示中(=1)またはStep0前(=0)のみ拒否。FO開始後(>=2)は通す
+                        payload.AjsIndex > _currentAjsIndex)  // forward 同期（GRP_002_B 等）の場合のみ拒否
+                    {
+                        _log?.LogAdd(
+                            $"[AJS同期受信] スキップ(WaitsForResult採点待ち中): AjsIndex={payload.AjsIndex} / 現在={_currentAjsIndex} ({csWait.ScreenId})",
+                            _log.INFO);
+                        // DV_Result が既に届いていれば自律進行を試みる
+                        TryAdvanceAjsGrp001IfResultReady();
+                        return;
+                    }
+                }
+
                 // 同じインデックスで既にそのステップ以上に進んでいる場合もスキップ
                 // 例: index=0 の電文が index=1 より後に届き、かつ受信側が index=0 処理時に
                 //     自動遷移で index=1 まで進んだ場合、同じ画面に余分な Advance() が入るため。
@@ -3345,11 +3429,35 @@ namespace DSDsp
                 {
                     var csCheck = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
                     var tagMatch = _offScreenWindow?.CurrentScreenTag == (object)_currentAjsProgressItems[_currentAjsIndex];
+
+                    // DSP_GRP_001_B が Auto+Step>=1 の場合（タイマーまたは TryAdvance によるフェードアウト進行中）、
+                    // 外部からの Advance() はタイマーと衝突するためスキップする。
+                    bool isGrp001Running =
+                        csCheck != null && tagMatch &&
+                        csCheck.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase) &&
+                        !csCheck.WaitsForResult &&
+                        csCheck.CurrentStep >= 1;
+                    if (isGrp001Running)
+                    {
+                        _log?.LogAdd(
+                            $"[AJS同期受信] スキップ(GRP_001タイマー進行中): AjsIndex={payload.AjsIndex} Step={payload.Step} currentStep={csCheck?.CurrentStep}",
+                            _log.INFO);
+                        return;
+                    }
+
                     if (csCheck != null && tagMatch && csCheck.CurrentStep >= payload.Step)
                     {
                         _log?.LogAdd(
                             $"[AJS同期受信] スキップ(進捗済み): AjsIndex={payload.AjsIndex} step={csCheck.CurrentStep} >= {payload.Step}",
                             _log.INFO);
+                        // WaitsForResult=true かつ FO開始済み(CurrentStep>=2) の場合のみ SkipToFadeOut を試みる。
+                        // CurrentStep=1（表示中）の時は自律進行しない（採点完了を待つ）。
+                        if (csCheck.WaitsForResult &&
+                            csCheck.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase) &&
+                            csCheck.CurrentStep >= 2)
+                        {
+                            TryAdvanceAjsGrp001IfResultReady();
+                        }
                         return;
                     }
                 }
@@ -3374,6 +3482,18 @@ namespace DSDsp
                 if (_currentAjsIndex != payload.AjsIndex)
                 {
                     _log?.LogAdd($"[AJS同期受信] インデックス同期: {_currentAjsIndex} → {payload.AjsIndex}", _log.INFO);
+
+                    // インデックス同期前に現在の画面の ScreenCompleted イベントを解除・タイマーを停止する。
+                    // 旧画面（Auto モード等）がフェードアウト中の場合、同期後に遅延 RaiseScreenCompleted が
+                    // 発火して _currentAjsIndex を誤って ++ してしまうのを防ぐ。
+                    var oldScreen = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
+                    if (oldScreen != null)
+                    {
+                        oldScreen.ScreenCompleted -= OnAjsScreenCompleted;
+                        oldScreen.StopAutoTimer();
+                        _log?.LogAdd($"[AJS同期受信] 旧画面の ScreenCompleted を解除: {oldScreen.ScreenId}", _log.INFO);
+                    }
+
                     _suppressAjsSelectionChanged = true;
                     _currentAjsIndex = payload.AjsIndex;
                     LstAjsProgress.SelectedIndex = _currentAjsIndex;

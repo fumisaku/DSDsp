@@ -486,6 +486,22 @@ namespace DSDsp.画面
             明細Storyboard.Begin();
         }
 
+        /// <summary>
+        /// WaitsForResult=true でページング2ページ目以降（Step≥2）で止まっている場合に、
+        /// 直ちに OnページングComplete へジャンプしてフェードアウトを開始する。
+        /// Step=1 は「選手一覧表示完了直後」または「1ページ目フェードアウト中」のため除外。
+        /// </summary>
+        public override void SkipToFadeOut()
+        {
+            int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
+            if (_currentStep >= 基本ステップ数) return;
+            // Step=0 または Step=1 は通常フローで処理するため除外
+            if (_currentStep < 2) return;
+            StopAutoTimer();
+            _currentStep = 基本ステップ数;
+            OnページングComplete();
+        }
+
         public void Step4(Action? onCompleted = null)
         {
             EnsurePartsMainInitialized();

@@ -291,6 +291,15 @@ namespace DSDsp.画面
         /// <summary>総ステップ数を取得（旧互換）。</summary>
         [Obsolete("外部からの参照は不要になりました")]
         public int GetTotalSteps() => TotalSteps;
+
+        /// <summary>
+        /// WaitsForResult=true でページング途中（Step≥1）の場合に、現在表示中の行を
+        /// フェードアウトして直ちに OnページングComplete（= フェードアウト→RaiseScreenCompleted）へ
+        /// 進めるためのメソッド。
+        /// 派生クラスでオーバーライドする。デフォルトは何もしない。
+        /// TryAdvanceAjsGrp001IfResultReady() がページング中断を必要とする場合に呼ぶ。
+        /// </summary>
+        public virtual void SkipToFadeOut() { }
         #endregion
 
         #region プロテクテッドメソッド
