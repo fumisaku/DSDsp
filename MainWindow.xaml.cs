@@ -3026,6 +3026,15 @@ namespace DSDsp
                             $"HeatEnd: 次ヒートへ NotifyHeatChanged (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
                             _log.INFO);
                     }
+                    else if (screenIdForHeat is "DSP_PRG_004_B" or "DSP_PRG_004_S")
+                    {
+                        // DSP_PRG_004（決勝進出者）は選手一覧を表示するだけで、
+                        // 種目切り替え（W→T等）でも画面内容は変わらないため何もしない。
+                        // Advance() を呼ぶと STEP4（フェードアウト）が実行されて選手リストが消えてしまう。
+                        _log?.LogAdd(
+                            $"HeatEnd: DSP_PRG_004 は種目切り替えをスキップ (dance={nextHeat.Value.DncNo}, heat={nextHeat.Value.HeatNo})",
+                            _log.INFO);
+                    }
                     else
                     {
                         _currentProgressScreen!.Advance();

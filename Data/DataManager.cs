@@ -202,6 +202,73 @@ namespace DSDsp.Data
         }
 
         /// <summary>
+        /// DS_Statusを差分更新（updatedProgress形式）
+        /// サーバーから送られた進行1件（updatedProgress）を DS_FLOORs[].DS_PRGRSs[] の
+        /// DS_PrgId が一致するエントリに上書きする。
+        /// </summary>
+        /// <param name="version">新しいバージョン番号</param>
+        /// <param name="updatedProgress">更新された進行オブジェクト</param>
+        public void UpdateDS_StatusFromProgress(int version, JsonNode updatedProgress)
+        {
+            if (_dsStatus == null)
+            {
+                _log.LogAdd("DS_Statusが未設定のため差分更新できません", _log.WARNING);
+                return;
+            }
+
+            try
+            {
+                var prgId = updatedProgress["DS_PrgId"]?.ToString();
+                if (string.IsNullOrEmpty(prgId))
+                {
+                    _log.LogAdd("updatedProgress に DS_PrgId がないため差分更新をスキップ", _log.WARNING);
+                    return;
+                }
+
+                bool updated = false;
+                var floors = _dsStatus["DS_FLOORs"]?.AsArray();
+                if (floors != null)
+                {
+                    foreach (var floor in floors)
+                    {
+                        var prgrs = floor?["DS_PRGRSs"]?.AsArray();
+                        if (prgrs == null) continue;
+
+                        for (int i = 0; i < prgrs.Count; i++)
+                        {
+                            if (prgrs[i]?["DS_PrgId"]?.ToString() == prgId)
+                            {
+                                // 進行オブジェクトを丸ごと置き換える
+                                prgrs[i] = updatedProgress.DeepClone();
+                                updated = true;
+                                break;
+                            }
+                        }
+                        if (updated) break;
+                    }
+                }
+
+                if (!updated)
+                {
+                    _log.LogAdd($"DS_PrgId={prgId} の進行が見つからないためフルリフレッシュが必要", _log.WARNING);
+                }
+
+                _dsStatusVersion = version;
+                if (_dsStatus["DS_Version"] != null)
+                {
+                    _dsStatus["DS_Version"] = version;
+                }
+
+                DS_StatusUpdated?.Invoke(this, EventArgs.Empty);
+                _log.LogAdd($"DS_Status進行差分更新完了: Version={version}, PrgId={prgId}, updated={updated}", _log.INFO);
+            }
+            catch (Exception ex)
+            {
+                _log.LogAdd($"DS_Status進行差分更新エラー: {ex.Message}", _log.ERR);
+            }
+        }
+
+        /// <summary>
         /// JSONパスに従って値を更新
         /// </summary>
         private void ApplyUpdate(JsonNode node, string path, object? value)

@@ -167,6 +167,9 @@ namespace DSDsp.Handlers
 
         /// <summary>
         /// DS_Status差分更新処理
+        /// サーバーは {"DS_Version":N, "updatedProgress":{...}} 形式で送信する。
+        /// updatedProgress が存在する場合は進行1件を DS_PrgId で上書き更新する。
+        /// 旧形式 (Updates 配列) にも後方互換でフォールバックする。
         /// </summary>
         private async Task Handle_DP_UPD_DS(ParsedMessage msg)
         {
@@ -175,8 +178,22 @@ namespace DSDsp.Handlers
                 var update = JsonSerializer.Deserialize<DP_UPD_DS>(msg.MsgDetail, _jsonOptions);
                 if (update != null)
                 {
-                    _dataManager.UpdateDS_Status(update.Version, update.Updates);
-                    _log.LogAdd($"DS_Status差分更新: Version={update.Version}, 更新数={update.Updates.Count}", _log.INFO);
+                    if (update.UpdatedProgress != null)
+                    {
+                        // 現行サーバー形式: updatedProgress で進行1件を置き換え
+                        _dataManager.UpdateDS_StatusFromProgress(update.Version, update.UpdatedProgress);
+                        _log.LogAdd($"DS_Status差分更新(progress): Version={update.Version}", _log.INFO);
+                    }
+                    else if (update.Updates.Count > 0)
+                    {
+                        // 旧形式フォールバック
+                        _dataManager.UpdateDS_Status(update.Version, update.Updates);
+                        _log.LogAdd($"DS_Status差分更新(path): Version={update.Version}, 更新数={update.Updates.Count}", _log.INFO);
+                    }
+                    else
+                    {
+                        _log.LogAdd($"DS_Status差分更新: Version={update.Version}, 更新なし", _log.WARNING);
+                    }
                     DS_StatusReceived?.Invoke(this, EventArgs.Empty);
                 }
             }

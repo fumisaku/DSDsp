@@ -50,10 +50,22 @@ namespace DSDsp.Messages
 
     /// <summary>
     /// DS_Status差分更新
+    /// サーバーは {"DS_Version":N, "updatedProgress":{...}} 形式で送信する。
     /// </summary>
     public class DP_UPD_DS
     {
+        [System.Text.Json.Serialization.JsonPropertyName("DS_Version")]
         public int Version { get; set; }
+
+        /// <summary>
+        /// 更新された進行1件。サーバーから送られてくる現在の形式。
+        /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName("updatedProgress")]
+        public System.Text.Json.Nodes.JsonNode? UpdatedProgress { get; set; }
+
+        /// <summary>
+        /// 旧形式（path/value 配列）。後方互換用。
+        /// </summary>
         public List<DsStatusUpdate> Updates { get; set; } = new List<DsStatusUpdate>();
     }
 
