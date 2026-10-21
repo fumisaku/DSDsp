@@ -633,26 +633,33 @@ namespace DSDsp.画面
                 ? _heatSequence[heatIdx].DncNo
                 : GetCurrentDncNo();
 
-            // Label.Content に TextBlock をセットして種目ごとに色を変える
+            // COM003 の LB_右上 は ContentTemplate で OutlinedTextBlock(Text={Binding}) を使うため、
+            // Content に TextBlock 等のオブジェクトを入れると ToString() が表示されてしまう。
+            // ContentTemplate を外し、種目ごとの OutlinedTextBlock を StackPanel に並べて色分けする。
             if (PartsCOM003.FindName("LB_右上") is System.Windows.Controls.Label lb種目)
             {
-                var tb = new System.Windows.Controls.TextBlock
+                lb種目.ContentTemplate = null;
+                var panel = new System.Windows.Controls.StackPanel
                 {
+                    Orientation         = System.Windows.Controls.Orientation.Horizontal,
                     HorizontalAlignment = HorizontalAlignment.Right,
                     VerticalAlignment   = VerticalAlignment.Center,
-                    TextAlignment       = System.Windows.TextAlignment.Right,
                 };
                 for (int i = 0; i < dances.Count; i++)
                 {
-                    if (i > 0)
-                        tb.Inlines.Add(new Run("  ") { Foreground = WhiteBrush });
                     bool isCur = (dances[i].DncNo == curDncNo);
-                    tb.Inlines.Add(new Run(dances[i].DncCd)
+                    panel.Children.Add(new パーツ.OutlinedTextBlock
                     {
-                        Foreground = isCur ? CurrentBrush : WhiteBrush
+                        Text            = dances[i].DncCd,
+                        FontSize        = 12,
+                        FontWeight      = FontWeights.Bold,
+                        Foreground      = isCur ? CurrentBrush : WhiteBrush,
+                        Stroke          = Brushes.Black,
+                        StrokeThickness = 1.5,
+                        Margin          = new Thickness(0, 0, i < dances.Count - 1 ? 8 : 0, 0),
                     });
                 }
-                lb種目.Content = tb;
+                lb種目.Content = panel;
             }
         }
 
