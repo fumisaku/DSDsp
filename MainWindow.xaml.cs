@@ -714,6 +714,8 @@ namespace DSDsp
             public string DGrpNo  { get; set; } = string.Empty;
             public string KbnName { get; set; } = string.Empty;
             public string RndName { get; set; } = string.Empty;
+            /// <summary>進行ステータスが "5" 以上（競技終了・採点中以降）なら true。一覧でグレーアウトする。</summary>
+            public bool IsFinished { get; set; }
             public override string ToString() => $"{PrgNo}  {KbnName}　{RndName}";
         }
 
@@ -1004,7 +1006,7 @@ namespace DSDsp
             var seen  = new System.Collections.Generic.HashSet<string>();
             var items = new System.Collections.Generic.List<ProgressListItem>();
 
-            var allPrgrs = new System.Collections.Generic.List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string DGrpNo)>();
+            var allPrgrs = new System.Collections.Generic.List<(int SortOrder, string PrgNo, string KbnNo, string RndNo, string DGrpNo, bool IsFinished)>();
             foreach (var floor in floors)
             {
                 var prgrs = floor?["DS_PRGRSs"]?.AsArray();
@@ -1016,12 +1018,13 @@ namespace DSDsp
                     var kbnNo     = prg?["DS_KbnNo"]?.ToString() ?? "";
                     var rndNo     = prg?["DS_RndNo"]?.ToString() ?? "";
                     var dGrpNo    = prg?["DS_DGrpNo"]?.ToString() ?? "";
-                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, dGrpNo));
+                    var isFinished = int.TryParse(prg?["DS_PrgSts"]?.ToString(), out var prgSts) && prgSts >= 5;
+                    allPrgrs.Add((sortOrder, prgNo, kbnNo, rndNo, dGrpNo, isFinished));
                 }
             }
             allPrgrs.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
 
-            foreach (var (_, prgNo, kbnNo, rndNo, dGrpNo) in allPrgrs)
+            foreach (var (_, prgNo, kbnNo, rndNo, dGrpNo, isFinished) in allPrgrs)
             {
                 // 同一 PrgNo の重複排除（通常は発生しないが念のため）
                 if (!seen.Add(prgNo)) continue;
@@ -1037,16 +1040,21 @@ namespace DSDsp
                     DGrpNo  = dGrpNo,
                     KbnName = kbnName,
                     RndName = rndName,
+                    IsFinished = isFinished,
                 });
             }
 
             LstProgressItems.ItemsSource = items;
             TxtProgressCurrentPrg.Text   = items.Count > 0 ? $"（{items.Count} 件）" : "";
 
-            if (items.Count > 0 && LstProgressItems.SelectedIndex < 0)
+            // 現在進行中の進行 = 「終わった競技」のうち最後のものの次。終了済みがなければ先頭、全て終了なら末尾。
+            if (items.Count > 0)
             {
-                LstProgressItems.SelectedIndex = 0;
-                _currentProgressIndex = 0;
+                int lastFinished = items.FindLastIndex(x => x.IsFinished);
+                int currentIdx = System.Math.Min(lastFinished + 1, items.Count - 1);
+                LstProgressItems.SelectedIndex = currentIdx;
+                _currentProgressIndex = currentIdx;
+                LstProgressItems.ScrollIntoView(items[currentIdx]);
             }
 
             UpdateProgressScreenIdLabel();

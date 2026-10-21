@@ -408,7 +408,18 @@
                                  Grid.Row="2"
                                  SelectionChanged="LstProgressItems_SelectionChanged"
                                  BorderBrush="#DDDDDD"
-                                 FontSize="12"/>
+                                 FontSize="12">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFinished}" Value="True">
+                                            <Setter Property="Foreground" Value="#9E9E9E"/>
+                                            <Setter Property="Background" Value="#F0F0F0"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
                     </Grid>
 
                     <!-- 行8: 割り込みボタン -->
