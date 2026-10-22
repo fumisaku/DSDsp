@@ -124,6 +124,28 @@ namespace DSDsp.画面
         }
 
         /// <summary>
+        /// コンボで手動指定された種目・ヒートのヒート紹介へ直接ジャンプする（出場選手紹介は飛ばす）。
+        /// 未開始ならフローを開始し、区分名紹介も飛ばす。指定位置が無ければ通常の Advance() にする。
+        /// 現在位置より前へも戻れる。
+        /// </summary>
+        public void JumpToHeat(int dncNo, int heatNo)
+        {
+            if (!_started)
+            {
+                StartFlow(skipTitle: true, startDncNo: dncNo, startHeatNo: heatNo);
+                return;
+            }
+
+            int target = FindUnitIndex(dncNo, heatNo);
+            if (target < 0) { Advance(); return; }
+
+            StopAutoTimer();
+            _unitIdx = target;
+            int tk = ++_token;
+            FadeOutShown(() => { if (tk == _token) GoHeat(target); });
+        }
+
+        /// <summary>
         /// HeatEnd 通知受信時に MainWindow から呼ばれる。
         /// MainWindow が設定した 種目番号/ヒート番号（次の対象）に対応する単位へ進む。
         /// </summary>
@@ -141,7 +163,7 @@ namespace DSDsp.画面
         #endregion
 
         #region フロー制御
-        private void StartFlow(bool skipTitle)
+        private void StartFlow(bool skipTitle, int startDncNo = 0, int startHeatNo = 0)
         {
             _started = true;
             EnsurePartsMainInitialized();
@@ -150,7 +172,8 @@ namespace DSDsp.画面
             SetHeader();
             UpdateCOM003種目(0);
 
-            _unitIdx = FindStartIndex();
+            int specified = FindUnitIndex(startDncNo, startHeatNo);
+            _unitIdx = specified >= 0 ? specified : FindStartIndex();
 
             if (_units.Count == 0)
             {
@@ -158,7 +181,9 @@ namespace DSDsp.画面
                 return;
             }
 
-            if (!skipTitle && _titleStep != null)
+            if (specified >= 0)
+                GoHeat(_unitIdx);   // 手動指定: 出場選手紹介を飛ばしてヒート紹介から
+            else if (!skipTitle && _titleStep != null)
                 GoTitle();
             else
                 GoUnit(_unitIdx);

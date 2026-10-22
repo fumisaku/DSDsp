@@ -1010,7 +1010,7 @@ namespace DSDsp
         private void SyncHeatCombosFromScreen(string screenId)
         {
             if (_currentProgressScreen == null) return;
-            if (screenId != "DSP_PRG_003_B" && screenId != "DSP_PRG_003_S") return;
+            if (screenId != "DSP_PRG_003_B" && screenId != "DSP_PRG_003_S" && screenId != "DSP_PRG_010_S") return;
 
             int screenHeatNo = _currentProgressScreen.ヒート番号;
             int screenDncNo  = _currentProgressScreen.種目番号;
@@ -2062,7 +2062,7 @@ namespace DSDsp
             // ヒートモード時のコンボ選択値を取得（新規画面生成の初期値に使用）
             int selDncNo  = 0;
             int selHeatNo = 0;
-            if ((screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_011_B")
+            if ((screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_010_S" || screenId == "DSP_PRG_011_B")
                 && CmbProgressDance?.SelectedItem is ProgressDanceItem pd
                 && CmbProgressHeat?.SelectedItem  is ProgressHeatItem  ph)
             {
@@ -2117,7 +2117,7 @@ namespace DSDsp
                 // DSP_PRG_004/005 はヒート番号が内部変更されたとき、コンボを即時同期する。
                 // 自動同期中は _suppressManualComboDepth++ にして
                 // SelectionChanged イベントによる手動変更フラグの誤セットを防ぐ。
-                if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_011_B")
+                if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_010_S" || screenId == "DSP_PRG_011_B")
                 {
                     newScreen.OnHeatNoChanged = heatNo =>
                     {
@@ -2148,7 +2148,7 @@ namespace DSDsp
                 _offScreenWindow.ShowScreen(newScreen, item.KbnNo);
                 _log?.LogAdd($"進行画面表示: {screenId}  KbnNo={item.KbnNo} RndNo={item.RndNo} DGrpNo={item.DGrpNo}", _log.INFO);
             }
-            else if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
+            else if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_010_S")
             {
                 // 既存の DSP_PRG_004/005 画面を継続使用する場合:
                 // 手動変更フラグが立っているときはジャンプ再生（後述）するのでここでは同期しない。
@@ -2179,6 +2179,18 @@ namespace DSDsp
                 _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
                 screen005.JumpToHeat(selDncNo, selHeatNo);
             }
+            else if (_manualComboChanged
+                && screenId == "DSP_PRG_010_S"
+                && selDncNo > 0 && selHeatNo > 0
+                && _currentProgressScreen is 画面.DSP_PRG_010_S_フロー進行表示_小 screen010)
+            {
+                // フロー進行表示: コンボで指定された種目・ヒートのヒート紹介へジャンプする。
+                // （新規生成直後でも、手動指定があれば区分名紹介・出場選手紹介を飛ばして表示する）
+                _manualComboChanged = false;
+                _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
+                screen010.JumpToHeat(selDncNo, selHeatNo);
+            }
+
             else if (screenId == "DSP_PRG_011_B")
             {
                 // 選手係表示: Advance() ではなく NotifyHeatChanged() で「現在ヒートを先頭行」に表示する。
