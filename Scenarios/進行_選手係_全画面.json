@@ -1,0 +1,12 @@
+{
+  "ScenarioName": "進行_選手係_全画面",
+  "ScenarioType": "Progress",
+  "Description": "選手係全画面シナリオ。PRG007（選手係表示・大）だけを表示し続ける。ヒートの曲演奏が終わる（HeatEnd 通知）たびに現在ヒートが先頭行になるよう表示を更新し、進行内の最終ヒートが終わったら次の進行（区分・ラウンド）へ切り替える。背景は黒。",
+  "ScreenId": "DSP_PRG_011_B",
+  "DefaultScreenSize": "Large",
+  "DefaultMode": "Heat",
+  "Background": {
+    "Type": "None"
+  },
+  "Items": []
+}

@@ -406,6 +406,16 @@ namespace DSDsp.Scenario
     }
 
     /// <summary>
+    /// 進行シナリオのデフォルト画面サイズ ("Large" または "Small")
+    /// </summary>
+    public enum ProgressScenarioScreenSize { Large, Small }
+
+    /// <summary>
+    /// 進行シナリオのデフォルト表示モード ("ProgressOnly" / "Heat" / "Final")
+    /// </summary>
+    public enum ProgressScenarioMode { ProgressOnly, Heat, Final }
+
+    /// <summary>
     /// 進行シナリオ
     /// </summary>
     public class ProgressScenario
@@ -419,8 +429,171 @@ namespace DSDsp.Scenario
         [JsonPropertyName("Description")]
         public string Description { get; set; } = string.Empty;
 
+        /// <summary>
+        /// デフォルト画面サイズ。"Large"（大）または "Small"（小）。省略時は "Large"。
+        /// 選択後でもUIのラジオボタンで切り替え可能。
+        /// </summary>
+        [JsonPropertyName("DefaultScreenSize")]
+        public string DefaultScreenSize { get; set; } = "Large";
+
+        /// <summary>
+        /// デフォルト表示モード。"ProgressOnly"（進行のみ）/ "Heat"（ヒートも）/ "Final"（決勝）。
+        /// 省略時は "ProgressOnly"。選択後でもUIのラジオボタンで切り替え可能。
+        /// </summary>
+        [JsonPropertyName("DefaultMode")]
+        public string DefaultMode { get; set; } = "ProgressOnly";
+
+        /// <summary>
+        /// 決勝時の表示モード。ラウンド名に「決勝」を含む進行を選択したとき、このモードに自動切り替えする。
+        /// "ProgressOnly" / "Heat" / "Final" のいずれか。省略（null）時は DefaultMode をそのまま使用する。
+        /// </summary>
+        [JsonPropertyName("FinalMode")]
+        public string? FinalMode { get; set; }
+
+        /// <summary>
+        /// 使用する進行画面ID（例: "DSP_PRG_011_B"）。
+        /// 指定した場合、大/小・表示モードの設定に関わらずこの画面を使用する。省略時は従来の画面選択ロジック。
+        /// </summary>
+        [JsonPropertyName("ScreenId")]
+        public string ScreenId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 背景設定。null の場合はデフォルト（黒）。
+        /// AjsBackground と同じ型を使用するため "None" / "Image" / "Color" / "ChromaKey" を指定できる。
+        /// </summary>
+        [JsonPropertyName("Background")]
+        public AjsBackground? Background { get; set; }
+
         [JsonPropertyName("Items")]
         public List<ProgressScenarioItem> Items { get; set; } = new();
+
+        /// <summary>
+        /// ラウンド番号ごとの進行フロー定義。RoundNos に一致するラウンドはその Flow で進行する。
+        /// 省略可。RoundRules / DefaultRule のどちらかが定義されていれば「フロー進行画面(DSP_PRG_010)」を使用する。
+        /// </summary>
+        [JsonPropertyName("RoundRules")]
+        public List<ProgressRoundRule> RoundRules { get; set; } = new();
+
+        /// <summary>
+        /// RoundRules のどれにも一致しないラウンドに適用するフロー定義（例: 予選）。
+        /// </summary>
+        [JsonPropertyName("DefaultRule")]
+        public ProgressRoundRule? DefaultRule { get; set; }
+
+        /// <summary>ラウンド別フロー定義を持つシナリオかどうか。</summary>
+        [JsonIgnore]
+        public bool HasFlow => DefaultRule != null || RoundRules.Count > 0;
+
+        /// <summary>
+        /// ラウンド番号に対応するルールを返す。RoundNos が一致するものを優先し、
+        /// 一致しなければ DefaultRule を返す。どちらも無ければ null。
+        /// </summary>
+        public ProgressRoundRule? GetRuleForRound(string rndNo)
+        {
+            foreach (var rule in RoundRules)
+            {
+                if (rule.RoundNos.Contains(rndNo)) return rule;
+            }
+            return DefaultRule;
+        }
+
+        /// <summary>
+        /// DefaultScreenSize を ProgressScenarioScreenSize 列挙型に変換する。
+        /// </summary>
+        public ProgressScenarioScreenSize GetScreenSize()
+        {
+            return DefaultScreenSize.Equals("Small", System.StringComparison.OrdinalIgnoreCase)
+                ? ProgressScenarioScreenSize.Small
+                : ProgressScenarioScreenSize.Large;
+        }
+
+        /// <summary>
+        /// DefaultMode を ProgressScenarioMode 列挙型に変換する。
+        /// </summary>
+        public ProgressScenarioMode GetMode()
+            => ParseMode(DefaultMode);
+
+        /// <summary>
+        /// ラウンド名に応じたモードを返す。
+        /// ラウンド名に「決勝」を含み、かつ FinalMode が設定されている場合は FinalMode を使用する。
+        /// それ以外は DefaultMode を使用する。
+        /// </summary>
+        public ProgressScenarioMode GetModeForRound(string roundName)
+        {
+            if (!string.IsNullOrEmpty(FinalMode) && roundName.Contains("決勝"))
+                return ParseMode(FinalMode);
+            return ParseMode(DefaultMode);
+        }
+
+        private static ProgressScenarioMode ParseMode(string? mode)
+        {
+            return (mode ?? string.Empty).ToUpperInvariant() switch
+            {
+                "HEAT"  => ProgressScenarioMode.Heat,
+                "FINAL" => ProgressScenarioMode.Final,
+                _       => ProgressScenarioMode.ProgressOnly,
+            };
+        }
+    }
+
+    /// <summary>
+    /// ラウンド別の進行フロー定義。
+    /// </summary>
+    public class ProgressRoundRule
+    {
+        /// <summary>このルールを適用するラウンド番号（例: "200"）。DefaultRule では省略する。</summary>
+        [JsonPropertyName("RoundNos")]
+        public List<string> RoundNos { get; set; } = new();
+
+        /// <summary>
+        /// フロー要素。Type は次のとおり（Title → Player → Heat の順に1つずつ定義する）。
+        ///   TitleIntro  : ラウンド開始時に1回だけ区分名紹介を表示する。
+        ///   PlayerIntro : 各 HeatIntro の直前に出場選手紹介を挿入する。
+        ///   HeatIntro   : ヒート（または種目）紹介。繰り返しの単位。
+        /// </summary>
+        [JsonPropertyName("Flow")]
+        public List<ProgressFlowStep> Flow { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 進行フローの1要素。Type により使用するプロパティが異なる。
+    /// </summary>
+    public class ProgressFlowStep
+    {
+        /// <summary>"TitleIntro" / "PlayerIntro" / "HeatIntro"</summary>
+        [JsonPropertyName("Type")]
+        public string Type { get; set; } = string.Empty;
+
+        /// <summary>[TitleIntro] 表示秒数。経過後に次へ進む。</summary>
+        [JsonPropertyName("Seconds")]
+        public int Seconds { get; set; } = 5;
+
+        /// <summary>
+        /// [PlayerIntro] true のとき、全種目のヒート数が1つ（＝全員が同じ組）なら最初の種目でのみ表示し、
+        /// 2種目目以降は表示しない（準決勝・決勝用）。
+        /// </summary>
+        [JsonPropertyName("SingleHeatFirstDanceOnly")]
+        public bool SingleHeatFirstDanceOnly { get; set; } = false;
+
+        /// <summary>[PlayerIntro] 1ページに表示する組数。</summary>
+        [JsonPropertyName("PageSize")]
+        public int PageSize { get; set; } = 10;
+
+        /// <summary>[PlayerIntro] 1ページの表示秒数。最終ページ表示後もこの秒数で次へ進む。</summary>
+        [JsonPropertyName("PageSeconds")]
+        public int PageSeconds { get; set; } = 5;
+
+        /// <summary>[HeatIntro] "Heat"（ヒート単位。タイトルは「現在 S 1H」）または "Dance"（種目単位。「現在 W」）。</summary>
+        [JsonPropertyName("Unit")]
+        public string Unit { get; set; } = "Heat";
+
+        /// <summary>[HeatIntro] 右下に Next（次のヒート/種目）を表示するか。</summary>
+        [JsonPropertyName("ShowNext")]
+        public bool ShowNext { get; set; } = true;
+
+        /// <summary>[HeatIntro] 背番号が1行に収まる最大文字数。超えると2行に分けて表示する。</summary>
+        [JsonPropertyName("RowMaxChars")]
+        public int RowMaxChars { get; set; } = 30;
     }
 
     /// <summary>

@@ -520,36 +520,16 @@ namespace DSDsp.画面
             //   上記以外（複数種目 / シャッフルあり / 1種目でもヒート数超過）
             //   → 種目ごと・ヒートごとに S 1H → S 2H → C 1H → C 2H → ... の順で順次表示する。
 
-            if (_danceList.Count == 1)
+            // 本画面（選手係）は常にヒート毎更新モードとする。
+            // 一括表示モード（全ヒート表示＋ハイライトのみ）は使わず、
+            // 現在ヒートが先頭行に来るようにヒートごとに行を入れ替える（HeatEnd 毎に更新）。
+            // 種目ごとにヒート一覧を個別取得し、S 1H → S 2H → C 1H → C 2H → ... の順に列挙する。
+            _isBulk = false;
+            foreach (var (dncNo, _) in _danceList)
             {
-                // 単一種目: 一括表示モードを検討する
-                var only = _danceList[0];
-                if (_heatMap.TryGetValue(only.DncNo, out var onlyHeats) && onlyHeats.Count <= MaxRows)
-                {
-                    // 単一種目かつ MaxRows 以内 → 一括表示モード
-                    _isBulk = true;
-                    _heatSequence.Add((only.DncNo, -1));
-                }
-                else
-                {
-                    // 単一種目だがヒート数超過 → ヒート毎更新モード
-                    _isBulk = false;
-                    if (_heatMap.TryGetValue(only.DncNo, out var d))
-                        foreach (var hNo in d.Keys.OrderBy(n => n))
-                            _heatSequence.Add((only.DncNo, hNo));
-                }
-            }
-            else
-            {
-                // 複数種目: 種目ごとにヒート一覧を個別取得して順次列挙
-                // シャッフルの有無に関わらず S 1H → S 2H → C 1H → C 2H → ... の順にする
-                _isBulk = false;
-                foreach (var (dncNo, _) in _danceList)
-                {
-                    if (!_heatMap.TryGetValue(dncNo, out var dncHeats)) continue;
-                    foreach (var hNo in dncHeats.Keys.OrderBy(n => n))
-                        _heatSequence.Add((dncNo, hNo));
-                }
+                if (!_heatMap.TryGetValue(dncNo, out var dncHeats)) continue;
+                foreach (var hNo in dncHeats.Keys.OrderBy(n => n))
+                    _heatSequence.Add((dncNo, hNo));
             }
 
             // _heatCursor を現在ヒートの位置に合わせる（現在ヒートが先頭行になるよう）
@@ -569,16 +549,25 @@ namespace DSDsp.画面
         /// 種目ごとにヒート数・各ヒートの選手セットが全て一致する場合はシャッフルなし（false）。
         /// </summary>
         private bool CheckIsShuffled()
+            => IsShuffled(_danceList, _heatMap);
+
+        /// <summary>
+        /// 指定の種目リスト・ヒートマップについて、種目ごとにヒートの出場者が異なるか（シャッフルあり）を判定する。
+        /// 種目が1つ以下、または全種目でヒート数・各ヒートの選手セットが一致する場合は false。
+        /// </summary>
+        private static bool IsShuffled(
+            List<(int DncNo, string DncCd)> danceList,
+            Dictionary<int, Dictionary<int, List<string>>> heatMap)
         {
-            if (_danceList.Count <= 1) return false;
+            if (danceList.Count <= 1) return false;
 
-            var firstDnc = _danceList[0];
-            if (!_heatMap.TryGetValue(firstDnc.DncNo, out var firstHeatDic)) return false;
+            var firstDnc = danceList[0];
+            if (!heatMap.TryGetValue(firstDnc.DncNo, out var firstHeatDic)) return false;
 
-            foreach (var (dncNo, _) in _danceList)
+            foreach (var (dncNo, _) in danceList)
             {
                 if (dncNo == firstDnc.DncNo) continue;
-                if (!_heatMap.TryGetValue(dncNo, out var heatDic)) return true;
+                if (!heatMap.TryGetValue(dncNo, out var heatDic)) return true;
                 if (heatDic.Count != firstHeatDic.Count) return true;
 
                 foreach (var hNo in firstHeatDic.Keys)
@@ -832,7 +821,10 @@ namespace DSDsp.画面
 
         /// <summary>
         /// 次の競技のヒート行（_次、最大 MaxNextRows 行）を表示する。
-        /// 次の競技の先頭種目のヒートを順に並べる。ヒートデータが取得できない場合は非表示。
+        /// ・全種目でヒートの出場者が同じ場合: 先頭種目のヒートを「1H」形式で並べる。
+        /// ・種目によってヒートの出場者が異なる場合: Now と同様に「種目記号 ヒート番号」（例: W 1H）を
+        ///   種目順・ヒート順に並べる。
+        /// ヒートデータが取得できない場合は非表示。
         /// </summary>
         private void ShowNextHeatRows(System.Windows.FrameworkElement p, string kbnNo, string rndNo, string dGrpNo)
         {
@@ -842,16 +834,41 @@ namespace DSDsp.画面
             var dances = DSDspDataHelper.Get全種目リスト(DA_Master, kbnNo, rndNo, dGrpNo);
             var map    = DSDspDataHelper.Get全種目全ヒート背番号マップ(DS_Status, kbnNo, rndNo, dGrpNo);
             if (dances.Count == 0) return;
-            if (!map.TryGetValue(dances[0].DncNo, out var heatDic)) return;
+
+            // 表示する行（ラベル, 背番号リスト）を組み立てる
+            var rows = new List<(string Label, List<string> Players)>();
+            if (IsShuffled(dances, map))
+            {
+                // 種目ごとにヒート出場者が異なる → 種目記号付きで種目順・ヒート順
+                foreach (var (dncNo, dncCd) in dances)
+                {
+                    if (!map.TryGetValue(dncNo, out var dncHeats)) continue;
+                    foreach (var hNo in dncHeats.Keys.OrderBy(n => n))
+                    {
+                        rows.Add(($"{dncCd} {hNo}H", dncHeats[hNo]));
+                        if (rows.Count >= MaxNextRows) break;
+                    }
+                    if (rows.Count >= MaxNextRows) break;
+                }
+            }
+            else
+            {
+                // 全種目で同じ出場者 → 先頭種目のヒートのみ（種目記号なし）
+                if (!map.TryGetValue(dances[0].DncNo, out var heatDic)) return;
+                foreach (var hNo in heatDic.Keys.OrderBy(n => n))
+                {
+                    rows.Add(($"{hNo}H", heatDic[hNo]));
+                    if (rows.Count >= MaxNextRows) break;
+                }
+            }
 
             int row = 0;
-            foreach (var hNo in heatDic.Keys.OrderBy(n => n))
+            foreach (var (label, players) in rows)
             {
-                if (row >= MaxNextRows) break;
                 row++;
-                SetLabelContent(p, $"LB_ヒート{row}_次", $"{hNo}H");
+                SetLabelContent(p, $"LB_ヒート{row}_次", label);
                 SetLabelColor(p, $"LB_ヒート{row}_次", DefaultBrush);
-                SetLabelContent(p, $"LB_背番号{row}_次", FormatPlayers(heatDic[hNo]));
+                SetLabelContent(p, $"LB_背番号{row}_次", FormatPlayers(players));
                 SetLabelColor(p, $"LB_背番号{row}_次", DefaultBrush);
                 foreach (var name in new[] { $"IM_ヒート{row}_次", $"LB_ヒート{row}_次", $"IM_明細{row}_次", $"LB_背番号{row}_次" })
                 {

@@ -40,7 +40,7 @@
                    Grid.ColumnSpan="2"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
-                   Margin="0,-14,0,0"/>
+                   Margin="0,-2,0,0"/>
 
     </Grid>
 </local:DSDspScreenBase>

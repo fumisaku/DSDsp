@@ -271,6 +271,8 @@
                 <Grid Margin="15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="6"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="4"/>
@@ -281,8 +283,25 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- 行0: 画面サイズ / 表示モード 選択 -->
+                    <!-- 行0: シナリオ選択 -->
                     <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="シナリオ:" VerticalAlignment="Center"
+                                   FontWeight="Bold" Margin="0,0,0,0"/>
+                        <ComboBox x:Name="CmbProgressScenario"
+                                  Grid.Column="2"
+                                  Height="26"
+                                  FontSize="12"
+                                  SelectionChanged="CmbProgressScenario_SelectionChanged"
+                                  ToolTip="進行シナリオを選択するとデフォルトの画面サイズ・モードが自動設定されます"/>
+                    </Grid>
+
+                    <!-- 行2: 画面サイズ / 表示モード 選択 -->
+                    <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="30"/>
@@ -342,8 +361,8 @@
                                       ToolTip="ONにすると、DS_Status更新時に自動で進行画面を切り替えます"/>
                     </Grid>
 
-                    <!-- 行2: 現在選択中の画面ID 表示 -->
-                    <Border Grid.Row="2" Background="#F0F4F8" BorderBrush="#DDDDDD" BorderThickness="1"
+                    <!-- 行4: 現在選択中の画面ID 表示 -->
+                    <Border Grid.Row="4" Background="#F0F4F8" BorderBrush="#DDDDDD" BorderThickness="1"
                             Padding="8,4" CornerRadius="3">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -365,8 +384,8 @@
                         </Grid>
                     </Border>
 
-                    <!-- 行4: 種目・ヒート選択（DSP_PRG_004 ヒートモード時のみ有効） -->
-                    <Border Grid.Row="4" Background="#FFF8E1" BorderBrush="#FFD54F" BorderThickness="1"
+                    <!-- 行6: 種目・ヒート選択（DSP_PRG_004 ヒートモード時のみ有効） -->
+                    <Border Grid.Row="6" Background="#FFF8E1" BorderBrush="#FFD54F" BorderThickness="1"
                             Padding="8,4" CornerRadius="3">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -396,8 +415,8 @@
                         </Grid>
                     </Border>
 
-                    <!-- 行6: 進行一覧 -->
-                    <Grid Grid.Row="6">
+                    <!-- 行8: 進行一覧 -->
+                    <Grid Grid.Row="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="5"/>
@@ -422,8 +441,8 @@
                         </ListBox>
                     </Grid>
 
-                    <!-- 行8: 割り込みボタン -->
-                    <StackPanel Grid.Row="8" Orientation="Horizontal">
+                    <!-- 行10: 割り込みボタン -->
+                    <StackPanel Grid.Row="10" Orientation="Horizontal">
                         <TextBlock Text="割り込み:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,8,0"/>
                         <Button x:Name="BtnIntervalInterrupt"
                                 Content="インターバル"

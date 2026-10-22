@@ -172,8 +172,11 @@ namespace DSDsp
             _displayWindow?.SetMirrorSource(_offScreenWindow.LayeredContentGrid);
             _fullScreenWindow?.SetMirrorSource(_offScreenWindow.LayeredContentGrid);
 
-            // 現在のシナリオ背景を適用
-            ApplyScenarioBackground(_currentAjsScenario?.Background);
+            // 現在アクティブなシナリオの背景を適用する。
+            // 進行シナリオが選択されている場合はそちらを優先し、
+            // そうでなければ AJS シナリオの背景を適用する。
+            var initialBg = _currentProgressScenario?.Background ?? _currentAjsScenario?.Background;
+            ApplyScenarioBackground(initialBg);
 
             _log?.LogAdd("オフスクリーンウィンドウを作成（画面外 Visible）", _log.INFO);
         }
@@ -239,6 +242,14 @@ namespace DSDsp
         private void LoadScenarios()
         {
             if (_scenarioManager == null) return;
+
+            // 進行シナリオ
+            var progressFiles = _scenarioManager.GetScenarioFiles(ScenarioType.Progress);
+            // 先頭に「（シナリオなし）」を追加して未選択状態を表現できるようにする
+            var progressItems = new System.Collections.Generic.List<string> { "（シナリオなし）" };
+            progressItems.AddRange(progressFiles);
+            CmbProgressScenario.ItemsSource = progressItems;
+            CmbProgressScenario.SelectedIndex = 0;   // デフォルトは「シナリオなし」
 
             // AJSシナリオ
             var ajsFiles = _scenarioManager.GetScenarioFiles(ScenarioType.AJS);
@@ -734,12 +745,92 @@ namespace DSDsp
 
         // ---- UIイベント ----
 
+        /// <summary>
+        /// 進行シナリオ選択変更。シナリオが選択されたらデフォルトの大/小・モードをラジオボタンに反映する。
+        /// ユーザーはその後いつでも手動で切り替え可能。
+        /// </summary>
+        private void CmbProgressScenario_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_scenarioManager == null) return;
+
+            var selected = CmbProgressScenario?.SelectedItem?.ToString();
+            // 「（シナリオなし）」か未選択の場合はシナリオをクリアするだけで UI を変更しない
+            if (string.IsNullOrEmpty(selected) || selected == "（シナリオなし）")
+            {
+                _currentProgressScenario = null;
+                return;
+            }
+
+            var scenario = _scenarioManager.LoadProgressScenario(selected);
+            if (scenario == null)
+            {
+                MessageBox.Show($"進行シナリオの読み込みに失敗しました。\nログを確認してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _currentProgressScenario = scenario;
+
+            // シナリオのデフォルト値をラジオボタンに反映
+            // ※ラジオボタンの Checked イベントが発火するため _progressSize/_progressMode は自動更新される
+            var scenarioSize = scenario.GetScreenSize();
+            if (scenarioSize == Scenario.ProgressScenarioScreenSize.Small)
+            {
+                if (RbSmall != null) RbSmall.IsChecked = true;
+            }
+            else
+            {
+                if (RbLarge != null) RbLarge.IsChecked = true;
+            }
+
+            ApplyProgressMode(scenario.GetMode());
+
+            // シナリオの背景設定を全ウィンドウに適用
+            ApplyScenarioBackground(scenario.Background);
+
+            _log?.LogAdd($"進行シナリオ選択: {scenario.ScenarioName}  サイズ={scenario.DefaultScreenSize}  モード={scenario.DefaultMode}  背景={scenario.Background?.Type ?? "null"}", _log.INFO);
+        }
+
         private void LstProgressItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             _currentProgressIndex = LstProgressItems.SelectedIndex;
             _log?.LogAdd($"進行項目選択: {_currentProgressIndex}", _log.DEBUG);
+
+            // シナリオに FinalMode が設定されている場合、ラウンド名に応じてモードを自動切り替えする
+            if (_currentProgressScenario?.FinalMode != null)
+            {
+                var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+                if (items != null && _currentProgressIndex >= 0 && _currentProgressIndex < items.Count)
+                {
+                    var roundName = items[_currentProgressIndex].RndName;
+                    var autoMode = _currentProgressScenario.GetModeForRound(roundName);
+                    ApplyProgressMode(autoMode);
+                }
+            }
+
             UpdateProgressScreenIdLabel();
             UpdateProgressDanceCombo();
+        }
+
+        /// <summary>
+        /// ProgressScenarioMode をラジオボタンに反映し、内部フィールドも更新する。
+        /// </summary>
+        private void ApplyProgressMode(Scenario.ProgressScenarioMode mode)
+        {
+            switch (mode)
+            {
+                case Scenario.ProgressScenarioMode.Heat:
+                    if (RbModeHeat?.IsChecked != true && RbModeHeat != null)
+                        RbModeHeat.IsChecked = true;
+                    break;
+                case Scenario.ProgressScenarioMode.Final:
+                    if (RbModeFinal?.IsChecked != true && RbModeFinal != null)
+                        RbModeFinal.IsChecked = true;
+                    break;
+                default:
+                    if (RbModeProgress?.IsChecked != true && RbModeProgress != null)
+                        RbModeProgress.IsChecked = true;
+                    break;
+            }
         }
 
         private void RbProgressSize_Changed(object sender, RoutedEventArgs e)
@@ -1072,6 +1163,14 @@ namespace DSDsp
         /// <summary>大/小 × モードから使用する画面ID を返す。</summary>
         private string GetProgressScreenId()
         {
+            // シナリオで画面IDが明示指定されている場合（例: 進行_選手係_全画面 → DSP_PRG_011_B）はそれを使う
+            if (!string.IsNullOrEmpty(_currentProgressScenario?.ScreenId))
+                return _currentProgressScenario!.ScreenId;
+
+            // ラウンド別フロー定義(RoundRules/DefaultRule)を持つシナリオは、大/小・モードに関わらずフロー進行画面を使う
+            if (_currentProgressScenario?.HasFlow == true)
+                return "DSP_PRG_010_S";
+
             bool isSmall = (_progressSize == ProgressSize.Small);
             return _progressMode switch
             {
@@ -1963,7 +2062,7 @@ namespace DSDsp
             // ヒートモード時のコンボ選択値を取得（新規画面生成の初期値に使用）
             int selDncNo  = 0;
             int selHeatNo = 0;
-            if ((screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
+            if ((screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_011_B")
                 && CmbProgressDance?.SelectedItem is ProgressDanceItem pd
                 && CmbProgressHeat?.SelectedItem  is ProgressHeatItem  ph)
             {
@@ -1991,6 +2090,11 @@ namespace DSDsp
                     "DSP_PRG_003_S" => new 画面.DSP_PRG_003_S_進行表示ヒート表_小(),
                     "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大(),
                     "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小(),
+                    "DSP_PRG_010_S" => new 画面.DSP_PRG_010_S_フロー進行表示_小
+                    {
+                        Rule = _currentProgressScenario?.GetRuleForRound(item.RndNo),
+                    },
+                    "DSP_PRG_011_B" => new 画面.DSP_PRG_011_B_選手係表示_大(),
                     _             => new 画面.DSP_PRG_001_B_進行表示1面_大(),
                 };
 
@@ -2013,7 +2117,7 @@ namespace DSDsp
                 // DSP_PRG_004/005 はヒート番号が内部変更されたとき、コンボを即時同期する。
                 // 自動同期中は _suppressManualComboDepth++ にして
                 // SelectionChanged イベントによる手動変更フラグの誤セットを防ぐ。
-                if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S")
+                if (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_011_B")
                 {
                     newScreen.OnHeatNoChanged = heatNo =>
                     {
@@ -2074,6 +2178,25 @@ namespace DSDsp
                 _manualComboChanged = false;
                 _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
                 screen005.JumpToHeat(selDncNo, selHeatNo);
+            }
+            else if (screenId == "DSP_PRG_011_B")
+            {
+                // 選手係表示: Advance() ではなく NotifyHeatChanged() で「現在ヒートを先頭行」に表示する。
+                // 新規生成直後（STEP1 前）でもタイトル・ヒート行まで一括表示される。
+                // 既存画面の再生ボタン押下時は DS_Status を最新化して現在ヒートで再表示する。
+                // コンボで種目・ヒートが手動指定されている場合は、その位置を先頭行にして表示する
+                // （NotifyHeatChanged → PrepareHeatData が 種目番号/ヒート番号 を現在位置として使う）。
+                if (_manualComboChanged && selDncNo > 0 && selHeatNo > 0)
+                {
+                    _currentProgressScreen!.種目番号  = selDncNo;
+                    _currentProgressScreen!.ヒート番号 = selHeatNo;
+                    _log?.LogAdd($"進行 ジャンプ再生: 種目={selDncNo} ヒート={selHeatNo}", _log.INFO);
+                }
+                _manualComboChanged = false;
+                if (dm?.DS_Status != null)
+                    _currentProgressScreen!.DS_Status = dm.DS_Status;
+                _currentProgressScreen!.NotifyHeatChanged();
+                _log?.LogAdd($"進行 NotifyHeatChanged: {screenId}", _log.INFO);
             }
             else
             {
@@ -2994,6 +3117,11 @@ namespace DSDsp
                             "DSP_PRG_003_S" => new 画面.DSP_PRG_003_S_進行表示ヒート表_小(),
                             "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大(),
                             "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小(),
+                            "DSP_PRG_010_S" => new 画面.DSP_PRG_010_S_フロー進行表示_小
+                            {
+                                Rule = _currentProgressScenario?.GetRuleForRound(item.RndNo),
+                            },
+                            "DSP_PRG_011_B" => new 画面.DSP_PRG_011_B_選手係表示_大(),
                             _             => new 画面.DSP_PRG_001_B_進行表示1面_大(),
                         };
 
@@ -3027,7 +3155,7 @@ namespace DSDsp
                     // 再生ボタン未押しでフェーズが途中のままでも確実にヒートを表示できる。
                     // その他の画面は従来通り Advance() を呼ぶ。
                     var screenIdForHeat = GetProgressScreenId();
-                    if (screenIdForHeat is "DSP_PRG_003_B" or "DSP_PRG_003_S")
+                    if (screenIdForHeat is "DSP_PRG_003_B" or "DSP_PRG_003_S" or "DSP_PRG_010_S" or "DSP_PRG_011_B")
                     {
                         _currentProgressScreen!.NotifyHeatChanged();
                         _log?.LogAdd(
@@ -3085,7 +3213,12 @@ namespace DSDsp
                     {
                         // 全進行が終了 → 現在の画面を Advance() してフェードアウト・完了
                         _log?.LogAdd("HeatEnd: 全進行が終了しました", _log.INFO);
-                        if (_currentProgressScreen != null)
+                        if (GetProgressScreenId() == "DSP_PRG_011_B")
+                        {
+                            // 選手係表示は最後まで表示し続ける（Advance() すると STEP1 が再実行され表示が消える）
+                            _log?.LogAdd("HeatEnd: DSP_PRG_011_B は最終進行後も表示を維持します", _log.INFO);
+                        }
+                        else if (_currentProgressScreen != null)
                         {
                             _currentProgressScreen.Advance();
                             _log?.LogAdd("HeatEnd: 最終進行画面を Advance() で完了させます", _log.INFO);

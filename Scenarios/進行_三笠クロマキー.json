@@ -1,0 +1,35 @@
+{
+  "ScenarioName": "進行_三笠クロマキー",
+  "ScenarioType": "Progress",
+  "Description": "三笠クロマキーシナリオ。画面小。背景はクロマキー。ラウンド番号ごとの進行フローを DefaultRule / RoundRules で定義する。RoundRules の RoundNos に一致しないラウンドは DefaultRule(予選の動き)で処理する。",
+  "DefaultScreenSize": "Small",
+  "DefaultMode": "Heat",
+  "Background": {
+    "Type": "ChromaKey"
+  },
+  "DefaultRule": {
+    "Flow": [
+      { "Type": "TitleIntro", "Seconds": 5 },
+      { "Type": "HeatIntro", "Unit": "Heat", "ShowNext": true, "RowMaxChars": 30 }
+    ]
+  },
+  "RoundRules": [
+    {
+      "RoundNos": [ "200" ],
+      "Flow": [
+        { "Type": "TitleIntro", "Seconds": 5 },
+        { "Type": "PlayerIntro", "PageSize": 10, "PageSeconds": 5, "SingleHeatFirstDanceOnly": true },
+        { "Type": "HeatIntro", "Unit": "Heat", "ShowNext": true, "RowMaxChars": 30 }
+      ]
+    },
+    {
+      "RoundNos": [ "300", "400" ],
+      "Flow": [
+        { "Type": "TitleIntro", "Seconds": 5 },
+        { "Type": "PlayerIntro", "PageSize": 10, "PageSeconds": 5, "SingleHeatFirstDanceOnly": true },
+        { "Type": "HeatIntro", "Unit": "Dance", "ShowNext": false, "RowMaxChars": 30 }
+      ]
+    }
+  ],
+  "Items": []
+}

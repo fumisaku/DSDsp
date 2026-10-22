@@ -2,6 +2,8 @@
   "ScenarioName": "進行_サンプル",
   "ScenarioType": "Progress",
   "Description": "進行用サンプルシナリオ",
+  "DefaultScreenSize": "Large",
+  "DefaultMode": "ProgressOnly",
   "Items": [
     {
       "ProgressNo": 1,

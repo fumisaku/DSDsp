@@ -1,0 +1,12 @@
+{
+  "ScenarioName": "進行_グランプリ全画面",
+  "ScenarioType": "Progress",
+  "Description": "グランプリ全画面シナリオ。画面大・ヒート表示モード（決勝は自動的に決勝モードに切り替え）。背景は黒（AJS全画面グランプリと同設定）。",
+  "DefaultScreenSize": "Large",
+  "DefaultMode": "Heat",
+  "FinalMode": "Final",
+  "Background": {
+    "Type": "None"
+  },
+  "Items": []
+}
