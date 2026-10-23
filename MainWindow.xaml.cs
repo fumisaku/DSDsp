@@ -2088,8 +2088,8 @@ namespace DSDsp
                     "DSP_PRG_001_S" => new 画面.DSP_PRG_001_S_進行表示1面_小(),
                     "DSP_PRG_003_B" => new 画面.DSP_PRG_003_B_進行表示ヒート表_大(),
                     "DSP_PRG_003_S" => new 画面.DSP_PRG_003_S_進行表示ヒート表_小(),
-                    "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大(),
-                    "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小(),
+                    "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大() { AutoShowOnLoad = true },
+                    "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小() { AutoShowOnLoad = true },
                     "DSP_PRG_010_S" => new 画面.DSP_PRG_010_S_フロー進行表示_小
                     {
                         Rule = _currentProgressScenario?.GetRuleForRound(item.RndNo),
@@ -2191,6 +2191,14 @@ namespace DSDsp
                 screen010.JumpToHeat(selDncNo, selHeatNo);
             }
 
+            else if (screenId == "DSP_PRG_004_B" || screenId == "DSP_PRG_004_S")
+            {
+                // 決勝進出者: 新規生成時は AutoShowOnLoad=true を設定済みのため
+                // Loaded イベント内で自動的に Step1→Step2→Step3(0) が実行される。
+                // isSameScreen=true（再生ボタン再押し）の場合は既に表示中なので何もしない。
+                _manualComboChanged = false;
+                _log?.LogAdd($"進行 DSP_PRG_004 AutoShowOnLoad 待機: {screenId}", _log.INFO);
+            }
             else if (screenId == "DSP_PRG_011_B")
             {
                 // 選手係表示: Advance() ではなく NotifyHeatChanged() で「現在ヒートを先頭行」に表示する。
@@ -3127,8 +3135,8 @@ namespace DSDsp
                             "DSP_PRG_001_S" => new 画面.DSP_PRG_001_S_進行表示1面_小(),
                             "DSP_PRG_003_B" => new 画面.DSP_PRG_003_B_進行表示ヒート表_大(),
                             "DSP_PRG_003_S" => new 画面.DSP_PRG_003_S_進行表示ヒート表_小(),
-                            "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大(),
-                            "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小(),
+                            "DSP_PRG_004_B" => new 画面.DSP_PRG_004_B_決勝進出者_大() { AutoShowOnLoad = true },
+                            "DSP_PRG_004_S" => new 画面.DSP_PRG_004_S_決勝進出者_小() { AutoShowOnLoad = true },
                             "DSP_PRG_010_S" => new 画面.DSP_PRG_010_S_フロー進行表示_小
                             {
                                 Rule = _currentProgressScenario?.GetRuleForRound(item.RndNo),
@@ -3207,10 +3215,12 @@ namespace DSDsp
                         ExecuteProgressStep();
                         _log?.LogAdd($"HeatEnd: 次の進行へ自動遷移 Index={nextIdx}", _log.INFO);
 
-                        // DSP_PRG_004/005 の場合、ExecuteProgressStep() が Advance() を1回呼んで
+                        // DSP_PRG_003_B/S の場合、ExecuteProgressStep() が Advance() を1回呼んで
                         // STEP1（ヘッダー表示）のみ完了した状態になる。
                         // そのままではSTEP2（タイトル・区分名・ヒート表示）が実行されず黒画面になるため、
                         // NotifyHeatChanged() でフェーズを補完してSTEP2→ヒート表示まで自動実行する。
+                        // DSP_PRG_004_B/S は ExecuteProgressStep() 内で Dispatcher.BeginInvoke による
+                        // 遅延 NotifyHeatChanged() が登録済みのため、ここでの呼び出しは不要。
                         var nextScreenId = GetProgressScreenId();
                         if ((nextScreenId is "DSP_PRG_003_B" or "DSP_PRG_003_S")
                             && _currentProgressScreen != null)

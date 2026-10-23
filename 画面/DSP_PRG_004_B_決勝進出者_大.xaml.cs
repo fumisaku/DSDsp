@@ -47,6 +47,12 @@ namespace DSDsp.画面
         /// </summary>
         public bool カップル所属表示 { get; set; } = true;
 
+        /// <summary>
+        /// true のとき、Loaded イベント後に Step1→Step2→Step3(0) を自動実行して選手一覧を表示する。
+        /// MainWindow の新規生成時にセットする。
+        /// </summary>
+        public bool AutoShowOnLoad { get; set; } = false;
+
         // TotalSteps は RaiseScreenCompleted で管理するため大きな値を返す
         protected override int TotalSteps => 100;
         #endregion
@@ -64,6 +70,14 @@ namespace DSDsp.画面
         {
             EnsurePartsMainInitialized();
             HideAllParts();
+            if (AutoShowOnLoad)
+            {
+                AutoShowOnLoad = false;
+                Step1();
+                Step2();
+                Step3(0);
+                _currentStep = 3;
+            }
         }
         #endregion
 
@@ -354,6 +368,32 @@ namespace DSDsp.画面
         #endregion
 
         #region 公開メソッド
+
+        /// <summary>
+        /// フェーズを補完して選手一覧を表示する。
+        /// MainWindow の ExecuteProgressStep() や HeatEnd 2b 処理から呼ぶ。
+        ///
+        /// _currentStep が 0（STEP1未実行）の場合は Step1→Step2→Step3(0)、
+        /// _currentStep が 1（STEP1済・STEP2未実行）の場合は Step2→Step3(0) を実行する。
+        /// _currentStep が 2 以上（既に選手明細表示中）は何もしない（表示継続）。
+        /// </summary>
+        public override void NotifyHeatChanged()
+        {
+            if (_currentStep == 0)
+            {
+                Step1();
+                Step2();
+                Step3(0);
+                _currentStep = 3;
+            }
+            else if (_currentStep == 1)
+            {
+                Step2();
+                Step3(0);
+                _currentStep = 3;
+            }
+            // _currentStep >= 2: 既に選手明細表示中のため何もしない
+        }
 
         /// <summary>
         /// 画面を閉じる要求をセットする。
