@@ -3405,17 +3405,34 @@ namespace DSDsp
                 "DSP_SOL_002_B", "DSP_SOL_002_S", "DSP_SOL_003_B", "DSP_SOL_003_S",
             };
 
-            // 次の画面アイテムを取得
             var items = _currentAjsProgressItems;
-            int nextIndex = _currentAjsIndex + 1;
-            if (items == null || nextIndex < 0 || nextIndex >= items.Count)
+            if (items == null)
             {
                 TxtResultReady.Visibility = System.Windows.Visibility.Collapsed;
                 return;
             }
 
-            var nextItem = items[nextIndex];
-            if (!resultScreenIds.Contains(nextItem.ScreenId))
+            // 「次に再生ボタンを押したときに表示される結果画面」を特定する。
+            // HoldsAfterFadeOut=true の画面が完了すると _currentAjsIndex が次画面（結果画面）を
+            // 指すようになるため、_currentAjsIndex 自体が結果画面の場合も判定対象に含める。
+            AjsProgressItem? nextItem = null;
+            if (_currentAjsIndex >= 0 && _currentAjsIndex < items.Count &&
+                resultScreenIds.Contains(items[_currentAjsIndex].ScreenId))
+            {
+                // 現在のインデックスが結果画面（HoldsAfterFadeOut 停止後などに相当）
+                nextItem = items[_currentAjsIndex];
+            }
+            else
+            {
+                int nextIndex = _currentAjsIndex + 1;
+                if (nextIndex >= 0 && nextIndex < items.Count &&
+                    resultScreenIds.Contains(items[nextIndex].ScreenId))
+                {
+                    nextItem = items[nextIndex];
+                }
+            }
+
+            if (nextItem == null)
             {
                 TxtResultReady.Visibility = System.Windows.Visibility.Collapsed;
                 return;
