@@ -187,6 +187,26 @@ namespace DSDsp.画面
             }
         }
 
+        /// <summary>
+        /// 演技済み（現在のヒート番号以前）の選手結果のみを返す。
+        /// 未演技の選手（ヒート番号が現在より後、または未割当）は途中経過に表示しない。
+        /// </summary>
+        private List<JsonNode> 演技済み選手結果を取得(JsonNode? 種目結果)
+        {
+            var 選手結果リスト = 種目結果?["選手結果"]?.AsArray();
+            if (選手結果リスト == null) return new List<JsonNode>();
+
+            return 選手結果リスト
+                .Where(p =>
+                {
+                    if (p == null) return false;
+                    int 選手ヒート = p["ヒート番号"]?.GetValue<int>() ?? 0;
+                    return 選手ヒート >= 1 && 選手ヒート <= ヒート番号;
+                })
+                .Select(p => p!)
+                .ToList();
+        }
+
         private void 非表示()
         {
          
@@ -283,7 +303,7 @@ namespace DSDsp.画面
             // DV_Result から選手結果件数を取得し、ページ数を確定する（TotalSteps を固定するため）
             var 種目結果リスト = DV_Result?["種目結果"]?.AsArray();
             var 種目結果 = 種目結果リスト?.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
-            int 件数 = 種目結果?["選手結果"]?.AsArray()?.Count ?? 0;
+            int 件数 = 演技済み選手結果を取得(種目結果).Count;
             _ページ数 = Math.Max(1, (int)Math.Ceiling(件数 / 8.0));
 
             if (DA_Master == null) return;
@@ -380,13 +400,13 @@ namespace DSDsp.画面
             var 種目結果 = 種目結果リスト.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
             if (種目結果 == null) return;
 
-            var 選手結果リスト = 種目結果["選手結果"]?.AsArray();
-            if (選手結果リスト == null) return;
+            // 演技済み（現在ヒート以前）の選手のみ対象
+            var 選手結果リスト = 演技済み選手結果を取得(種目結果);
+
 
             // 順位昇順で並べ、開始インデックスから最大8件を取得
             var 全順位リスト = 選手結果リスト
-                .Where(p => p != null)
-                .OrderBy(p => p!["種目順位番号"]?.GetValue<int>() ?? int.MaxValue)
+                .OrderBy(p => (p!["種目順位番号"]?.GetValue<int>() ?? 0) == 0 ? int.MaxValue : p!["種目順位番号"]!.GetValue<int>()) // 順位0(棄権)は末尾
                 .ToList();
             var 表示対象 = 全順位リスト
                 .Skip(開始インデックス)
@@ -409,10 +429,11 @@ namespace DSDsp.画面
                 string 順位表記 = p?["種目順位表記"]?.ToString() ?? "";
                 double 得点 = p?["種目得点"]?.GetValue<double>() ?? 0;
                 bool 失格 = p?["失格FLAG"]?.ToString() == "1";
+                bool 棄権 = p?["棄権FLAG"]?.ToString() == "1";
 
                 // 一般減点合計
                 double 減点合計 = 0;
-                if (!失格)
+                if (!失格 && !棄権)
                 {
                     var 一般減点Array = p?["一般減点"]?.AsArray();
                     if (一般減点Array != null)
@@ -435,12 +456,12 @@ namespace DSDsp.画面
                     : new SolidColorBrush(Colors.DarkBlue);
 
                 // 順位ラベル（LB_結果1_xxx が 1位）
-                _順位LB[i].Content = 失格 ? "失格" : 順位表記;
+                _順位LB[i].Content = 失格 ? "失格" : (棄権 ? "棄権" : 順位表記);
                 _背番号LB[i].Content = 背番号;
                 _選手名LB[i].Content = 選手名表示;
                 _所属LB[i].Content = 所属;
-                _減点LB[i].Content = 失格 ? "" : (減点合計 == 0 ? "" : 減点合計.ToString("F1"));
-                _得点LB[i].Content = 失格 ? "失格" : 得点.ToString("F3");
+                _減点LB[i].Content = (失格 || 棄権) ? "" : (減点合計 == 0 ? "" : 減点合計.ToString("F1"));
+                _得点LB[i].Content = 失格 ? "失格" : (棄権 ? "棄権" : 得点.ToString("F3"));
 
                 // 減点が0より大きい場合は赤字、それ以外は通常色
                 var 減点前景色 = (!失格 && 減点合計 != 0)
