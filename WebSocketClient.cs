@@ -147,13 +147,16 @@ namespace DSDsp
         private async Task ReceiveLoop()
         {
             var buffer = new byte[8192];
-            var messageBuilder = new System.Text.StringBuilder();
+            // バイト列を累積してから一括 UTF-8 デコードする。
+            // チャンク（8192バイト）ごとにデコードすると、境界で日本語（3バイト）が分断されて文字化けし、
+            // JSON のキー名が壊れて値が取得できなくなる（bug #274）。
+            var byteAccumulator = new System.IO.MemoryStream();
 
             try
             {
                 while (_client != null && IsConnected && !_cancellationTokenSource!.Token.IsCancellationRequested)
                 {
-                    messageBuilder.Clear();
+                    byteAccumulator.SetLength(0);
                     WebSocketReceiveResult result;
                     
                     // メッセージが完全に受信されるまでループ
@@ -171,16 +174,15 @@ namespace DSDsp
 
                         if (result.MessageType == WebSocketMessageType.Text)
                         {
-                            string chunk = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                            messageBuilder.Append(chunk);
+                            byteAccumulator.Write(buffer, 0, result.Count);
                         }
                     }
                     while (!result.EndOfMessage);
 
                     // 完全なメッセージを取得
-                    if (messageBuilder.Length > 0)
+                    if (byteAccumulator.Length > 0)
                     {
-                        string message = messageBuilder.ToString();
+                        string message = Encoding.UTF8.GetString(byteAccumulator.GetBuffer(), 0, (int)byteAccumulator.Length);
                         _log.LogAdd($"電文受信: {message.Substring(0, Math.Min(200, message.Length))}...", _log.INFO);
 
                         // メッセージ受信イベント発火（UIスレッドで実行）

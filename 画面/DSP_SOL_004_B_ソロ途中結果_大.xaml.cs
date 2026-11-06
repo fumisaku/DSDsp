@@ -391,14 +391,26 @@ namespace DSDsp.画面
         public void Step3(JsonNode? dvResult, int 開始インデックス = 0)
         {
             EnsurePartsMainInitialized();
-            if (_partsMain == null || dvResult == null) return;
+            if (_partsMain == null || dvResult == null)
+            {
+                Log?.LogAdd($"[SOL_004_B診断] Step3中断: partsMain={(_partsMain == null ? "null" : "ok")} dvResult={(dvResult == null ? "null" : "ok")}", Log.WARNING);
+                return;
+            }
 
             // ---- 種目結果を取得 ----
             var 種目結果リスト = dvResult["種目結果"]?.AsArray();
-            if (種目結果リスト == null) return;
+            if (種目結果リスト == null)
+            {
+                Log?.LogAdd("[SOL_004_B診断] Step3中断: 種目結果リストなし", Log.WARNING);
+                return;
+            }
 
             var 種目結果 = 種目結果リスト.FirstOrDefault(d => d?["種目順"]?.GetValue<int>() == 種目番号);
-            if (種目結果 == null) return;
+            if (種目結果 == null)
+            {
+                Log?.LogAdd($"[SOL_004_B診断] Step3中断: 種目{種目番号}の結果なし", Log.WARNING);
+                return;
+            }
 
             // 演技済み（現在ヒート以前）の選手のみ対象
             var 選手結果リスト = 演技済み選手結果を取得(種目結果);
@@ -413,6 +425,7 @@ namespace DSDsp.画面
                 .Take(8)
                 .ToList();
             int 表示件数 = 表示対象.Count;
+            Log?.LogAdd($"[SOL_004_B診断] Step3開始: 種目{種目番号} ヒート{ヒート番号} 開始Idx={開始インデックス} 演技済み={選手結果リスト.Count} 表示件数={表示件数}", Log.INFO);
             if (表示件数 == 0) return;
 
             // ---- 指定ヒートの出場選手（背番号リスト）を取得 ----
@@ -457,6 +470,7 @@ namespace DSDsp.画面
 
                 // 順位ラベル（LB_結果1_xxx が 1位）
                 _順位LB[i].Content = 失格 ? "失格" : (棄権 ? "棄権" : 順位表記);
+                Log?.LogAdd($"[SOL_004_B診断] 行{i + 1}: 背番号={背番号} ヒート={p?["ヒート番号"]} 順位番号={p?["種目順位番号"]} 順位表記='{順位表記}' 得点={得点:F3} 失格={失格} 棄権={棄権} 当該ヒート={当該ヒート選手.Contains(背番号)} → 順位LB.Content='{_順位LB[i].Content}' (設定前 Opacity={_順位LB[i].Opacity} Visibility={_順位LB[i].Visibility})", Log.INFO);
                 _背番号LB[i].Content = 背番号;
                 _選手名LB[i].Content = 選手名表示;
                 _所属LB[i].Content = 所属;
@@ -525,6 +539,7 @@ namespace DSDsp.画面
                 var 結果Storyboard = new Storyboard();
                 for (int i = 0; i < 表示件数; i++)
                 {
+                    Log?.LogAdd($"[SOL_004_B診断] フェードイン直前 行{i + 1}: 順位LB Opacity={_順位LB[i].Opacity} Visibility={_順位LB[i].Visibility} Content='{_順位LB[i].Content}' / 得点LB Opacity={_得点LB[i].Opacity} Visibility={_得点LB[i].Visibility}", Log.INFO);
                     _partsMain?.フェードイン(true, _順位LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _背番号LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _選手名LB[i], 結果Storyboard, 0);
@@ -532,6 +547,13 @@ namespace DSDsp.画面
                    // _partsMain?.フェードイン(true, _減点LB[i], 結果Storyboard, 0);
                     _partsMain?.フェードイン(true, _得点LB[i], 結果Storyboard, 0);
                 }
+                結果Storyboard.Completed += (s2, e2) =>
+                {
+                    for (int i = 0; i < 表示件数; i++)
+                    {
+                        Log?.LogAdd($"[SOL_004_B診断] フェードイン完了 行{i + 1}: 順位LB Opacity={_順位LB[i].Opacity} Visibility={_順位LB[i].Visibility} Content='{_順位LB[i].Content}' / 得点LB Opacity={_得点LB[i].Opacity} Visibility={_得点LB[i].Visibility}", Log.INFO);
+                    }
+                };
                 結果Storyboard.Begin();
             };
 

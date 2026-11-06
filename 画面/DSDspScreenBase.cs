@@ -72,6 +72,8 @@ namespace DSDsp.画面
         public JsonNode? DA_Master  { get => _daMaster;  set => _daMaster  = value; }
         public JsonNode? DS_Status  { get => _dsStatus;  set => _dsStatus  = value; }
         public JsonNode? DV_Result  { get => _dvResult;  set => _dvResult  = value; }
+        /// <summary>診断ログ出力用（MainWindow が画面生成時に設定。未設定なら null）</summary>
+        public LOG_C?    Log        { get; set; }
         public string    区分番号   { get => _kbnNo;     set => _kbnNo     = value; }
         public string    ラウンド番号{ get => _rndNo;     set => _rndNo     = value; }
         public string    DGrpNo     { get => _dGrpNo;    set => _dGrpNo    = value; }

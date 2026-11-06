@@ -2292,6 +2292,7 @@ namespace DSDsp
                 var dvForScreen = GetDvResultFor(kbnNo, roundNo);
                 if (dvForScreen != null) screen.DV_Result = dvForScreen;
 
+                screen.Log               = _log;
                 screen.ScreenId          = item.ScreenId;
                 screen.区分番号          = kbnNo;
                 screen.ラウンド番号       = roundNo;
