@@ -354,19 +354,21 @@ namespace DSDsp.画面
 
             var (pcs1, 減点1, total1, rank1) = GetPlayerData(_背番号1);
             var (pcs2, 減点2, total2, rank2) = GetPlayerData(_背番号2);
+            bool 棄権1 = 選手結果リスト.FirstOrDefault(p => p?["背番号"]?.ToString() == _背番号1)?["棄権FLAG"]?.ToString() == "1";
+            bool 棄権2 = 選手結果リスト.FirstOrDefault(p => p?["背番号"]?.ToString() == _背番号2)?["棄権FLAG"]?.ToString() == "1";
 
             // ---- PCS得点・減点ラベルにセット ----
             PartsDUE001.LB_PCS1_1.Content = pcs1[0].ToString("F2");
             PartsDUE001.LB_PCS1_2.Content = pcs1[1].ToString("F2");
             PartsDUE001.LB_PCS1_3.Content = pcs1[2].ToString("F2");
             PartsDUE001.LB_PCS1_4.Content = pcs1[3].ToString("F2");
-            PartsDUE001.LB_Red_1.Content  = double.IsNaN(減点1) ? "失格" : 減点1.ToString("F1");
+            PartsDUE001.LB_Red_1.Content  = double.IsNaN(減点1) ? "失格" : (棄権1 ? "棄権" : 減点1.ToString("F1"));
 
             PartsDUE001.LB_PCS2_1.Content = pcs2[0].ToString("F2");
             PartsDUE001.LB_PCS2_2.Content = pcs2[1].ToString("F2");
             PartsDUE001.LB_PCS2_3.Content = pcs2[2].ToString("F2");
             PartsDUE001.LB_PCS2_4.Content = pcs2[3].ToString("F2");
-            PartsDUE001.LB_Red_2.Content  = double.IsNaN(減点2) ? "失格" : 減点2.ToString("F1");
+            PartsDUE001.LB_Red_2.Content  = double.IsNaN(減点2) ? "失格" : (棄権2 ? "棄権" : 減点2.ToString("F1"));
 
             // ---- PCS + 減点をフェードイン ----
             var pcsSb = new Storyboard();
@@ -391,8 +393,8 @@ namespace DSDsp.画面
                 {
                     timer.Stop();
 
-                    PartsDUE001.LB_Total_1.Content = total1.ToString("F3");
-                    PartsDUE001.LB_Total_2.Content = total2.ToString("F3");
+                    PartsDUE001.LB_Total_1.Content = 棄権1 ? "棄権" : total1.ToString("F3");
+                    PartsDUE001.LB_Total_2.Content = 棄権2 ? "棄権" : total2.ToString("F3");
 
                     var totalSb = new Storyboard();
                     foreach (var lb in new System.Windows.Controls.Label[]

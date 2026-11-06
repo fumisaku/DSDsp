@@ -175,6 +175,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0"
@@ -232,8 +233,22 @@
                             FontWeight="Bold"
                             Cursor="Hand"/>
                     
-                    <Button x:Name="BtnPlay"
+                    <Button x:Name="BtnBack"
                             Grid.Column="5"
+                            Content="◀ 戻る"
+                            Click="BtnBack_Click"
+                            Width="90"
+                            Height="30"
+                            Margin="0,0,10,0"
+                            Background="#5C6BC0"
+                            Foreground="White"
+                            BorderThickness="0"
+                            FontWeight="Bold"
+                            Cursor="Hand"
+                            ToolTip="前のステップ／前の画面に戻ります"/>
+
+                    <Button x:Name="BtnPlay"
+                            Grid.Column="6"
                             Content="▶ 再生"
                             Click="BtnPlay_Click"
                             Width="90"
@@ -246,7 +261,7 @@
                             Cursor="Hand"/>
                     
                     <Button x:Name="BtnClear"
-                            Grid.Column="6"
+                            Grid.Column="7"
                             Content="✕ クリア"
                             Click="BtnClear_Click"
                             Width="90"
@@ -616,10 +631,12 @@
                                      BorderBrush="#DDDDDD"
                                      FontSize="12"/>
 
-                            <!-- メイン 操作ボタン（結果状態 / 再生 / クリア） -->
+                            <!-- メイン 操作ボタン（結果状態 / 戻る / 再生 / クリア） -->
                             <Grid Grid.Row="4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="5"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="5"/>
@@ -631,8 +648,19 @@
                                            FontSize="12"
                                            Padding="6,0"
                                            Visibility="Collapsed"/>
-                                <Button x:Name="BtnMainPlay"
+                                <Button x:Name="BtnMainBack"
                                         Grid.Column="2"
+                                        Content="◀ メイン戻る"
+                                        Click="BtnBack_Click"
+                                        Height="30"
+                                        Background="#5C6BC0"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        FontWeight="Bold"
+                                        Cursor="Hand"
+                                        ToolTip="前のステップ／前の画面に戻ります"/>
+                                <Button x:Name="BtnMainPlay"
+                                        Grid.Column="4"
                                         Content="▶ メイン再生"
                                         Click="BtnPlay_Click"
                                         Height="30"
@@ -642,7 +670,7 @@
                                         FontWeight="Bold"
                                         Cursor="Hand"/>
                                 <Button x:Name="BtnMainClear"
-                                        Grid.Column="4"
+                                        Grid.Column="6"
                                         Content="✕ メインクリア"
                                         Click="BtnMainClear_Click"
                                         Height="30"
@@ -687,9 +715,22 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="5"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="BtnSubPlay"
+                                <Button x:Name="BtnSubBack"
                                         Grid.Column="0"
+                                        Content="◀ SUB戻る"
+                                        Click="BtnSubBack_Click"
+                                        Height="30"
+                                        Background="#5C6BC0"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        FontWeight="Bold"
+                                        Cursor="Hand"
+                                        ToolTip="前のSUBステップ／画面に戻ります"/>
+                                <Button x:Name="BtnSubPlay"
+                                        Grid.Column="2"
                                         Content="▶ SUB再生"
                                         Click="BtnSubPlay_Click"
                                         Height="30"
@@ -699,7 +740,7 @@
                                         FontWeight="Bold"
                                         Cursor="Hand"/>
                                 <Button x:Name="BtnSubClear"
-                                        Grid.Column="2"
+                                        Grid.Column="4"
                                         Content="✕ SUBクリア"
                                         Click="BtnSubClear_Click"
                                         Height="30"

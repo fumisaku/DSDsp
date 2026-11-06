@@ -385,7 +385,7 @@ namespace DSDsp.画面
             // 総合順位番号昇順で並べ、開始インデックスから最大8件を取得
             var 全順位リスト = 総合結果リスト
                 .Where(p => p != null)
-                .OrderBy(p => p!["総合順位番号"]?.GetValue<int>() ?? int.MaxValue)
+                .OrderBy(p => (p!["総合順位番号"]?.GetValue<int>() ?? 0) == 0 ? int.MaxValue : p!["総合順位番号"]!.GetValue<int>()) // 順位0(棄権)は末尾
                 .ToList();
             var 表示対象 = 全順位リスト
                 .Skip(開始インデックス)
@@ -554,7 +554,7 @@ namespace DSDsp.画面
             fadeOutStoryboard.Completed += (s, e) =>
             {
                 if (StepMode == "Auto" && !SuppressAutoTimer)
-                    StartAutoTimer(() => RaiseScreenCompleted());
+                    StartAutoTimer(() => RaiseScreenCompleted(), skippableByPlay: true);
                 else
                     RaiseScreenCompleted();
             };

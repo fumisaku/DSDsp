@@ -351,8 +351,9 @@ namespace DSDsp.画面
             // 一般減点を取得
             double 減点合計 = 0;
             bool 失格 = 選手結果["失格FLAG"]?.ToString() == "1";
+            bool 棄権 = 選手結果["棄権FLAG"]?.ToString() == "1";
             
-            if (!失格)
+            if (!失格 && !棄権)
             {
                 var 一般減点Array = 選手結果["一般減点"]?.AsArray();
                 if (一般減点Array != null)
@@ -375,9 +376,9 @@ namespace DSDsp.画面
             PartsSOL003.LB_PCS4.Content = pcs4.ToString("F2");
 
             // 減点表示
-            if (失格)
+            if (失格 || 棄権)
             {
-                PartsSOL003.LB_Red.Content = "失格";
+                PartsSOL003.LB_Red.Content = 失格 ? "失格" : "棄権";
             }
             else
             {
@@ -504,7 +505,7 @@ namespace DSDsp.画面
                     timer.Stop();
                     
                     // Total得点を表示
-                    PartsSOL003.LB_Total.Content = 種目得点.ToString("F3");
+                    PartsSOL003.LB_Total.Content = 棄権 ? "棄権" : 種目得点.ToString("F3");
                     
                     var totalStoryboard = new Storyboard();
                     PartsSOL003.LB_Total.Opacity = 0;

@@ -235,7 +235,12 @@ namespace DSDsp
                     disposable.Dispose();
                 }
                 
-                _currentScreen = null;
+                _currentScreen    = null;
+                _currentScreenTag = null;
+            }
+            else
+            {
+                _currentScreenTag = null;
             }
         }
 
@@ -253,7 +258,12 @@ namespace DSDsp
                     disposable.Dispose();
                 }
 
-                _currentSubScreen = null;
+                _currentSubScreen    = null;
+                _currentSubScreenTag = null;
+            }
+            else
+            {
+                _currentSubScreenTag = null;
             }
         }
 

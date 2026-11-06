@@ -36,6 +36,7 @@ namespace DSDsp.画面
         protected DispatcherTimer? _timer;
         private   DispatcherTimer? _clockTimer;
         private   DispatcherTimer? _autoTimer;   // Auto モード用ワンショットタイマー
+        private   Action?          _skippableAutoAction; // 再生ボタンでスキップ可能な待機タイマーのコールバック
         protected int _currentStep = 0;
         protected bool _disposed = false;
 
@@ -182,7 +183,13 @@ namespace DSDsp.画面
         /// AutoTimerSeconds 秒後に onFired を UIスレッドで実行する。
         /// 既存タイマーがあれば先に停止する。
         /// </summary>
-        public void StartAutoTimer(Action onFired)
+        /// <param name="onFired">タイマー満了時の処理</param>
+        /// <param name="skippableByPlay">
+        /// true のとき、待機中に再生ボタンが押された場合は
+        /// <see cref="TrySkipAutoTimer"/> で残り時間を待たずに onFired を即時実行できる
+        /// （最終ステップ後の「表示保持」待機用）。
+        /// </param>
+        public void StartAutoTimer(Action onFired, bool skippableByPlay = false)
         {
             StopAutoTimer();
             // タイマー抑制フラグが立っているときはタイマーを起動しない（手動再生を待つ）
@@ -194,6 +201,7 @@ namespace DSDsp.画面
                 onFired();
                 return;
             }
+            if (skippableByPlay) _skippableAutoAction = onFired;
             _autoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(seconds) };
             _autoTimer.Tick += (s, e) =>
             {
@@ -211,6 +219,20 @@ namespace DSDsp.画面
                 _autoTimer.Stop();
                 _autoTimer = null;
             }
+            _skippableAutoAction = null;
+        }
+
+        /// <summary>
+        /// skippableByPlay=true で待機中の Auto タイマーがあれば、タイマーを停止して即時発火する。
+        /// 発火した場合は true を返す。
+        /// </summary>
+        public bool TrySkipAutoTimer()
+        {
+            var action = _skippableAutoAction;
+            if (action == null) return false;
+            StopAutoTimer();
+            action();
+            return true;
         }
         #endregion
 

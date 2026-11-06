@@ -401,7 +401,7 @@ namespace DSDsp.画面
 
             // 順位昇順で並べ、開始インデックスから最大8件を取得
             var 全順位リスト = フィルタ後リスト
-                .OrderBy(p => p!["種目順位番号"]?.GetValue<int>() ?? int.MaxValue)
+                .OrderBy(p => (p!["種目順位番号"]?.GetValue<int>() ?? 0) == 0 ? int.MaxValue : p!["種目順位番号"]!.GetValue<int>()) // 順位0(棄権)は末尾
                 .ToList();
             var 表示対象 = 全順位リスト
                 .Skip(開始インデックス)
@@ -425,10 +425,11 @@ namespace DSDsp.画面
                 string 順位表記 = p?["種目順位表記"]?.ToString() ?? "";
                 double 得点 = p?["種目得点"]?.GetValue<double>() ?? 0;
                 bool 失格 = p?["失格FLAG"]?.ToString() == "1";
+                bool 棄権 = p?["棄権FLAG"]?.ToString() == "1";
 
                 // 一般減点合計
                 double 減点合計 = 0;
-                if (!失格)
+                if (!失格 && !棄権)
                 {
                     var 一般減点Array = p?["一般減点"]?.AsArray();
                     if (一般減点Array != null)
@@ -449,12 +450,12 @@ namespace DSDsp.画面
                 var 前景色 = new SolidColorBrush(Colors.DarkBlue);
 
                 // 順位ラベル（LB_結果1_xxx が 1位）
-                _順位LB[i].Content = 失格 ? "失格" : 順位表記;
+                _順位LB[i].Content = 失格 ? "失格" : (棄権 ? "棄権" : 順位表記);
                 _背番号LB[i].Content = 背番号;
                 _選手名LB[i].Content = 選手名表示;
                 _所属LB[i].Content = 所属;
-                _減点LB[i].Content = 失格 ? "" : 減点合計.ToString("F1");
-                _得点LB[i].Content = 失格 ? "失格" : 得点.ToString("F3");
+                _減点LB[i].Content = (失格 || 棄権) ? "" : 減点合計.ToString("F1");
+                _得点LB[i].Content = 失格 ? "失格" : (棄権 ? "棄権" : 得点.ToString("F3"));
 
                 // 減点が0以外の場合は赤字、それ以外はDarkBlue
                 var 減点前景色 = (!失格 && 減点合計 != 0)

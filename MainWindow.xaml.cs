@@ -108,6 +108,9 @@ namespace DSDsp
 
             // シナリオファイルを読み込み
             LoadScenarios();
+
+            // 起動時に自動でサーバーへ接続する（失敗時は自動再接続ループに移行）
+            _ = ConnectAsync(isAutoStart: true);
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -280,7 +283,7 @@ namespace DSDsp
         /// <summary>
         /// サーバーに接続
         /// </summary>
-        private async System.Threading.Tasks.Task ConnectAsync()
+        private async System.Threading.Tasks.Task ConnectAsync(bool isAutoStart = false)
         {
             try
             {
@@ -314,7 +317,16 @@ namespace DSDsp
                     {
                         UpdateConnectionStatus("初期化失敗", Brushes.Red);
                         await DisconnectAsync();
-                        MessageBox.Show("初期化に失敗しました", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                        if (isAutoStart)
+                        {
+                            _isManualDisconnect = false;
+                            _log?.LogAdd("起動時自動接続: 初期化失敗（自動再接続へ移行）", _log.WARNING);
+                            if (!_isReconnecting) StartAutoReconnect();
+                        }
+                        else
+                        {
+                            MessageBox.Show("初期化に失敗しました", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
                     }
                 }
                 else
@@ -322,7 +334,15 @@ namespace DSDsp
                     UpdateConnectionStatus("接続失敗", Brushes.Red);
                     _client?.Dispose();
                     _client = null;
-                    MessageBox.Show("サーバーに接続できませんでした", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (isAutoStart)
+                    {
+                        _log?.LogAdd("起動時自動接続: 接続失敗（自動再接続へ移行）", _log.WARNING);
+                        if (!_isReconnecting) StartAutoReconnect();
+                    }
+                    else
+                    {
+                        MessageBox.Show("サーバーに接続できませんでした", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
             catch (Exception ex)
@@ -331,7 +351,14 @@ namespace DSDsp
                 _client?.Dispose();
                 _client = null;
                 _log?.LogAdd($"接続エラー: {ex.Message}", _log.ERR);
-                MessageBox.Show($"接続エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (isAutoStart)
+                {
+                    if (!_isReconnecting) StartAutoReconnect();
+                }
+                else
+                {
+                    MessageBox.Show($"接続エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             finally
             {
@@ -552,6 +579,15 @@ namespace DSDsp
         }
 
         /// <summary>
+        /// 戻るボタンクリック（メイン）
+        /// </summary>
+        private void BtnBack_Click(object sender, RoutedEventArgs e)
+        {
+            EnsureOffScreenWindowCreated();
+            ExecuteCurrentBackStep();
+        }
+
+        /// <summary>
         /// 再生ボタンクリック（メイン）
         /// </summary>
         private void BtnPlay_Click(object sender, RoutedEventArgs e)
@@ -577,6 +613,15 @@ namespace DSDsp
         {
             _offScreenWindow?.ClearScreen();
             _log?.LogAdd("メイン画面クリア", _log.INFO);
+        }
+
+        /// <summary>
+        /// SUB戻るボタンクリック
+        /// </summary>
+        private void BtnSubBack_Click(object sender, RoutedEventArgs e)
+        {
+            EnsureOffScreenWindowCreated();
+            ExecuteAjsSubBackStep();
         }
 
         /// <summary>
@@ -2024,6 +2069,23 @@ namespace DSDsp
         #region ステップ実行
 
         /// <summary>
+        /// 戻るボタンから呼ばれる。現在のタブに応じて1つ前のステップ・画面に戻る。
+        /// </summary>
+        private void ExecuteCurrentBackStep()
+        {
+            if (TabControl.SelectedIndex == 1)      // AJSタブ
+                ExecuteAjsBackStep();
+            else if (TabControl.SelectedIndex == 2) // 表彰式タブ
+                ExecuteAwardBackStep();
+            else if (TabControl.SelectedIndex == 3) // オナーダンスタブ
+                ExecuteHonorBackStep();
+            else if (TabControl.SelectedIndex == 4) // ジャッジ紹介タブ
+                ExecuteJudgeBackStep();
+            else                                    // 進行タブ
+                ExecuteProgressBackStep();
+        }
+
+        /// <summary>
         /// 再生ボタンから呼ばれる。現在のタブに応じてステップを実行する。
         /// </summary>
         private void ExecuteCurrentStep()
@@ -2038,6 +2100,226 @@ namespace DSDsp
                 ExecuteJudgeStep();
             else                                    // 進行タブ
                 ExecuteProgressStep();
+        }
+
+        /// <summary>
+        /// 進行タブ：1つ前のヒート／種目／進行項目に戻る。
+        /// </summary>
+        private void ExecuteProgressBackStep()
+        {
+            var items = LstProgressItems.ItemsSource as System.Collections.Generic.List<ProgressListItem>;
+            if (items == null || items.Count == 0) return;
+
+            var screenId = GetProgressScreenId();
+            bool isHeatMode = (screenId == "DSP_PRG_003_B" || screenId == "DSP_PRG_003_S" || screenId == "DSP_PRG_010_S" || screenId == "DSP_PRG_011_B");
+
+            if (isHeatMode && CmbProgressHeat != null && CmbProgressDance != null)
+            {
+                // 1. ヒートコンボが2番目以降ならヒートを1つ戻す
+                if (CmbProgressHeat.SelectedIndex > 0)
+                {
+                    _manualComboChanged = true;
+                    CmbProgressHeat.SelectedIndex--;
+                    _log?.LogAdd($"進行 戻る: ヒートを1つ前へ ({CmbProgressHeat.SelectedIndex + 1})", _log.INFO);
+                    ExecuteProgressStep();
+                    return;
+                }
+
+                // 2. ヒートが先頭で、種目コンボが2番目以降なら種目を1つ戻し、最後のヒートを選択
+                if (CmbProgressDance.SelectedIndex > 0)
+                {
+                    _manualComboChanged = true;
+                    CmbProgressDance.SelectedIndex--;
+                    if (CmbProgressHeat.Items.Count > 0)
+                    {
+                        CmbProgressHeat.SelectedIndex = CmbProgressHeat.Items.Count - 1;
+                    }
+                    _log?.LogAdd($"進行 戻る: 前の種目へ ({CmbProgressDance.SelectedIndex + 1})", _log.INFO);
+                    ExecuteProgressStep();
+                    return;
+                }
+            }
+
+            // 3. 進行項目を1つ戻す
+            if (_currentProgressIndex > 0)
+            {
+                _currentProgressIndex--;
+                LstProgressItems.SelectedIndex = _currentProgressIndex;
+                LstProgressItems.ScrollIntoView(items[_currentProgressIndex]);
+                if (_currentProgressScreen != null)
+                {
+                    _currentProgressScreen.ScreenCompleted -= OnProgressScreenCompleted;
+                    _currentProgressScreen = null;
+                }
+                _currentProgressScreenId = string.Empty;
+                _log?.LogAdd($"進行 戻る: 前の進行項目へ Index={_currentProgressIndex}", _log.INFO);
+                ExecuteProgressStep();
+            }
+            else
+            {
+                // 先頭進行項目の場合は画面をリセットして再表示
+                if (_currentProgressScreen != null)
+                {
+                    _currentProgressScreen.ScreenCompleted -= OnProgressScreenCompleted;
+                    _currentProgressScreen = null;
+                }
+                _currentProgressScreenId = string.Empty;
+                _log?.LogAdd("進行 戻る: 先頭項目のため初期表示にリセット", _log.INFO);
+                ExecuteProgressStep();
+            }
+        }
+
+        /// <summary>
+        /// AJSタブ：誤って表示してしまった画面を取り消し、前の画面の最終状態（保持画面またはクリア待機）に戻す。
+        /// 次に再生ボタンを押したときに該当画面が最初から表示される。
+        /// </summary>
+        private void ExecuteAjsBackStep()
+        {
+            if (_currentAjsProgressItems == null || _currentAjsProgressItems.Count == 0) return;
+            if (_currentAjsIndex < 0 || _currentAjsIndex >= _currentAjsProgressItems.Count) return;
+
+            int prevIndex = _currentAjsIndex - 1;
+            var prevItem = (prevIndex >= 0 && prevIndex < _currentAjsProgressItems.Count)
+                ? _currentAjsProgressItems[prevIndex]
+                : null;
+
+            // 前の画面が HoldsAfterFadeOut (DSP_GRP_001 等) の場合は、その画面を再表示して保持状態を再現
+            if (prevItem != null && prevItem.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase))
+            {
+                _offScreenWindow?.ClearScreen();
+
+                if (CmbAjsCategory.SelectedItem != null &&
+                    _ajsCategoryKeys.TryGetValue(CmbAjsCategory.SelectedItem.ToString() ?? "", out var key))
+                {
+                    var keyParts = key.Split('-');
+                    var kbnNo   = keyParts.Length == 2 ? keyParts[0] : "";
+                    var roundNo = keyParts.Length == 2 ? keyParts[1] : "";
+
+                    var prevScreen = CreateAjsScreen(prevItem.ScreenId);
+                    if (prevScreen != null)
+                    {
+                        var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+                        if (dm?.DA_Master != null) prevScreen.DA_Master = dm.DA_Master;
+                        if (dm?.DS_Status != null) prevScreen.DS_Status = dm.DS_Status;
+                        var dvForScreen = GetDvResultFor(kbnNo, roundNo);
+                        if (dvForScreen != null) prevScreen.DV_Result = dvForScreen;
+
+                        prevScreen.Log               = _log;
+                        prevScreen.ScreenId          = prevItem.ScreenId;
+                        prevScreen.区分番号          = kbnNo;
+                        prevScreen.ラウンド番号       = roundNo;
+                        prevScreen.種目番号          = prevItem.DanceNo;
+                        prevScreen.ヒート番号        = prevItem.HeatNo;
+                        prevScreen.IsOverviewMode    = prevItem.IsOverviewMode;
+                        prevScreen.IsLastHeatInDance = prevItem.IsLastHeatInDance;
+                        prevScreen.ChromaKeyMode     = (_currentAjsScenario?.ChromaKeyMode == true) || (_currentAjsScenario?.Background?.GetBackgroundType() == Scenario.AjsBackgroundType.ChromaKey);
+                        prevScreen.StepMode          = prevItem.StepMode;
+                        prevScreen.WaitsForResult    = prevItem.WaitsForResult;
+                        prevScreen.AutoTimerSecondsOverride = prevItem.AutoTimerSeconds;
+                        prevScreen.SuppressAutoTimer = (TglAutoGroupDisplay?.IsChecked == false);
+
+                        // tag を prevItem にして表示（CurrentScreenTag != _currentAjsProgressItems[_currentAjsIndex] となり HoldsAfterFadeOut 停止状態と同一になる）
+                        _offScreenWindow?.ShowScreen(prevScreen, prevItem);
+                        prevScreen.Advance(); // 選手一覧表示 (Step 0)
+                        prevScreen.OnHoldsAfterFadeOut();
+                        _log?.LogAdd($"AJS 戻る: 前の画面 {prevItem.ScreenId} の保持状態を再現 Index={_currentAjsIndex}", _log.INFO);
+                        return;
+                    }
+                }
+            }
+
+            // 通常の画面の場合はオフスクリーンをクリアして待機状態に戻す
+            _offScreenWindow?.ClearScreen();
+            _log?.LogAdd($"AJS 戻る: 画面をクリアして待機状態に戻す Index={_currentAjsIndex}", _log.INFO);
+        }
+
+        /// <summary>
+        /// AJS SUBタブ：誤って表示してしまった画面を取り消し、待機状態に戻す。
+        /// 次にSUB再生ボタンを押したときに該当画面が最初から表示される。
+        /// </summary>
+        private void ExecuteAjsSubBackStep()
+        {
+            if (_currentAjsSubProgressItems == null || _currentAjsSubProgressItems.Count == 0) return;
+            if (_currentAjsSubIndex < 0 || _currentAjsSubIndex >= _currentAjsSubProgressItems.Count) return;
+
+            _offScreenWindow?.ClearSubScreen();
+            _log?.LogAdd($"AJS SUB 戻る: 画面をクリアして待機状態に戻す Index={_currentAjsSubIndex}", _log.INFO);
+        }
+
+        /// <summary>
+        /// 表彰式タブ：1つ前の区分・タイトルに戻る。
+        /// </summary>
+        private void ExecuteAwardBackStep()
+        {
+            var items = LstAwardCategories.ItemsSource as System.Collections.Generic.List<AwardCategoryItem>;
+            if (items == null || items.Count == 0) return;
+
+            if (LstAwardCategories.SelectedIndex > 0)
+            {
+                LstAwardCategories.SelectedIndex--;
+            }
+
+            if (_currentAwardScreen != null)
+            {
+                _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
+                _currentAwardScreen = null;
+            }
+            _log?.LogAdd($"表彰式 戻る: Index={LstAwardCategories.SelectedIndex}", _log.INFO);
+            ExecuteAwardStep();
+        }
+
+        /// <summary>
+        /// オナーダンスタブ：1つ前の選手／区分に戻る。
+        /// </summary>
+        private void ExecuteHonorBackStep()
+        {
+            var playerItems = LstHonorPlayers.ItemsSource as System.Collections.Generic.List<HonorPlayerItem>;
+            if (playerItems != null && playerItems.Count > 0 && LstHonorPlayers.SelectedIndex > 0)
+            {
+                LstHonorPlayers.SelectedIndex--;
+                if (_currentHonorScreen != null)
+                {
+                    _currentHonorScreen.ScreenCompleted -= OnHonorScreenCompleted;
+                    _currentHonorScreen = null;
+                }
+                _log?.LogAdd($"オナーダンス 戻る: 選手 Index={LstHonorPlayers.SelectedIndex}", _log.INFO);
+                ExecuteHonorStep();
+                return;
+            }
+
+            var catItems = LstHonorCategories.ItemsSource as System.Collections.Generic.List<HonorCategoryItem>;
+            if (catItems != null && catItems.Count > 0 && LstHonorCategories.SelectedIndex > 0)
+            {
+                LstHonorCategories.SelectedIndex--;
+                if (_currentHonorScreen != null)
+                {
+                    _currentHonorScreen.ScreenCompleted -= OnHonorScreenCompleted;
+                    _currentHonorScreen = null;
+                }
+                _log?.LogAdd($"オナーダンス 戻る: 区分 Index={LstHonorCategories.SelectedIndex}", _log.INFO);
+                ExecuteHonorStep();
+            }
+        }
+
+        /// <summary>
+        /// ジャッジ紹介タブ：1つ前のジャッジに戻る。
+        /// </summary>
+        private void ExecuteJudgeBackStep()
+        {
+            var items = LstJudgeItems.ItemsSource as System.Collections.Generic.List<JudgeListItem>;
+            if (items == null || items.Count == 0) return;
+
+            if (LstJudgeItems.SelectedIndex > 0)
+            {
+                LstJudgeItems.SelectedIndex--;
+            }
+
+            if (_currentJudgeScreen != null)
+            {
+                _currentJudgeScreen = null;
+            }
+            _log?.LogAdd($"ジャッジ紹介 戻る: Index={LstJudgeItems.SelectedIndex}", _log.INFO);
+            ExecuteJudgeStep();
         }
 
         /// <summary>
@@ -2317,6 +2599,23 @@ namespace DSDsp
             }
 
             if (currentScreen == null) return;
+
+            // 最終ステップ後の「表示保持」Auto タイマー待機中（COM_001 等）に再生ボタンが押された場合は、
+            // 残り時間を待たずに完了させ、そのまま次の画面を表示する。
+            // （待機中は _currentAjsIndex が現在画面のままなので、そのまま Advance() すると
+            //   最終ステップを再実行してしまい、次画面が表示されない）
+            if (!isNewScreen)
+            {
+                int indexBeforeSkip = _currentAjsIndex;
+                if (currentScreen.TrySkipAutoTimer())
+                {
+                    _log?.LogAdd($"AJS: 表示保持タイマーをスキップ: {item.ScreenId} Index={indexBeforeSkip}", _log.INFO);
+                    // OnAjsScreenCompleted で Index が進み HoldsAfterFadeOut 停止した場合は次画面を表示する
+                    if (_currentAjsIndex != indexBeforeSkip)
+                        ExecuteAjsStep();
+                    return;
+                }
+            }
 
             _log?.LogAdd($"AJS Advance: {item.ScreenId} Step={currentScreen.CurrentStep} StepMode={currentScreen.StepMode} TotalSteps={currentScreen.CurrentStep}", _log.INFO);
             currentScreen.Advance();
@@ -3044,6 +3343,15 @@ namespace DSDsp
 
             Dispatcher.Invoke(() =>
             {
+                // AJSタブ使用中（進行一覧生成済み）は進行タブの自動進行ロジックを実行しない。
+                // 実行すると最終種目の最終ヒート終了時に AJS の結果画面（DSP_GRP_002 等）を
+                // 表示する前／表示中に「次の進行」の画面へ上書き遷移してしまう（bug #275）。
+                if (TabControl.SelectedIndex == 1 && _currentAjsProgressItems != null)
+                {
+                    _log?.LogAdd("HeatEnd通知: AJSタブ使用中のため進行タブの自動進行をスキップ", _log.DEBUG);
+                    return;
+                }
+
                 var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
                 if (dm?.DS_Status == null) return;
 
