@@ -179,6 +179,7 @@ namespace DSDsp.画面
             string 順位表記 = entry.順位表記 ?? string.Empty;
             if (string.IsNullOrEmpty(順位表記))
                 順位表記 = targetRank > 0 ? $"{targetRank}位" : string.Empty;
+            順位表記 = DSDspDataHelper.Apply優勝表記(entry.順位番号 > 0 ? entry.順位番号 : targetRank, 順位表記);
 
             // DA_Master から選手名・所属を取得
             var 選手情報 = DSDspDataHelper.Get選手情報(DA_Master, 背番号, 区分番号);

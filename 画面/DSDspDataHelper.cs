@@ -1087,8 +1087,8 @@ namespace DSDsp.画面
         /// </summary>
         public static string Format順位テキスト(int rankNo, string rankStr = "")
         {
-            // DV_Result の順位表記が設定されていればそれを使う
-            if (!string.IsNullOrEmpty(rankStr)) return rankStr;
+            // DV_Result の順位表記が設定されていればそれを使う（1位は「優勝」に置換）
+            if (!string.IsNullOrEmpty(rankStr)) return Apply優勝表記(rankNo, rankStr);
 
             return rankNo switch
             {
@@ -1096,6 +1096,15 @@ namespace DSDsp.画面
                 2 => "準優勝",
                 _ => $"{rankNo}位"
             };
+        }
+
+        /// <summary>
+        /// 順位番号が1で表記が「1位」の場合のみ「優勝」に置き換える。
+        /// （サーバーは総合順位表記を「N位」で返すため、表彰式表示で1位を「優勝」にするための補正）
+        /// </summary>
+        public static string Apply優勝表記(int rankNo, string rankStr)
+        {
+            return rankNo == 1 && rankStr == "1位" ? "優勝" : rankStr;
         }
 
         /// <summary>
