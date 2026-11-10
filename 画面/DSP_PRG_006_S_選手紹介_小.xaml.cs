@@ -16,6 +16,8 @@ namespace DSDsp.画面
     ///                     → AJS採点の場合: LB_得点（総合得点）をフェードイン（LB_所属は非表示）
     ///                     → AJS以外の場合: LB_所属 をフェードイン
     ///   STEP3 (case 2): 何もしない（テロップ表示保持 → 次の再生ボタン待ち）
+    ///                     ただし HonorMode かつ HonorRightTopText が設定されている場合は、
+    ///                     選手紹介（下部）をフェードアウトして COM003（右上）に HonorRightTopText をフェードイン表示する
     ///   STEP4 (case 3): STEP2 で表示したものをフェードアウト → RaiseScreenCompleted()
     ///
     /// 操作フロー: 再生1回目＝STEP1クリア、再生2回目＝テロップ表示、
@@ -76,6 +78,12 @@ namespace DSDsp.画面
         /// null の場合はデフォルト（選手名）を使用。
         /// </summary>
         public string? HonorLB選手名Override { get; set; } = null;
+
+        /// <summary>
+        /// HonorMode 時、STEP3 の再生で選手紹介（下部）と入れ替えに COM003（右上）へ表示するテキスト
+        /// （例: "優勝  xx・xx 組"）。空の場合は何もしない。
+        /// </summary>
+        public string HonorRightTopText { get; set; } = string.Empty;
         #endregion
 
         #region コンストラクタ
@@ -116,7 +124,7 @@ namespace DSDsp.画面
             {
                 case 0: Step1(); break;
                 case 1: Step2(); break;
-                case 2: /* STEP3: 保持（何もしない） */ break;
+                case 2: Step3(); break;
                 case 3: Step4(); break;
             }
         }
@@ -303,6 +311,33 @@ namespace DSDsp.画面
             imageSb.Begin();
         }
 
+        /// <summary>
+        /// STEP3: 保持。HonorMode かつ HonorRightTopText 設定時のみ、
+        /// 選手紹介（下部）をフェードアウトして COM003（右上）にテキストをフェードイン表示する。
+        /// </summary>
+        public void Step3()
+        {
+            if (!HonorMode || string.IsNullOrEmpty(HonorRightTopText)) return;
+
+            EnsurePartsMainInitialized();
+            if (_partsMain == null) return;
+
+            var sb = new Storyboard();
+            _partsMain.フェードアウト(true, PartsPRG006.IM_種目1,  sb, 0);
+            _partsMain.フェードアウト(true, PartsPRG006.IM_種目2,  sb, 0);
+            _partsMain.フェードアウト(true, PartsPRG006.LB_区分名, sb, 0);
+            _partsMain.フェードアウト(true, PartsPRG006.LB_順位,   sb, 0);
+            _partsMain.フェードアウト(true, PartsPRG006.LB_選手名, sb, 0);
+            _partsMain.フェードアウト(true, PartsPRG006.LB_所属,   sb, 0);
+            _partsMain.フェードアウト(true, PartsPRG006.LB_得点,   sb, 0);
+
+            PartsCOM003.LB_右上.Content = HonorRightTopText;
+            PartsCOM003.LB_右上.Opacity = 0;
+            _partsMain.フェードイン(true, PartsCOM003.LB_右上, sb, 0);
+
+            sb.Begin();
+        }
+
         /// <summary>STEP4: STEP2 で表示したものをフェードアウト → RaiseScreenCompleted</summary>
         public void Step4()
         {
@@ -317,6 +352,8 @@ namespace DSDsp.画面
             _partsMain.フェードアウト(true, PartsPRG006.LB_選手名, sb, 0);
             _partsMain.フェードアウト(true, PartsPRG006.LB_所属,   sb, 0);
             _partsMain.フェードアウト(true, PartsPRG006.LB_得点,   sb, 0);
+            if (HonorMode && !string.IsNullOrEmpty(HonorRightTopText))
+                _partsMain.フェードアウト(true, PartsCOM003.LB_右上, sb, 0);
 
             sb.Completed += (s, e) => RaiseScreenCompleted();
             sb.Begin();

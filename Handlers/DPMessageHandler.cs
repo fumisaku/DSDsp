@@ -25,6 +25,8 @@ namespace DSDsp.Handlers
         public event EventHandler<HeatEndNotifyEventArgs>? HeatEndNotifyReceived;
         /// <summary>DP_AJS_ADVANCE（他DSDspからのAJSステップ進行通知）を受信したときに発火する。</summary>
         public event EventHandler<AjsAdvanceReceivedEventArgs>? AjsAdvanceReceived;
+        /// <summary>DP_TAB_ADVANCE（他DSDspからの表彰式／オナーダンス再生通知）を受信したときに発火する。</summary>
+        public event EventHandler<TabAdvanceReceivedEventArgs>? TabAdvanceReceived;
 
         private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions =
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -88,6 +90,10 @@ namespace DSDsp.Handlers
 
                     case "DP_AJS_ADVANCE":
                         await Handle_DP_AJS_ADVANCE(parsed);
+                        break;
+
+                    case "DP_TAB_ADVANCE":
+                        await Handle_DP_TAB_ADVANCE(parsed);
                         break;
 
                     default:
@@ -398,6 +404,47 @@ namespace DSDsp.Handlers
         }
 
         /// <summary>
+        /// DP_TAB_ADVANCE を送信（表彰式／オナーダンスの再生を他DSDspへ通知）
+        /// </summary>
+        public async Task<bool> SendTabAdvanceAsync(
+            string orgCd, string cmpNo, string tab, int categoryIndex, int playerIndex, int rank)
+        {
+            var payload = new DP_TAB_ADVANCE
+            {
+                Tab           = tab,
+                CategoryIndex = categoryIndex,
+                PlayerIndex   = playerIndex,
+                Rank          = rank,
+            };
+            var json    = JsonSerializer.Serialize(payload);
+            var message = ParsedMessage.Build(orgCd, cmpNo, "DP_TAB_ADVANCE", json);
+            return await _wsClient.SendMessageAsync(message);
+        }
+
+        /// <summary>
+        /// DP_TAB_ADVANCE 受信処理（他DSDspからのブロードキャスト）
+        /// </summary>
+        private async Task Handle_DP_TAB_ADVANCE(ParsedMessage parsed)
+        {
+            try
+            {
+                var payload = JsonSerializer.Deserialize<DP_TAB_ADVANCE>(parsed.MsgDetail, _jsonOptions);
+                if (payload == null) return;
+
+                _log.LogAdd(
+                    $"DP_TAB_ADVANCE 受信: Tab={payload.Tab} Category={payload.CategoryIndex} Player={payload.PlayerIndex} Rank={payload.Rank}",
+                    _log.DEBUG);
+
+                TabAdvanceReceived?.Invoke(this, new TabAdvanceReceivedEventArgs(payload));
+            }
+            catch (Exception ex)
+            {
+                _log.LogAdd($"DP_TAB_ADVANCE パースエラー: {ex.Message}", _log.WARNING);
+            }
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
         /// DP_AJS_ADVANCE 受信処理（他DSDspからのブロードキャスト）
         /// </summary>
         private async Task Handle_DP_AJS_ADVANCE(ParsedMessage parsed)
@@ -493,6 +540,19 @@ namespace DSDsp.Handlers
 
         [System.Text.Json.Serialization.JsonPropertyName("イベント")]
         public string? イベント { get; set; }
+    }
+
+    /// <summary>
+    /// DP_TAB_ADVANCE 受信イベント引数
+    /// </summary>
+    public class TabAdvanceReceivedEventArgs : EventArgs
+    {
+        public DP_TAB_ADVANCE Payload { get; }
+
+        public TabAdvanceReceivedEventArgs(DP_TAB_ADVANCE payload)
+        {
+            Payload = payload;
+        }
     }
 
     /// <summary>

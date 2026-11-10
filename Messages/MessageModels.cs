@@ -133,6 +133,30 @@ namespace DSDsp.Messages
     }
 
     /// <summary>
+    /// 表彰式／オナーダンスタブの再生同期通知（DSDsp → サーバー → 他DSDspブロードキャスト）
+    /// </summary>
+    public class DP_TAB_ADVANCE
+    {
+        /// <summary>対象タブ："AWARD"（表彰式） / "HONOR"（オナーダンス）</summary>
+        public string Tab { get; set; } = string.Empty;
+
+        /// <summary>区分リスト（LstAwardCategories / LstHonorCategories）の選択インデックス</summary>
+        public int CategoryIndex { get; set; }
+
+        /// <summary>入賞者リスト（LstHonorPlayers）の選択インデックス。該当なしは -1</summary>
+        public int PlayerIndex { get; set; } = -1;
+
+        /// <summary>
+        /// 表彰式(AWARD)の区分画面で、送信元が再生後に最後に表示した順位。
+        /// 受信側は再生ステップ数ではなくこの順位に合わせて表示する（表示モードごとにステップ数が異なるため）。
+        ///   &gt;=1 : その順位まで表示する
+        ///    0    : まだ順位を表示していない（通常の1ステップ実行）
+        ///   -1    : 送信元の画面が完了した（受信側も閉じる）
+        /// </summary>
+        public int Rank { get; set; } = 0;
+    }
+
+    /// <summary>
     /// エラー応答
     /// </summary>
     public class ErrorResponse

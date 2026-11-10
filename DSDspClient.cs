@@ -49,6 +49,8 @@ namespace DSDsp
         public event EventHandler<HeatEndNotifyEventArgs>? HeatEndNotifyReceived;
         /// <summary>DP_AJS_ADVANCE（他DSDspからのAJSステップ進行通知）を受信したときに発火する。</summary>
         public event EventHandler<AjsAdvanceReceivedEventArgs>? AjsAdvanceReceived;
+        /// <summary>DP_TAB_ADVANCE（他DSDspからの表彰式／オナーダンス再生通知）を受信したときに発火する。</summary>
+        public event EventHandler<TabAdvanceReceivedEventArgs>? TabAdvanceReceived;
 
         /// <summary>
         /// 複数競技会リストを受信したときに呼ばれるコールバック。
@@ -83,6 +85,7 @@ namespace DSDsp
             _messageHandler.ErrorReceived += (s, e) => ErrorReceived?.Invoke(s, e);
             _messageHandler.HeatEndNotifyReceived += (s, e) => HeatEndNotifyReceived?.Invoke(s, e);
             _messageHandler.AjsAdvanceReceived += (s, e) => AjsAdvanceReceived?.Invoke(s, e);
+            _messageHandler.TabAdvanceReceived += (s, e) => TabAdvanceReceived?.Invoke(s, e);
 
             _isDisposed = false;
 
@@ -303,6 +306,18 @@ namespace DSDsp
                 settings.OrgCd, cmpNo,
                 ajsIndex, screenId, kbnNo, rndNo,
                 dncNo, heatNo, step);
+        }
+
+        /// <summary>
+        /// DP_TAB_ADVANCE を送信（表彰式／オナーダンスの再生を他DSDspへ通知）
+        /// </summary>
+        public async Task<bool> SendTabAdvanceAsync(string tab, int categoryIndex, int playerIndex, int rank = 0)
+        {
+            if (!IsConnected) return false;
+            var settings = AppSettings.Instance.WebSocketSettings;
+            var cmpNo    = _dataManager.CmpNo ?? "";
+            return await _messageHandler.SendTabAdvanceAsync(
+                settings.OrgCd, cmpNo, tab, categoryIndex, playerIndex, rank);
         }
 
         /// <summary>

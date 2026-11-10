@@ -299,6 +299,7 @@ namespace DSDsp
                 _client.ErrorReceived += OnErrorReceived;
                 _client.HeatEndNotifyReceived += OnHeatEndNotifyReceived;
                 _client.AjsAdvanceReceived += OnAjsAdvanceReceived;
+                _client.TabAdvanceReceived += OnTabAdvanceReceived;
                 _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                 bool connected = await _client.ConnectAsync();
@@ -1481,12 +1482,16 @@ namespace DSDsp
         private enum AwardOrderMode { Page, Asc, Desc }
 
         private AwardDisplayMode _awardDisplay = AwardDisplayMode.Full;
-        private AwardOrderMode   _awardOrder   = AwardOrderMode.Asc;
+        private AwardOrderMode   _awardOrder   = AwardOrderMode.Desc;
 
         private (string KbnNo, string RndNo, string KbnName, string Display)? _awardSelectedCategory = null;
         private bool _awardSelectedIsAwardTitle = false;
         private bool _awardSelectedIsAwardEnd   = false;
         private 画面.DSDspScreenBase? _currentAwardScreen = null;
+
+        // クロマキ個別でプレビューリストから選択された順位番号（null=未選択→従来どおり先頭/末尾から）
+        private int? _awardSelectedRank = null;
+        private bool _suppressAwardPreviewSelection = false;
 
         // ---- データクラス ----
 
@@ -1503,6 +1508,7 @@ namespace DSDsp
 
         private class AwardPreviewItem
         {
+            public int    順位番号 { get; set; } = 0;
             public string 順位   { get; set; } = string.Empty;
             public string 背番号 { get; set; } = string.Empty;
             public string 選手名 { get; set; } = string.Empty;
@@ -1538,6 +1544,32 @@ namespace DSDsp
         private void BtnAwardRefresh_Click(object sender, RoutedEventArgs e)
             => LoadAwardCategoryList();
 
+        /// <summary>
+        /// プレビューリストで選手を選択（クロマキ_個別 昇順/降順のみ有効）。
+        /// 再生ボタンで、選択した選手の個別紹介（DSP_PRG_006_S）をその順位から表示する。
+        /// </summary>
+        private void AwardPreviewList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressAwardPreviewSelection) return;
+
+            if (AwardPreviewList.SelectedItem is not AwardPreviewItem item)
+            {
+                _awardSelectedRank = null;
+                return;
+            }
+
+            _awardSelectedRank = item.順位番号;
+
+            if (_awardDisplay == AwardDisplayMode.ChromaIndividual && _awardOrder != AwardOrderMode.Page)
+            {
+                // 表示中の画面を破棄し、再生ボタンで選択選手から新規表示する
+                if (_currentAwardScreen != null)
+                    _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
+                _currentAwardScreen = null;
+                UpdateAwardStatus($"選手選択: {item.順位}  {item.背番号}  {item.選手名} — 再生ボタンで表示");
+            }
+        }
+
         private async void LstAwardCategories_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (LstAwardCategories.SelectedItem is not AwardCategoryItem item) return;
@@ -1545,17 +1577,22 @@ namespace DSDsp
             _awardSelectedIsAwardTitle = item.IsAwardTitle;
             _awardSelectedIsAwardEnd   = item.IsAwardEnd;
             _currentAwardScreen = null;
+            _awardSelectedRank  = null;
 
             if (item.IsAwardTitle)
             {
                 _awardSelectedCategory = null;
+                _suppressAwardPreviewSelection = true;
                 AwardPreviewList.ItemsSource = null;
+                _suppressAwardPreviewSelection = false;
                 UpdateAwardStatus("表彰式タイトル選択済み — 再生ボタンで表示");
             }
             else if (item.IsAwardEnd)
             {
                 _awardSelectedCategory = null;
+                _suppressAwardPreviewSelection = true;
                 AwardPreviewList.ItemsSource = null;
+                _suppressAwardPreviewSelection = false;
                 UpdateAwardStatus("終了選択済み — 再生ボタンで表示");
             }
             else
@@ -2093,9 +2130,20 @@ namespace DSDsp
             if (TabControl.SelectedIndex == 1)      // AJSタブ
                 ExecuteAjsStep();
             else if (TabControl.SelectedIndex == 2) // 表彰式タブ
+            {
+                bool canSync = _awardSelectedCategory != null || _awardSelectedIsAwardTitle || _awardSelectedIsAwardEnd;
                 ExecuteAwardStep();
+                if (canSync)
+                    _ = _client?.SendTabAdvanceAsync("AWARD", LstAwardCategories.SelectedIndex, -1);
+            }
             else if (TabControl.SelectedIndex == 3) // オナーダンスタブ
+            {
+                bool canSync = _honorSelectedIsTitle || _honorSelectedIsEnd
+                               || (_honorSelectedCategory != null && _honorSelectedPlayer != null);
                 ExecuteHonorStep();
+                if (canSync)
+                    _ = _client?.SendTabAdvanceAsync("HONOR", LstHonorCategories.SelectedIndex, LstHonorPlayers.SelectedIndex);
+            }
             else if (TabControl.SelectedIndex == 4) // ジャッジ紹介タブ
                 ExecuteJudgeStep();
             else                                    // 進行タブ
@@ -2961,7 +3009,8 @@ namespace DSDsp
                     }
                     else if (newScreen is 画面.DSP_PRG_006_S_選手紹介_小 s010)
                     {
-                        s010.順位番号 = (_awardOrder == AwardOrderMode.Desc) ? GetMaxRank(dvResult) : 1;
+                        s010.順位番号 = _awardSelectedRank
+                            ?? ((_awardOrder == AwardOrderMode.Desc) ? GetMaxRank(dvResult) : 1);
                     }
 
                     newScreen.ScreenCompleted += OnAwardScreenCompleted;
@@ -3004,6 +3053,7 @@ namespace DSDsp
                         newS010.区分番号    = _awardSelectedCategory.Value.KbnNo;
                         newS010.ラウンド番号 = _awardSelectedCategory.Value.RndNo;
                         newS010.順位番号    = nextRank;
+                        SyncAwardPreviewSelection(nextRank);
                         newS010.ScreenCompleted += OnAwardScreenCompleted;
                         _currentAwardScreen = newS010;
                         _offScreenWindow.ShowScreen(newS010, "DSP_PRG_006_S");
@@ -3014,6 +3064,7 @@ namespace DSDsp
                     else
                     {
                         _currentAwardScreen = null;
+                        SyncAwardPreviewSelection(null);
                         UpdateAwardStatus("画面終了");
                     }
                 });
@@ -3022,6 +3073,25 @@ namespace DSDsp
 
             _currentAwardScreen = null;
             Dispatcher.Invoke(() => UpdateAwardStatus("画面終了"));
+        }
+
+        /// <summary>プレビューリストの選択をイベントを発火させずに指定順位へ同期する（null=選択解除）</summary>
+        private void SyncAwardPreviewSelection(int? rank)
+        {
+            _suppressAwardPreviewSelection = true;
+            try
+            {
+                AwardPreviewList.SelectedItem = rank == null
+                    ? null
+                    : AwardPreviewList.Items.OfType<AwardPreviewItem>().FirstOrDefault(x => x.順位番号 == rank.Value);
+                if (AwardPreviewList.SelectedItem != null)
+                    AwardPreviewList.ScrollIntoView(AwardPreviewList.SelectedItem);
+            }
+            finally
+            {
+                _suppressAwardPreviewSelection = false;
+            }
+            _awardSelectedRank = rank;
         }
 
         /// <summary>DV_Result から最大順位番号を返す</summary>
@@ -3186,6 +3256,7 @@ namespace DSDsp
                         _client.ErrorReceived -= OnErrorReceived;
                         _client.HeatEndNotifyReceived -= OnHeatEndNotifyReceived;
                         _client.AjsAdvanceReceived -= OnAjsAdvanceReceived;
+                        _client.TabAdvanceReceived -= OnTabAdvanceReceived;
                         _client.Dispose();
                         _client = null;
                     }
@@ -3198,6 +3269,7 @@ namespace DSDsp
                     _client.ErrorReceived += OnErrorReceived;
                     _client.HeatEndNotifyReceived += OnHeatEndNotifyReceived;
                     _client.AjsAdvanceReceived += OnAjsAdvanceReceived;
+                    _client.TabAdvanceReceived += OnTabAdvanceReceived;
                     _client.CompetitionSelector = OnSelectCompetitionAsync;
 
                     bool connected = await _client.ConnectAsync();
@@ -3583,7 +3655,90 @@ namespace DSDsp
                     UpdateHonorStatus("区分選択済み — 入賞者を選択してください");
                     LoadHonorPlayerList(_honorSelectedCategory.Value.KbnNo, _honorSelectedCategory.Value.RndNo);
                 }
+
+                // 他台の再生通知（DP_TAB_ADVANCE）を DV_Result 待ちで保留していた場合はここで続行する
+                if (_pendingTabAdvance != null)
+                {
+                    var pending = _pendingTabAdvance;
+                    _pendingTabAdvance = null;
+                    FinishTabAdvance(pending);
+                }
             });
+        }
+
+        // ---- 表彰式／オナーダンス 複数台同期（DP_TAB_ADVANCE） ----
+
+        /// <summary>DV_Result 受信待ちで保留中の DP_TAB_ADVANCE</summary>
+        private Messages.DP_TAB_ADVANCE? _pendingTabAdvance = null;
+
+        /// <summary>
+        /// DP_TAB_ADVANCE 受信ハンドラ：他の DSDsp で表彰式／オナーダンスの再生ボタンが押されたとき、
+        /// 同じタブを表示している場合のみ、区分／入賞者の選択を合わせて同じステップを実行する。
+        /// </summary>
+        private void OnTabAdvanceReceived(object? sender, Handlers.TabAdvanceReceivedEventArgs e)
+        {
+            var p = e.Payload;
+            Dispatcher.Invoke(() =>
+            {
+                int tabIndex = p.Tab == "AWARD" ? 2 : p.Tab == "HONOR" ? 3 : -1;
+                _log?.LogAdd($"[TAB同期受信] Tab={p.Tab} Category={p.CategoryIndex} Player={p.PlayerIndex}", _log.INFO);
+                if (tabIndex < 0 || TabControl.SelectedIndex != tabIndex)
+                {
+                    _log?.LogAdd("[TAB同期受信] スキップ: 同じタブを表示していません", _log.INFO);
+                    return;
+                }
+
+                _pendingTabAdvance = null;
+                bool changed;
+                bool titleOrEnd;
+                if (tabIndex == 2)
+                {
+                    var items = LstAwardCategories.ItemsSource as List<AwardCategoryItem>;
+                    if (items == null || p.CategoryIndex < 0 || p.CategoryIndex >= items.Count) return;
+                    changed = LstAwardCategories.SelectedIndex != p.CategoryIndex;
+                    if (changed) LstAwardCategories.SelectedIndex = p.CategoryIndex;
+                    titleOrEnd = items[p.CategoryIndex].IsAwardTitle || items[p.CategoryIndex].IsAwardEnd;
+                }
+                else
+                {
+                    var items = LstHonorCategories.ItemsSource as List<HonorCategoryItem>;
+                    if (items == null || p.CategoryIndex < 0 || p.CategoryIndex >= items.Count) return;
+                    changed = LstHonorCategories.SelectedIndex != p.CategoryIndex;
+                    if (changed) LstHonorCategories.SelectedIndex = p.CategoryIndex;
+                    titleOrEnd = items[p.CategoryIndex].IsTitle || items[p.CategoryIndex].IsEnd;
+                }
+
+                // 区分が変わった場合、実データ接続中は DV_Result 受信後に続行する
+                if (changed && !titleOrEnd && _testDataManager == null && _client != null && _client.IsConnected)
+                {
+                    _pendingTabAdvance = p;
+                    return;
+                }
+
+                FinishTabAdvance(p);
+            });
+        }
+
+        /// <summary>DP_TAB_ADVANCE の選手選択を合わせて再生ステップを実行する。</summary>
+        private void FinishTabAdvance(Messages.DP_TAB_ADVANCE p)
+        {
+            if (p.Tab == "AWARD")
+            {
+                if (TabControl.SelectedIndex != 2) return;
+                ExecuteAwardStep();
+                return;
+            }
+
+            if (p.Tab != "HONOR" || TabControl.SelectedIndex != 3) return;
+
+            if (!_honorSelectedIsTitle && !_honorSelectedIsEnd)
+            {
+                var players = LstHonorPlayers.ItemsSource as List<HonorPlayerItem>;
+                if (players == null || p.PlayerIndex < 0 || p.PlayerIndex >= players.Count) return;
+                if (LstHonorPlayers.SelectedIndex != p.PlayerIndex)
+                    LstHonorPlayers.SelectedIndex = p.PlayerIndex;
+            }
+            ExecuteHonorStep();
         }
 
         /// <summary>
@@ -3667,9 +3822,14 @@ namespace DSDsp
             var dvResult = GetDvResultFor(kbnNo, rndNo);
             var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
 
+            // ItemsSource 差し替えで SelectionChanged が走って選択順位が消えないよう抑止し、後で復元する
+            int? keepRank = _awardSelectedRank;
+            _suppressAwardPreviewSelection = true;
+
             if (dvResult == null || daMaster == null)
             {
                 AwardPreviewList.ItemsSource = null;
+                _suppressAwardPreviewSelection = false;
                 return;
             }
 
@@ -3687,6 +3847,7 @@ namespace DSDsp
 
                 items.Add(new AwardPreviewItem
                 {
+                    順位番号 = rankNo,
                     順位   = 順位,
                     背番号 = bango,
                     選手名 = 選手名,
@@ -3696,6 +3857,9 @@ namespace DSDsp
             }
 
             AwardPreviewList.ItemsSource = items;
+            _suppressAwardPreviewSelection = false;
+            if (keepRank != null)
+                SyncAwardPreviewSelection(keepRank);
             _log?.LogAdd($"結果プレビュー更新: {items.Count}件", _log.DEBUG);
         }
 
@@ -4471,7 +4635,8 @@ namespace DSDsp
             string 競技会名 = 画面.DSDspDataHelper.Get競技会名(dm?.DA_Master);
 
             string screenId  = _honorDisplay == HonorDisplayMode.Chroma ? "DSP_PRG_006_S" : "DSP_SOL_001_B";
-            string com003Text = $"{rankSuffix}  {lName}・{pName}";
+            string namesText  = string.IsNullOrEmpty(pName) ? lName : $"{lName}・{pName}";
+            string com003Text = $"{rankSuffix}  {namesText} 組";
 
             bool isSameScreen = _currentHonorScreen?.ScreenId == screenId
                 && _currentHonorScreen?.区分番号 == kbnNo
@@ -4529,6 +4694,7 @@ namespace DSDsp
                     prg010.HonorMode       = true;
                     prg010.HonorBango      = bango;
                     prg010.HonorAffiliation = 所属;
+                    prg010.HonorRightTopText = com003Text;
                     prg010.ScreenCompleted += OnHonorScreenCompleted;
                     _currentHonorScreen = prg010;
                     _offScreenWindow.ShowScreen(prg010, screenId);
@@ -4545,16 +4711,8 @@ namespace DSDsp
             }
             else
             {
-                // 同じ画面で Step が 1 のとき（フェードアウト後）→ COM003 に表示
-                if (_currentHonorScreen?.CurrentStep == 1)
-                {
-                    if (_honorDisplay == HonorDisplayMode.Full
-                        && _currentHonorScreen is 画面.DSP_SOL_001_B_ソロ選手紹介_大 s001)
-                    {
-                        s001.PartsCOM003.LB_右上.Content    = com003Text;
-                        s001.PartsCOM003.LB_右上.Visibility = Visibility.Visible;
-                    }
-                }
+                // 同じ画面での再生: 全画面は COM003 を使用しない。
+                // クロマキは DSP_PRG_006_S の Step3（CurrentStep==2）で選手紹介と入れ替えに右上(COM003)へ表示される。
                 _currentHonorScreen!.Advance();
             }
 
