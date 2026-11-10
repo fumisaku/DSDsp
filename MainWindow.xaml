@@ -176,6 +176,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0"
@@ -185,91 +186,99 @@
                                Margin="0,0,8,0"/>
                     
                     <ComboBox x:Name="CmbScreenSelect"
-                              Grid.Column="1"
-                              Width="150"
-                              Height="30"
-                              Margin="0,0,15,0"
-                              SelectionChanged="CmbScreenSelect_SelectionChanged">
+                               Grid.Column="1"
+                               Width="150"
+                               Height="30"
+                               Margin="0,0,15,0"
+                               SelectionChanged="CmbScreenSelect_SelectionChanged">
                         <ComboBoxItem Content="スクリーン1" IsSelected="True"/>
                         <ComboBoxItem Content="スクリーン2"/>
                         <ComboBoxItem Content="スクリーン3"/>
                     </ComboBox>
                     
                     <Button x:Name="BtnToggleDisplay"
-                            Grid.Column="2"
-                            Content="🚫 非表示"
-                            Click="BtnToggleDisplay_Click"
-                            Width="110"
-                            Height="30"
-                            Margin="0,0,30,0"
-                            Background="#FF9800"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand"/>
+                             Grid.Column="2"
+                             Content="🚫 非表示"
+                             Click="BtnToggleDisplay_Click"
+                             Width="110"
+                             Height="30"
+                             Margin="0,0,30,0"
+                             Background="#FF9800"
+                             Foreground="White"
+                             BorderThickness="0"
+                             Cursor="Hand"/>
 
                     <Button x:Name="BtnLoadTestData"
-                            Grid.Column="3"
-                            Content="📂 テストデータ"
-                            Click="BtnLoadTestData_Click"
-                            Width="130"
-                            Height="30"
-                            Margin="0,0,10,0"
-                            Background="#607D8B"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand"
-                            ToolTip="DV_Result / DA_Master / DS_Status の JSON ファイルを読み込みます"/>
+                             Grid.Column="3"
+                             Content="📂 テストデータ"
+                             Click="BtnLoadTestData_Click"
+                             Width="130"
+                             Height="30"
+                             Margin="0,0,10,0"
+                             Background="#607D8B"
+                             Foreground="White"
+                             BorderThickness="0"
+                             Cursor="Hand"
+                             ToolTip="DV_Result / DA_Master / DS_Status の JSON ファイルを読み込みます"/>
 
                     <Button x:Name="BtnTestDisplay"
-                            Grid.Column="4"
-                            Content="🔍 テスト表示"
-                            Click="BtnTestDisplay_Click"
-                            Width="110"
-                            Height="30"
-                            Margin="0,0,10,0"
-                            Background="#9C27B0"
-                            Foreground="White"
-                            BorderThickness="0"
-                            FontWeight="Bold"
-                            Cursor="Hand"/>
+                             Grid.Column="4"
+                             Content="🔍 テスト表示"
+                             Click="BtnTestDisplay_Click"
+                             Width="110"
+                             Height="30"
+                             Margin="0,0,10,0"
+                             Background="#9C27B0"
+                             Foreground="White"
+                             BorderThickness="0"
+                             FontWeight="Bold"
+                             Cursor="Hand"/>
+
+                    <CheckBox x:Name="ChkHoldSync"
+                              Grid.Column="5"
+                              Content="⏸ 同期ホールド"
+                              VerticalAlignment="Center"
+                              Margin="0,0,15,0"
+                              FontWeight="Bold"
+                              ToolTip="ONにすると、他のDSDspからの同期のメッセージを無視します"/>
                     
                     <Button x:Name="BtnBack"
-                            Grid.Column="5"
-                            Content="◀ 戻る"
-                            Click="BtnBack_Click"
-                            Width="90"
-                            Height="30"
-                            Margin="0,0,10,0"
-                            Background="#5C6BC0"
-                            Foreground="White"
-                            BorderThickness="0"
-                            FontWeight="Bold"
-                            Cursor="Hand"
-                            ToolTip="前のステップ／前の画面に戻ります"/>
+                             Grid.Column="6"
+                             Content="◀ 戻る"
+                             Click="BtnBack_Click"
+                             Width="90"
+                             Height="30"
+                             Margin="0,0,10,0"
+                             Background="#5C6BC0"
+                             Foreground="White"
+                             BorderThickness="0"
+                             FontWeight="Bold"
+                             Cursor="Hand"
+                             ToolTip="前のステップ／前の画面に戻ります"/>
 
                     <Button x:Name="BtnPlay"
-                            Grid.Column="6"
-                            Content="▶ 再生"
-                            Click="BtnPlay_Click"
-                            Width="90"
-                            Height="30"
-                            Margin="0,0,10,0"
-                            Background="#4CAF50"
-                            Foreground="White"
-                            BorderThickness="0"
-                            FontWeight="Bold"
-                            Cursor="Hand"/>
+                             Grid.Column="7"
+                             Content="▶ 再生"
+                             Click="BtnPlay_Click"
+                             Width="90"
+                             Height="30"
+                             Margin="0,0,10,0"
+                             Background="#4CAF50"
+                             Foreground="White"
+                             BorderThickness="0"
+                             FontWeight="Bold"
+                             Cursor="Hand"/>
                     
                     <Button x:Name="BtnClear"
-                            Grid.Column="7"
-                            Content="✕ クリア"
-                            Click="BtnClear_Click"
-                            Width="90"
-                            Height="30"
-                            Background="#F44336"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand"/>
+                             Grid.Column="8"
+                             Content="✕ クリア"
+                             Click="BtnClear_Click"
+                             Width="90"
+                             Height="30"
+                             Background="#F44336"
+                             Foreground="White"
+                             BorderThickness="0"
+                             Cursor="Hand"/>
                 </Grid>
             </Grid>
         </Border>

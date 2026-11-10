@@ -3835,6 +3835,12 @@ namespace DSDsp
             var p = e.Payload;
             Dispatcher.Invoke(() =>
             {
+                if (ChkHoldSync != null && ChkHoldSync.IsChecked == true)
+                {
+                    _log?.LogAdd($"[TAB同期受信] スキップ: 同期ホールドONのため無視します (Tab={p.Tab})", _log.INFO);
+                    return;
+                }
+
                 int tabIndex = p.Tab == "AWARD" ? 2 : p.Tab == "HONOR" ? 3 : -1;
                 _log?.LogAdd($"[TAB同期受信] Tab={p.Tab} Category={p.CategoryIndex} Player={p.PlayerIndex}", _log.INFO);
                 if (tabIndex < 0 || TabControl.SelectedIndex != tabIndex)
@@ -4179,6 +4185,12 @@ namespace DSDsp
 
             Dispatcher.Invoke(() =>
             {
+                if (ChkHoldSync != null && ChkHoldSync.IsChecked == true)
+                {
+                    _log?.LogAdd($"[AJS同期受信] スキップ: 同期ホールドONのため無視します (ScreenId={payload.ScreenId})", _log.INFO);
+                    return;
+                }
+
                 _log?.LogAdd(
                     $"[AJS同期受信] DP_AJS_ADVANCE 受信: ScreenId={payload.ScreenId} AjsIndex={payload.AjsIndex} Step={payload.Step}" +
                     $" / 自: items={_currentAjsProgressItems?.Count.ToString() ?? "null"} index={_currentAjsIndex}" +
