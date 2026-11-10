@@ -67,6 +67,12 @@ namespace DSDsp.画面
         /// </summary>
         public bool IsPageMode { get; set; } = true;
 
+        /// <summary>
+        /// 最後に表示した選手の順位番号（0=未表示）。複数台同期（DP_TAB_ADVANCE）で使用。
+        /// ページ毎モードはそのページの最大順位。
+        /// </summary>
+        public int LastShownRank { get; private set; } = 0;
+
         protected override int TotalSteps => 100;
         #endregion
 
@@ -223,6 +229,7 @@ namespace DSDsp.画面
             var p = PartsLST004;
             int startIdx = pageIdx * MaxRows;
             int endIdx   = Math.Min(startIdx + MaxRows, _resultList.Count);
+            if (endIdx > startIdx) LastShownRank = _resultList[endIdx - 1].順位番号;
 
             // LB_タイトル4: 2ページ以上の時のみ範囲を表示し、LB_タイトル3 と切り替え
             if (_pageCount > 1)
@@ -394,6 +401,7 @@ namespace DSDsp.画面
             }
 
             SetRowLabels(playerIdx, row);
+            LastShownRank = _resultList[playerIdx].順位番号;
 
             if (_partsMain != null)
             {

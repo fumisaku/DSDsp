@@ -2132,9 +2132,19 @@ namespace DSDsp
             else if (TabControl.SelectedIndex == 2) // 表彰式タブ
             {
                 bool canSync = _awardSelectedCategory != null || _awardSelectedIsAwardTitle || _awardSelectedIsAwardEnd;
+                bool isCategory = _awardSelectedCategory != null;
                 ExecuteAwardStep();
-                if (canSync)
-                    _ = _client?.SendTabAdvanceAsync("AWARD", LstAwardCategories.SelectedIndex, -1);
+                // 区分画面は表示方式ごとにステップ数が違うため、電文には「表示した順位」を載せる。
+                // 再生中に画面が完了した場合は OnAwardScreenCompleted から Rank=-1 が送信されるのでここでは送らない。
+                if (canSync && (!isCategory || _currentAwardScreen != null))
+                {
+                    // クロマキ個別でフェードアウト(Step4)を実行した場合は Rank=-2（選手を非表示にしただけ）
+                    int rankToSend = !isCategory ? 0
+                        : (_currentAwardScreen is 画面.DSP_PRG_006_S_選手紹介_小 ps && ps.CurrentStep >= 4)
+                            ? -2
+                            : GetAwardShownRank();
+                    _ = _client?.SendTabAdvanceAsync("AWARD", LstAwardCategories.SelectedIndex, -1, rankToSend);
+                }
             }
             else if (TabControl.SelectedIndex == 3) // オナーダンスタブ
             {
@@ -2950,13 +2960,7 @@ namespace DSDsp
                 // クロマキ_個別（一括） → DSP_PRG_008（クロマキ背景）
                 bool isChromaIndividualPage = (_awardDisplay == AwardDisplayMode.ChromaIndividual
                                                && _awardOrder == AwardOrderMode.Page);
-                string screenId;
-                if (_awardDisplay == AwardDisplayMode.ChromaList)
-                    screenId = "DSP_PRG_005_S";
-                else if (_awardDisplay == AwardDisplayMode.ChromaIndividual && !isChromaIndividualPage)
-                    screenId = "DSP_PRG_006_S";
-                else
-                    screenId = "DSP_PRG_005_B";
+                string screenId = GetAwardCategoryScreenId();
 
                 bool isSameScreen = _currentAwardScreen?.ScreenId == screenId
                     && _currentAwardScreen?.区分番号 == kbnNo
@@ -3026,6 +3030,28 @@ namespace DSDsp
                     : "画面終了");
         }
 
+        /// <summary>現在の表示方式で使う区分画面の画面IDを返す。</summary>
+        private string GetAwardCategoryScreenId()
+        {
+            if (_awardDisplay == AwardDisplayMode.ChromaList)
+                return "DSP_PRG_005_S";
+            if (_awardDisplay == AwardDisplayMode.ChromaIndividual && _awardOrder != AwardOrderMode.Page)
+                return "DSP_PRG_006_S";
+            return "DSP_PRG_005_B";
+        }
+
+        /// <summary>表示中の区分画面が最後に表示した順位（未表示は0）。DP_TAB_ADVANCE の Rank に使う。</summary>
+        private int GetAwardShownRank() => _currentAwardScreen switch
+        {
+            画面.DSP_PRG_005_B_決勝結果_大 b => b.LastShownRank,
+            画面.DSP_PRG_005_S_決勝結果_小 s => s.LastShownRank,
+            画面.DSP_PRG_006_S_選手紹介_小 p => p.CurrentStep >= 2 ? p.順位番号 : 0,
+            _ => 0
+        };
+
+        /// <summary>DP_TAB_ADVANCE 受信処理中は true（受信起因の画面完了を他台へ再送しない）</summary>
+        private bool _isReceivingTabAdvance = false;
+
         private void OnAwardScreenCompleted(object? sender, EventArgs e)
         {
             if (sender is 画面.DSDspScreenBase s)
@@ -3066,13 +3092,142 @@ namespace DSDsp
                         _currentAwardScreen = null;
                         SyncAwardPreviewSelection(null);
                         UpdateAwardStatus("画面終了");
+                        BroadcastAwardClosed();
                     }
                 });
                 return;
             }
 
+            bool isCategoryScreen = sender is 画面.DSP_PRG_005_B_決勝結果_大 || sender is 画面.DSP_PRG_005_S_決勝結果_小;
             _currentAwardScreen = null;
-            Dispatcher.Invoke(() => UpdateAwardStatus("画面終了"));
+            Dispatcher.Invoke(() =>
+            {
+                UpdateAwardStatus("画面終了");
+                if (isCategoryScreen) BroadcastAwardClosed();
+            });
+        }
+
+        /// <summary>区分画面が最後まで完了したことを他台へ通知する（Rank=-1）。受信起因の完了は送らない。</summary>
+        private void BroadcastAwardClosed()
+        {
+            if (_isReceivingTabAdvance || _awardSelectedCategory == null) return;
+            _ = _client?.SendTabAdvanceAsync("AWARD", LstAwardCategories.SelectedIndex, -1, -1);
+        }
+
+        /// <summary>現在の表示方式の区分画面が表示中か</summary>
+        private bool IsAwardCategoryScreenActive()
+        {
+            if (_currentAwardScreen == null || _awardSelectedCategory == null) return false;
+            var (kbnNo, rndNo, _, _) = _awardSelectedCategory.Value;
+            return _currentAwardScreen.ScreenId == GetAwardCategoryScreenId()
+                && _currentAwardScreen.区分番号 == kbnNo
+                && _currentAwardScreen.ラウンド番号 == rndNo;
+        }
+
+        /// <summary>
+        /// 他台から受信した順位まで、自分の表示方式で表示する。
+        /// 表示方式（全画面/クロマキ_リスト/クロマキ_個別）でステップ数が違っても同じ順位が表示される。
+        /// </summary>
+        private void SyncAwardToRank(int rank)
+        {
+            if (_awardSelectedCategory == null) return;
+            var (kbnNo, rndNo, _, _) = _awardSelectedCategory.Value;
+
+            // クロマキ_個別: 順位を指定して新規に選手紹介画面を表示する
+            if (GetAwardCategoryScreenId() == "DSP_PRG_006_S")
+            {
+                if (IsAwardCategoryScreenActive() && _currentAwardScreen is 画面.DSP_PRG_006_S_選手紹介_小 cur
+                    && cur.順位番号 == rank)
+                {
+                    while (cur.CurrentStep < 2) cur.Advance();   // Step1/Step2 まで
+                    return;
+                }
+
+                EnsureOffScreenWindowCreated();
+                if (_offScreenWindow == null) return;
+                ApplyAwardWindowBackground(true);
+                if (_currentAwardScreen != null)
+                    _currentAwardScreen.ScreenCompleted -= OnAwardScreenCompleted;
+
+                var dm = (_testDataManager != null) ? _testDataManager : _client?.DataManager;
+                var s010 = new 画面.DSP_PRG_006_S_選手紹介_小();
+                s010.ScreenId    = "DSP_PRG_006_S";
+                s010.DA_Master   = dm?.DA_Master;
+                s010.DS_Status   = dm?.DS_Status;
+                s010.DV_Result   = GetDvResultFor(kbnNo, rndNo);
+                s010.区分番号    = kbnNo;
+                s010.ラウンド番号 = rndNo;
+                s010.順位番号    = rank;
+                s010.ScreenCompleted += OnAwardScreenCompleted;
+                _currentAwardScreen = s010;
+                _offScreenWindow.ShowScreen(s010, "DSP_PRG_006_S");
+                s010.Advance();   // Step1
+                s010.Advance();   // Step2（選手表示）
+                SyncAwardPreviewSelection(rank);
+                _log?.LogAdd($"[TAB同期受信] クロマキ個別 順位={rank} を表示", _log.INFO);
+                return;
+            }
+
+            // 全画面／クロマキ_リスト: 指定順位が表示されるまで再生を進める
+            if (!IsAwardCategoryScreenActive())
+                ExecuteAwardStep();   // 画面生成＋Step1
+
+            bool asc = (_awardOrder != AwardOrderMode.Desc);   // 一括(Page)も昇順扱い
+            for (int i = 0; i < 200; i++)
+            {
+                if (!IsAwardCategoryScreenActive()) break;
+                int last = GetAwardShownRank();
+                if (last > 0 && (asc ? last >= rank : last <= rank)) break;
+                ExecuteAwardStep();
+            }
+        }
+
+        /// <summary>
+        /// 他台のクロマキ個別が選手を非表示にした(Rank=-2)とき、自台がクロマキ個別で選手表示中なら同様に非表示にする。
+        /// 自台の ScreenCompleted で次の選手が用意される（通常の再生と同じ）。他の表示方式では何もしない。
+        /// </summary>
+        private void HideAwardIndividualFromSync()
+        {
+            if (IsAwardCategoryScreenActive() && _currentAwardScreen is 画面.DSP_PRG_006_S_選手紹介_小 p && p.CurrentStep >= 2)
+                while (p.CurrentStep < 4) p.Advance();   // Step3(保持)→Step4(フェードアウト)
+        }
+
+        /// <summary>他台の表彰式区分画面が最後まで完了したとき、自台の区分画面も閉じる。</summary>
+        private void CloseAwardScreenFromSync()
+        {
+            if (!IsAwardCategoryScreenActive() || _currentAwardScreen == null) return;
+            var screen = _currentAwardScreen;
+            screen.ScreenCompleted -= OnAwardScreenCompleted;
+
+            bool done = false;
+            EventHandler onDone = (_, _) => done = true;
+            screen.ScreenCompleted += onDone;
+            try
+            {
+                if (screen is 画面.DSP_PRG_005_B_決勝結果_大 b) b.RequestClose();
+                else if (screen is 画面.DSP_PRG_005_S_決勝結果_小 sm) sm.RequestClose();
+
+                if (screen is 画面.DSP_PRG_006_S_選手紹介_小 p)
+                {
+                    if (p.CurrentStep >= 2)
+                        while (p.CurrentStep < 4) p.Advance();   // Step3(保持)→Step4(フェードアウト)
+                    else
+                        _offScreenWindow?.ClearScreen();
+                }
+                else
+                {
+                    for (int i = 0; i < 10 && !done; i++) screen.Advance();
+                    if (!done) _offScreenWindow?.ClearScreen();
+                }
+            }
+            finally
+            {
+                screen.ScreenCompleted -= onDone;
+            }
+
+            _currentAwardScreen = null;
+            UpdateAwardStatus("画面終了");
+            _log?.LogAdd("[TAB同期受信] 区分画面を終了しました", _log.INFO);
         }
 
         /// <summary>プレビューリストの選択をイベントを発火させずに指定順位へ同期する（null=選択解除）</summary>
@@ -3725,7 +3880,24 @@ namespace DSDsp
             if (p.Tab == "AWARD")
             {
                 if (TabControl.SelectedIndex != 2) return;
-                ExecuteAwardStep();
+                _isReceivingTabAdvance = true;
+                try
+                {
+                    if (p.Rank == -2)
+                        HideAwardIndividualFromSync();
+                    else if (p.Rank < 0)
+                        CloseAwardScreenFromSync();
+                    else if (p.Rank >= 1)
+                        SyncAwardToRank(p.Rank);   // 表示方式に関わらず同じ順位を表示する
+                    else if (_awardSelectedCategory != null
+                             && _currentAwardScreen is 画面.DSP_PRG_006_S_選手紹介_小 cur && cur.CurrentStep >= 1)
+                    {
+                        // 送信元は順位表示前の段階。クロマキ個別は Step2 で選手を出してしまうため進めない
+                    }
+                    else
+                        ExecuteAwardStep();
+                }
+                finally { _isReceivingTabAdvance = false; }
                 return;
             }
 
