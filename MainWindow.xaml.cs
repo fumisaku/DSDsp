@@ -4711,7 +4711,7 @@ namespace DSDsp
 
                 string honorRankStr = rankNo switch
                 {
-                    1 => "チャンピオン",
+                    1 => "優勝",
                     2 => "準優勝",
                     _ => $"第{rankNo}位"
                 };
@@ -4803,7 +4803,7 @@ namespace DSDsp
             // 演技順テキスト: 区分名 + "  " + 順位
             string rankSuffix = rankNo switch
             {
-                1 => "チャンピオン",
+                1 => "優勝",
                 2 => "準優勝",
                 _ => $"第{rankNo}位"
             };
@@ -4835,6 +4835,7 @@ namespace DSDsp
                 {
                     var sol001 = new 画面.DSP_SOL_001_B_ソロ選手紹介_大();
                     sol001.ScreenId    = screenId;
+                    sol001.HonorMode   = true;
                     sol001.DA_Master   = dm?.DA_Master;
                     sol001.DS_Status   = dm?.DS_Status;
                     sol001.DV_Result   = dvResult;
@@ -4895,8 +4896,9 @@ namespace DSDsp
             }
             else
             {
-                // 同じ画面での再生: 全画面は COM003 を使用しない。
-                // クロマキは DSP_PRG_006_S の Step3（CurrentStep==2）で選手紹介と入れ替えに右上(COM003)へ表示される。
+                // 同じ画面での再生（2回目以降）:
+                //   全画面(DSP_SOL_001_B): 2回目＝何もしない、3回目＝選手紹介を非表示
+                //   クロマキ(DSP_PRG_006_S): 2回目＝選手紹介を消して右上(COM003)に表示、3回目＝右上を非表示
                 _currentHonorScreen!.Advance();
             }
 

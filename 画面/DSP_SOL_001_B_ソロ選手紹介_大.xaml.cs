@@ -32,7 +32,13 @@ namespace DSDsp.画面
         /// 既定: Step1+Step2同時(1) + Step3(1) = 2ステップ
         /// Hold: Step1(1) + Step2(1) + 何もしない(1) + 停止(1) = 4ステップ
         /// </summary>
-        protected override int TotalSteps => StepMode == "Hold" ? 4 : 2;
+        protected override int TotalSteps => HonorMode ? 3 : (StepMode == "Hold" ? 4 : 2);
+
+        /// <summary>
+        /// オナーダンス表示モード。true のとき、
+        /// 再生1回目＝Step1+Step2（選手紹介表示）、2回目＝何もしない（クロマキの右上表示と同期）、3回目＝Step3（非表示）。
+        /// </summary>
+        public bool HonorMode { get; set; } = false;
         public override bool WaitsForLastStepFadeOut => true;
         /// <summary>
         /// Hold モード時は最終ステップ完了後も停止して次の再生ボタンを待つ。
@@ -51,7 +57,21 @@ namespace DSDsp.画面
         #region オーバーライドメソッド
         protected override void ExecuteCurrentStep()
         {
-            if (StepMode == "Hold")
+            if (HonorMode)
+            {
+                switch (_currentStep)
+                {
+                    case 0:
+                        Step1();
+                        Step2();
+                        break;
+                    case 1: break; // 何もしない（選手紹介を表示したまま）
+                    case 2:
+                        Step3();
+                        break;
+                }
+            }
+            else if (StepMode == "Hold")
             {
                 switch (_currentStep)
                 {
