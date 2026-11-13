@@ -80,10 +80,15 @@ namespace DSDsp.画面
                     return _ページ数 == 1 ? 1 : _ページ数 * 2;
                 }
                 int 基本 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
-                int 追加 = (_全ヒート数 >= 2 && ChromaKeyMode) ? 2 : 1;
+                int 追加 = (_全ヒート数 >= 2 && クロマキー2画面表示) ? 2 : 1;
                 return 基本 + 追加;
             }
         }
+        /// <summary>
+        /// クロマキー時に LST005（現在ヒート）を表示する2画面目を使うか。
+        /// デュエルヒート表（IsOverviewMode=true, ヒート番号=0）は次に選手紹介画面があるため不要。
+        /// </summary>
+        private bool クロマキー2画面表示 => ChromaKeyMode && !IsOverviewMode;
         public override bool WaitsForLastStepFadeOut => true;
         /// <summary>
         /// WaitsForResult=false（Auto タイマー）のときのみ HoldsAfterFadeOut=true：
@@ -132,7 +137,7 @@ namespace DSDsp.画面
                 {
                     if (_currentStep == 最初のLSTステップ)
                     {
-                        if (ChromaKeyMode)
+                        if (クロマキー2画面表示)
                             Step5_LST005フェードイン();
                         else
                             Step6_フェードアウト();
@@ -209,7 +214,7 @@ namespace DSDsp.画面
 
             if (_全ヒート数 >= 2)
             {
-                if (ChromaKeyMode)
+                if (クロマキー2画面表示)
                 {
                     Step5_LST005フェードイン();
                     _currentStep = 基本ステップ数 + 1;
@@ -255,7 +260,7 @@ namespace DSDsp.画面
                     {
                         if (_全ヒート数 >= 2)
                         {
-                            if (ChromaKeyMode)
+                            if (クロマキー2画面表示)
                             {
                                 Step5_LST005フェードイン();
                                 int 基本ステップ数 = _ページ数 == 1 ? 2 : _ページ数 * 2 + 1;
@@ -414,7 +419,7 @@ namespace DSDsp.画面
             PartsLST001.LB_タイトル1.Content = 区分名 + " " + ラウンド名;
             PartsLST001.LB_タイトル2.Content = DSDspDataHelper.Get種目名(DA_Master, 区分番号, ラウンド番号, 種目番号);
             int 全ヒート数 = DSDspDataHelper.Getヒート数(DS_Status, 区分番号, ラウンド番号, 種目番号);
-            PartsLST001.LB_タイトル3.Content = 全ヒート数 >= 2
+            PartsLST001.LB_タイトル3.Content = 全ヒート数 >= 2 && ヒート番号 > 0
                 ? $"{ヒート番号}H出場選手一覧"
                 : "出場選手一覧";
 
@@ -790,7 +795,7 @@ namespace DSDsp.画面
 
             var fadeOutStoryboard = new Storyboard();
 
-            if (ChromaKeyMode)
+            if (クロマキー2画面表示)
             {
                 // クロマキー: LST005+LST006 を消す（タイトルはStep5で消去済み）
                 if (PartsLST005.Visibility == Visibility.Visible)
