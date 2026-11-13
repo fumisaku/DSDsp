@@ -4352,7 +4352,10 @@ namespace DSDsp
                     var csWait = _offScreenWindow?.CurrentScreen as DSDspScreenBase;
                     bool tagMatchesCurrentIndex =
                         _offScreenWindow?.CurrentScreenTag == (object)_currentAjsProgressItems[_currentAjsIndex];
+                    // デュエルヒート表（IsOverviewMode, ヒート番号0）は採点結果を待つ対象ではないため除外する。
+                    // （IsHeatResultReady(…, 0) は常に false で自律進行できず、他台の DUE_001 表示に同期できなくなる）
                     if (csWait != null &&
+                        !csWait.IsOverviewMode &&
                         csWait.WaitsForResult &&
                         csWait.ScreenId.StartsWith("DSP_GRP_001", StringComparison.OrdinalIgnoreCase) &&
                         tagMatchesCurrentIndex &&          // HoldsAfterFadeOut 停止中は除外
