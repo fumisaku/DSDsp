@@ -163,7 +163,7 @@ namespace DSDsp.画面
         /// LST001パーツは他画面と共用のため、XAML側は変更せずここで上書きする。
         /// DSP_SOL_007 と同じ数値を適用する。
         ///   ・選手名 : Width 153 → 290
-        ///   ・所属   : Canvas.Left 256 → 330、Width 114 → 90（右端 420）
+        ///   ・所属   : Canvas.Left 303 → 330、Width 114 → 135（右端 465。得点 Left=469 の手前まで）
         ///   ・減点   : Visibility = Collapsed（この画面では減点不要）
         /// </summary>
         private void AdjustLayoutForCOM001()
@@ -188,7 +188,7 @@ namespace DSDsp.画面
             {
                 選手名リスト[i].Width = 290;
                 Canvas.SetLeft(所属リスト[i], 330);
-                所属リスト[i].Width = 90;
+                所属リスト[i].Width = 135;
                 減点リスト[i].Visibility = Visibility.Collapsed;
             }
         }
@@ -462,7 +462,7 @@ namespace DSDsp.画面
                 _partsMain.フォントサイズ自動調整(
                     label: _所属LB[i],
                     text: _所属LB[i].Content?.ToString() ?? "",
-                    maxWidth: 100,
+                    maxWidth: 125,
                     maxFontSize: 16,
                     minFontSize: 8,
                     fontFamilyName: FONT_FAMILY_NAME);
