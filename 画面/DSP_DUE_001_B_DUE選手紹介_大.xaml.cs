@@ -24,10 +24,15 @@ namespace DSDsp.画面
 
         #region オーバーライド
         /// <summary>
-        /// ステップ数: Step1(0), Step2(1), Step3(2) の 3 ステップ
+        /// ステップ数: 1回目＝Step1+Step2（2選手表示）、2回目＝表示したまま完了通知（ソロ選手紹介 Hold と同じ流れ）
         /// </summary>
         protected override int TotalSteps => 2;
         public override bool WaitsForLastStepFadeOut => true;
+        /// <summary>
+        /// 2回目の再生後も選手紹介を表示し続け、次の再生ボタンまで停止する。
+        /// （S と同じタイミングで次画面へ遷移するため。DSP_SOL_001_B の Hold と同様）
+        /// </summary>
+        public override bool HoldsAfterFadeOut => true;
         #endregion
 
         #region コンストラクタ
@@ -43,7 +48,11 @@ namespace DSDsp.画面
             switch (_currentStep)
             {
                 case 0: Step1(); Step2(); break;
-                case 1: Step3(); break;
+                case 1:
+                    // B（大画面）はフェードアウトせず選手紹介をそのまま表示し続ける。
+                    // WaitsForLastStepFadeOut=true のため手動で完了を通知する。
+                    RaiseScreenCompleted();
+                    break;
             }
         }
 
