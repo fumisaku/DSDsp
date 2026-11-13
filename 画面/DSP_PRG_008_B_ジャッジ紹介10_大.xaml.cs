@@ -31,7 +31,7 @@ namespace DSDsp.画面
         #region フィールド
         private bool _step2Visible = false;
         private bool _closeRequested = false;
-        private List<(string JdgCd, string JdgDispName, string JdgCtry)> _judgeList = new();
+        private List<DSDspDataHelper.JudgeIntroPage> _pages = new();
         private int _pageCount = 1;
         #endregion
 
@@ -138,7 +138,7 @@ namespace DSDsp.画面
             SetVisible(p, "LB_タイトル2", true);
 
             // タイトル3: ジャッジ
-            SetLabelContent(p, "LB_タイトル3", "ジャッジ");
+            SetLabelContent(p, "LB_タイトル3", _pages.Count > 0 ? _pages[0].Title : "ジャッジ");
             SetVisible(p, "IM_タイトル3", true);
             SetVisible(p, "LB_タイトル3", true);
 
@@ -150,14 +150,15 @@ namespace DSDsp.画面
         {
             EnsurePartsMainInitialized();
             var p = PartsLST002;
-            int startIdx = pageIdx * MaxRows;
-            int endIdx   = Math.Min(startIdx + MaxRows, _judgeList.Count);
+            var page = _pages[pageIdx];
 
-            // タイトル4: 20人以下はブランク、21人以上はページ数/全ページ数
-            if (_pageCount > 1)
+            // タイトル3: ジャッジタイプ別／役員のタイトル
+            SetLabelContent(p, "LB_タイトル3", page.Title);
+
+            // タイトル4: 同一タイトル内で複数ページになる場合のみ ページ/全ページ
+            if (page.PagesInSection > 1)
             {
-                int totalPages = _pageCount;
-                SetLabelContent(p, "LB_タイトル4", $"{pageIdx + 1}/{totalPages}");
+                SetLabelContent(p, "LB_タイトル4", $"{page.PageInSection}/{page.PagesInSection}");
                 SetVisible(p, "LB_タイトル4", true);
             }
             else
@@ -168,11 +169,10 @@ namespace DSDsp.画面
 
             for (int row = 1; row <= MaxRows; row++)
             {
-                int idx = startIdx + row - 1;
-                if (idx < _judgeList.Count)
+                if (row <= page.Items.Count)
                 {
-                    var j = _judgeList[idx];
-                    SetLabelContent(p, $"LB_結果{row}_背番号", j.JdgCd);
+                    var j = page.Items[row - 1];
+                    SetLabelContent(p, $"LB_結果{row}_背番号", j.DispCode);
                     SetLabelContent(p, $"LB_結果{row}_選手名", j.JdgDispName);
                     SetLabelContent(p, $"LB_結果{row}_所属",   j.JdgCtry);
                     if (p.FindName($"LB_結果{row}_選手名") is Label lb選手名)
@@ -192,8 +192,7 @@ namespace DSDsp.画面
             var lbNames = new List<string>();
             for (int row = 1; row <= MaxRows; row++)
             {
-                int idx = startIdx + row - 1;
-                if (idx < _judgeList.Count)
+                if (row <= page.Items.Count)
                 {
                     imNames.Add($"IM_明細{row}");
                     lbNames.Add($"LB_結果{row}_背番号");
@@ -288,9 +287,8 @@ namespace DSDsp.画面
 
         private void BuildJudgeList()
         {
-            var all = DSDspDataHelper.Getジャッジリスト_ByGroup(DA_Master, JudgeGroupId);
-            _judgeList = all.Select(j => (j.JdgCd, j.JdgDispName, j.JdgCtry)).ToList();
-            _pageCount = Math.Max(1, (int)Math.Ceiling(_judgeList.Count / (double)MaxRows));
+            _pages = DSDspDataHelper.Getジャッジ紹介ページ(DA_Master, JudgeGroupId, MaxRows);
+            _pageCount = _pages.Count;
         }
 
         private void HideAllParts()

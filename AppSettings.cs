@@ -69,6 +69,32 @@ namespace DSDsp
     }
 
     /// <summary>
+    /// ジャッジ紹介の役員1名分（タイトルと名前）
+    /// </summary>
+    public class OfficialEntry
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// ジャッジ紹介設定（タイプ別タイトル文言・役員）
+    /// </summary>
+    public class JudgeIntroSettings
+    {
+        /// <summary>ジャッジタイプ J のタイトル</summary>
+        public string JudgeTitle { get; set; } = "ジャッジ";
+        /// <summary>ジャッジタイプ R のタイトル</summary>
+        public string RefereeTitle { get; set; } = "レフリー";
+        /// <summary>ジャッジタイプ T のタイトル</summary>
+        public string TechnicalTitle { get; set; } = "技術判定員";
+        /// <summary>役員を紹介に含めるか</summary>
+        public bool ShowOfficials { get; set; } = true;
+        /// <summary>役員（最大4名。名前が空の行は表示しない）</summary>
+        public System.Collections.Generic.List<OfficialEntry> Officials { get; set; } = new();
+    }
+
+    /// <summary>
     /// アプリケーション設定
     /// </summary>
     public class AppSettings
@@ -78,6 +104,7 @@ namespace DSDsp
         public DisplaySettings DisplaySettings { get; set; } = new DisplaySettings();
         public AutoDisplaySettings AutoDisplaySettings { get; set; } = new AutoDisplaySettings();
         public ChromaKeySettings ChromaKeySettings { get; set; } = new ChromaKeySettings();
+        public JudgeIntroSettings JudgeIntroSettings { get; set; } = new JudgeIntroSettings();
 
         private static AppSettings? _instance;
         private static readonly object _lock = new object();

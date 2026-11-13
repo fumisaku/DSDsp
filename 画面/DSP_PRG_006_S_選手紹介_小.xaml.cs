@@ -84,6 +84,12 @@ namespace DSDsp.画面
         /// （例: "優勝  xx・xx 組"）。空の場合は何もしない。
         /// </summary>
         public string HonorRightTopText { get; set; } = string.Empty;
+
+        /// <summary>
+        /// true のとき（ジャッジ紹介クロマキ個別用）、「記号  名前  所属」を LB_選手名 1つに連結し、
+        /// テロップ帯の中央揃えで表示する（所属が空でもバランス良く表示するため）。HonorMode と併用する。
+        /// </summary>
+        public bool CenterJoinedLayout { get; set; } = false;
         #endregion
 
         #region コンストラクタ
@@ -193,7 +199,29 @@ namespace DSDsp.画面
 
             PartsPRG006.LB_選手名.HorizontalContentAlignment = System.Windows.HorizontalAlignment.Left;
 
-            if (HonorMode)
+            if (HonorMode && CenterJoinedLayout)
+            {
+                // ── ジャッジ紹介個別: 「記号  名前  所属」を帯の中央に1行で表示 ──
+                string 名前 = HonorLB選手名Override ?? 選手名;
+                // 空要素（役員は記号なし等）を除いて全角スペース2つで連結する
+                string 連結 = string.Join("　　",
+                    new[] { HonorBango, 名前, HonorAffiliation }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+                PartsPRG006.LB_区分名.Content = HonorLB区分名Override ?? string.Empty;
+                PartsPRG006.LB_順位.Content   = string.Empty;
+                PartsPRG006.LB_所属.Content   = string.Empty;
+                PartsPRG006.LB_得点.Content   = string.Empty;
+
+                // 帯画像（IM_種目2: Left=32, Width=530）の中央に合わせる
+                PartsPRG006.LB_選手名.Width = 530;
+                System.Windows.Controls.Canvas.SetLeft(PartsPRG006.LB_選手名, 32);
+                PartsPRG006.LB_選手名.HorizontalContentAlignment = System.Windows.HorizontalAlignment.Center;
+                PartsPRG006.LB_選手名.Content = 連結;
+
+                _partsMain.フォントサイズ自動調整(PartsPRG006.LB_区分名, PartsPRG006.LB_区分名.Content?.ToString() ?? "", MAX_WIDTH, 14, MIN_FS, FONT_FAMILY_NAME);
+                _partsMain.フォントサイズ自動調整(PartsPRG006.LB_選手名, 連結, 500, MAX_FS, MIN_FS, FONT_FAMILY_NAME);
+            }
+            else if (HonorMode)
             {
                 // ── オナーダンス / ジャッジ紹介個別 用テキスト設定 ──
                 // LB_区分名: オーバーライドが設定されている場合はそちらを使用
@@ -280,7 +308,11 @@ namespace DSDsp.画面
                 _partsMain?.フェードイン(true, PartsPRG006.LB_区分名, lbSb, 0);
                 _partsMain?.フェードイン(true, PartsPRG006.LB_選手名, lbSb, FADE_DELAY_MILLISECONDS);
 
-                if (HonorMode)
+                if (HonorMode && CenterJoinedLayout)
+                {
+                    // 連結表示: LB_選手名 のみ（上でフェードイン済み）
+                }
+                else if (HonorMode)
                 {
                     // オナーダンス: 得点非表示、LB_順位に背番号、LB_所属に所属を表示
                     PartsPRG006.LB_順位.Content    = HonorBango;

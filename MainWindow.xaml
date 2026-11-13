@@ -450,6 +450,7 @@
                         <ListBox x:Name="LstProgressItems"
                                  Grid.Row="2"
                                  SelectionChanged="LstProgressItems_SelectionChanged"
+                                 IsVisibleChanged="ScrollList_IsVisibleChanged"
                                  BorderBrush="#DDDDDD"
                                  FontSize="12">
                             <ListBox.ItemContainerStyle>
@@ -637,6 +638,7 @@
                             <ListBox x:Name="LstAjsProgress"
                                      Grid.Row="2"
                                      SelectionChanged="LstAjsProgress_SelectionChanged"
+                                     IsVisibleChanged="ScrollList_IsVisibleChanged"
                                      BorderBrush="#DDDDDD"
                                      FontSize="12"/>
 
@@ -1017,8 +1019,9 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- 行0: 表示設定 -->
-                    <Border Grid.Row="0" Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="1"
+                    <!-- 行0: 表示設定 + タイトル／役員設定 -->
+                    <StackPanel Grid.Row="0">
+                    <Border Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="1"
                             CornerRadius="4" Padding="10,7">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="表示" VerticalAlignment="Center" FontWeight="Bold"
@@ -1034,6 +1037,58 @@
                                          Checked="RbJudgeDisplay_Changed"/>
                         </StackPanel>
                     </Border>
+
+                    <!-- タイトル文言／役員設定 -->
+                    <Expander Header="タイトル文言・役員の設定" Margin="0,6,0,0" FontSize="12">
+                        <Border Background="#F7F7F7" BorderBrush="#DDDDDD" BorderThickness="1"
+                                CornerRadius="4" Padding="10,7" Margin="0,4,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="ジャッジ(J)" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBox x:Name="TxtJudgeTitleJ" Width="110" Margin="0,0,12,0"/>
+                                    <TextBlock Text="レフリー(R)" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBox x:Name="TxtJudgeTitleR" Width="110" Margin="0,0,12,0"/>
+                                    <TextBlock Text="技術判定員(T)" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBox x:Name="TxtJudgeTitleT" Width="110"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkShowOfficials" Content="役員を紹介に含める（「全員」タブの末尾に表示、名前が空の行は除外）"
+                                          Margin="0,8,0,4" IsChecked="True"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="170"/>
+                                        <ColumnDefinition Width="220"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="役員タイトル" FontWeight="Bold"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="名前" FontWeight="Bold"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="役員1" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="TxtOfficialTitle1" Grid.Row="1" Grid.Column="1" Margin="0,2,6,2"/>
+                                    <TextBox x:Name="TxtOfficialName1"  Grid.Row="1" Grid.Column="2" Margin="0,2,0,2"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="役員2" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="TxtOfficialTitle2" Grid.Row="2" Grid.Column="1" Margin="0,2,6,2"/>
+                                    <TextBox x:Name="TxtOfficialName2"  Grid.Row="2" Grid.Column="2" Margin="0,2,0,2"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="役員3" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="TxtOfficialTitle3" Grid.Row="3" Grid.Column="1" Margin="0,2,6,2"/>
+                                    <TextBox x:Name="TxtOfficialName3"  Grid.Row="3" Grid.Column="2" Margin="0,2,0,2"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="役員4" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="TxtOfficialTitle4" Grid.Row="4" Grid.Column="1" Margin="0,2,6,2"/>
+                                    <TextBox x:Name="TxtOfficialName4"  Grid.Row="4" Grid.Column="2" Margin="0,2,0,2"/>
+                                </Grid>
+                                <Button x:Name="BtnJudgeIntroSettingsSave" Content="設定を保存"
+                                        Click="BtnJudgeIntroSettingsSave_Click"
+                                        Height="26" Width="100" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                        Background="#1565C0" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            </StackPanel>
+                        </Border>
+                    </Expander>
+                    </StackPanel>
 
                     <!-- 行2: ジャッジタブ（全員＋グループ別）＋ジャッジ一覧 -->
                     <Grid Grid.Row="2">

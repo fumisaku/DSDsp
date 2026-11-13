@@ -1219,5 +1219,169 @@ namespace DSDsp.画面
             if (string.IsNullOrEmpty(grpId)) return all;
             return all.Where(j => j.JdgGrps.Contains(grpId!)).ToList();
         }
+
+        // ────────────────────────────────────────────────
+        // ジャッジ紹介（タイプ別タイトル・役員）
+        // ────────────────────────────────────────────────
+
+        /// <summary>ジャッジ紹介の1人分（ジャッジまたは役員）</summary>
+        public class JudgeIntroItem
+        {
+            /// <summary>セクションタイトル（ジャッジ／レフリー／技術判定員／役員）。画面のタイトル3に表示する。</summary>
+            public string SectionTitle { get; set; } = string.Empty;
+            /// <summary>個別表示時のタイトル（ジャッジはセクションタイトルと同じ、役員は個別タイトル）。</summary>
+            public string IndTitle { get; set; } = string.Empty;
+            public string JdgCd { get; set; } = string.Empty;
+            public string JdgDispName { get; set; } = string.Empty;
+            public string JdgCtry { get; set; } = string.Empty;
+            public bool IsOfficial { get; set; }
+            /// <summary>ジャッジ記号を表示するか（レフリー・技術判定員・役員は false）</summary>
+            public bool ShowCode { get; set; } = true;
+            /// <summary>表示用のジャッジ記号（ShowCode=false の場合は空）</summary>
+            public string DispCode => ShowCode ? JdgCd : string.Empty;
+        }
+
+        /// <summary>ジャッジ紹介の1ページ分（同一セクションタイトルの連続行）</summary>
+        public class JudgeIntroPage
+        {
+            public string Title { get; set; } = string.Empty;
+            public List<JudgeIntroItem> Items { get; set; } = new();
+            public int PageInSection { get; set; } = 1;
+            public int PagesInSection { get; set; } = 1;
+        }
+
+        /// <summary>
+        /// ジャッジタイプコード（DJ_JdgTyp: J/R/T）に対応するタイトルを設定から取得する。
+        /// 設定が空の場合は既定文言を返す。
+        /// </summary>
+        public static string Getジャッジタイプタイトル(string? typ)
+        {
+            var s = DSDsp.AppSettings.Instance.JudgeIntroSettings;
+            string t = (typ ?? string.Empty).Trim().ToUpperInvariant();
+            return t switch
+            {
+                "R" => string.IsNullOrWhiteSpace(s.RefereeTitle)   ? "レフリー"   : s.RefereeTitle.Trim(),
+                "T" => string.IsNullOrWhiteSpace(s.TechnicalTitle) ? "技術判定員" : s.TechnicalTitle.Trim(),
+                _   => string.IsNullOrWhiteSpace(s.JudgeTitle)     ? "ジャッジ"   : s.JudgeTitle.Trim(),
+            };
+        }
+
+        /// <summary>
+        /// ジャッジ紹介の対象一覧（ジャッジ→レフリー→技術判定員の順、続けて役員）を返す。
+        /// grpId 指定時はそのグループでのタイプ(DJ_JdgTyp)で分類し、役員は含めない。
+        /// grpId が null/空（全員）の場合は最初の有効タイプで分類し、設定が有効なら役員を末尾に追加する。
+        /// </summary>
+        public static List<JudgeIntroItem> Getジャッジ紹介アイテム(JsonNode? daMaster, string? grpId)
+        {
+            var result = new List<JudgeIntroItem>();
+            var judges = daMaster?["DJ_JUDGEs"]?.AsArray();
+            var buckets = new Dictionary<string, List<JudgeIntroItem>>
+            {
+                ["J"] = new(), ["R"] = new(), ["T"] = new()
+            };
+
+            if (judges != null)
+            {
+                foreach (var j in judges)
+                {
+                    if (j == null) continue;
+                    string typ = string.Empty;
+                    bool member = string.IsNullOrEmpty(grpId);
+                    var grpArr = j["DJ_JdgGrps"]?.AsArray();
+                    if (grpArr != null)
+                    {
+                        foreach (var g in grpArr)
+                        {
+                            var grp = g?["DJ_JdgGrp"]?.ToString();
+                            var t   = g?["DJ_JdgTyp"]?.ToString();
+                            if (string.IsNullOrEmpty(grp) || string.IsNullOrEmpty(t)) continue;
+                            if (string.IsNullOrEmpty(grpId) || grp == grpId)
+                            {
+                                typ = t!;
+                                member = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!member) continue;
+
+                    string key = typ.Trim().ToUpperInvariant();
+                    if (key != "R" && key != "T") key = "J";
+                    string title = Getジャッジタイプタイトル(key);
+                    buckets[key].Add(new JudgeIntroItem
+                    {
+                        SectionTitle = title,
+                        IndTitle     = title,
+                        JdgCd        = j["DJ_JdgCd"]?.ToString()       ?? string.Empty,
+                        JdgDispName  = j["DJ_JdgDispName"]?.ToString() ?? string.Empty,
+                        JdgCtry      = j["DJ_JdgCtry"]?.ToString()     ?? string.Empty,
+                        ShowCode     = key == "J",
+                    });
+                }
+            }
+
+            result.AddRange(buckets["J"]);
+            result.AddRange(buckets["R"]);
+            result.AddRange(buckets["T"]);
+
+            var settings = DSDsp.AppSettings.Instance.JudgeIntroSettings;
+            if (string.IsNullOrEmpty(grpId) && settings.ShowOfficials && settings.Officials != null)
+            {
+                foreach (var o in settings.Officials.Take(4))
+                {
+                    if (o == null || string.IsNullOrWhiteSpace(o.Name)) continue;
+                    string t = (o.Title ?? string.Empty).Trim();
+                    result.Add(new JudgeIntroItem
+                    {
+                        SectionTitle = "役員",
+                        IndTitle     = t,
+                        JdgCd        = string.Empty,
+                        JdgDispName  = o.Name.Trim(),
+                        JdgCtry      = t,
+                        IsOfficial   = true,
+                        ShowCode     = false,
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// ジャッジ紹介アイテムをセクション（タイトル）ごとに maxRows 件でページ分割する。
+        /// mergeOfficialTitleToName=true の場合、所属欄を持たない画面向けに役員の名前へタイトルを連結する。
+        /// </summary>
+        public static List<JudgeIntroPage> Getジャッジ紹介ページ(
+            JsonNode? daMaster, string? grpId, int maxRows, bool mergeOfficialTitleToName = false)
+        {
+            var pages = new List<JudgeIntroPage>();
+            var items = Getジャッジ紹介アイテム(daMaster, grpId);
+
+            foreach (var sec in items.GroupBy(i => i.SectionTitle))
+            {
+                var secItems = sec.ToList();
+                int count = Math.Max(1, (int)Math.Ceiling(secItems.Count / (double)maxRows));
+                for (int p = 0; p < count; p++)
+                {
+                    var rows = secItems.Skip(p * maxRows).Take(maxRows).Select(i =>
+                    {
+                        if (mergeOfficialTitleToName && i.IsOfficial && !string.IsNullOrEmpty(i.IndTitle))
+                            return new JudgeIntroItem
+                            {
+                                SectionTitle = i.SectionTitle, IndTitle = i.IndTitle, JdgCd = i.JdgCd,
+                                JdgDispName = $"{i.IndTitle}　{i.JdgDispName}", JdgCtry = i.JdgCtry, IsOfficial = true,
+                                ShowCode = i.ShowCode
+                            };
+                        return i;
+                    }).ToList();
+                    pages.Add(new JudgeIntroPage
+                    {
+                        Title = sec.Key, Items = rows, PageInSection = p + 1, PagesInSection = count
+                    });
+                }
+            }
+
+            return pages;
+        }
     }
 }

@@ -70,6 +70,7 @@ namespace DSDsp
         {
             // 設定ファイルの読み込み
             AppSettings.Load("DSDsp.json");
+            LoadJudgeIntroSettingsToUi();
 
             // ログの初期化
             _log = new LOG_C();
@@ -836,8 +837,51 @@ namespace DSDsp
             _log?.LogAdd($"進行シナリオ選択: {scenario.ScenarioName}  サイズ={scenario.DefaultScreenSize}  モード={scenario.DefaultMode}  背景={scenario.Background?.Type ?? "null"}", _log.INFO);
         }
 
+        /// <summary>進行一覧／AJS進行一覧で、選択行を上から何行目に固定するか（0始まり: 2 = 3行目）</summary>
+        private const int ProgressListAnchorRow = 2;
+
+        /// <summary>
+        /// 選択行が上から3行目に来るようにリストをスクロールする。
+        /// 選択が下に移動してもカーソルが動くのではなくリスト側が上にスクロールする。
+        /// （先頭付近は上に余白がないので先頭から表示、末尾付近は最大スクロール位置でクランプされる）
+        /// </summary>
+        private void ScrollListSelectedToAnchor(ListBox list)
+        {
+            // レイアウト確定後（既存の ScrollIntoView より後）に実行する
+            list.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                int idx = list.SelectedIndex;
+                if (idx < 0) return;
+                if (!list.IsVisible) return;   // 非表示中は IsVisibleChanged で再実行する
+
+                list.UpdateLayout();
+                var sv = FindScrollViewer(list);
+                if (sv == null) return;
+                // ListBox は既定でアイテム単位スクロール（CanContentScroll=True）なので、オフセット=先頭アイテムのindex
+                sv.ScrollToVerticalOffset(System.Math.Max(0, idx - ProgressListAnchorRow));
+            }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
+
+        private static ScrollViewer? FindScrollViewer(DependencyObject root)
+        {
+            if (root is ScrollViewer s) return s;
+            int n = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < n; i++)
+            {
+                var found = FindScrollViewer(VisualTreeHelper.GetChild(root, i));
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        private void ScrollList_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is true && sender is ListBox lb) ScrollListSelectedToAnchor(lb);
+        }
+
         private void LstProgressItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            ScrollListSelectedToAnchor(LstProgressItems);
             _currentProgressIndex = LstProgressItems.SelectedIndex;
             _log?.LogAdd($"進行項目選択: {_currentProgressIndex}", _log.DEBUG);
 
@@ -1456,6 +1500,7 @@ namespace DSDsp
 
         private void LstAjsProgress_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            ScrollListSelectedToAnchor(LstAjsProgress);
             if (_suppressAjsSelectionChanged) return;
 
             _currentAjsIndex = LstAjsProgress.SelectedIndex;
@@ -1698,6 +1743,11 @@ namespace DSDsp
             public string JdgCd       { get; set; } = string.Empty;
             public string JdgDispName { get; set; } = string.Empty;
             public string JdgCtry     { get; set; } = string.Empty;
+            /// <summary>個別表示時のタイトル（レフリー／技術判定員／役員タイトル等）</summary>
+            public string IndTitle    { get; set; } = string.Empty;
+            public bool   IsOfficial  { get; set; } = false;
+            /// <summary>ジャッジ記号を表示するか（レフリー・技術判定員・役員は false）</summary>
+            public bool   ShowCode    { get; set; } = true;
             public bool   IsEnd       { get; set; } = false;
             public override string ToString() => IsEnd ? "（終了）" : $"{JdgCd}  {JdgDispName}";
         }
@@ -1717,6 +1767,48 @@ namespace DSDsp
 
         private void BtnJudgeRefresh_Click(object sender, RoutedEventArgs e)
             => LoadJudgeGroupTabs();
+
+        /// <summary>ジャッジ紹介のタイトル文言・役員設定を画面に反映する。</summary>
+        private void LoadJudgeIntroSettingsToUi()
+        {
+            var s = AppSettings.Instance.JudgeIntroSettings;
+            TxtJudgeTitleJ.Text = s.JudgeTitle;
+            TxtJudgeTitleR.Text = s.RefereeTitle;
+            TxtJudgeTitleT.Text = s.TechnicalTitle;
+            ChkShowOfficials.IsChecked = s.ShowOfficials;
+
+            var titles = new[] { TxtOfficialTitle1, TxtOfficialTitle2, TxtOfficialTitle3, TxtOfficialTitle4 };
+            var names  = new[] { TxtOfficialName1,  TxtOfficialName2,  TxtOfficialName3,  TxtOfficialName4 };
+            for (int i = 0; i < 4; i++)
+            {
+                var o = (s.Officials != null && i < s.Officials.Count) ? s.Officials[i] : null;
+                titles[i].Text = o?.Title ?? string.Empty;
+                names[i].Text  = o?.Name ?? string.Empty;
+            }
+        }
+
+        private void BtnJudgeIntroSettingsSave_Click(object sender, RoutedEventArgs e)
+        {
+            var s = AppSettings.Instance.JudgeIntroSettings;
+            s.JudgeTitle     = TxtJudgeTitleJ.Text.Trim();
+            s.RefereeTitle   = TxtJudgeTitleR.Text.Trim();
+            s.TechnicalTitle = TxtJudgeTitleT.Text.Trim();
+            s.ShowOfficials  = ChkShowOfficials.IsChecked == true;
+
+            var titles = new[] { TxtOfficialTitle1, TxtOfficialTitle2, TxtOfficialTitle3, TxtOfficialTitle4 };
+            var names  = new[] { TxtOfficialName1,  TxtOfficialName2,  TxtOfficialName3,  TxtOfficialName4 };
+            s.Officials = new System.Collections.Generic.List<OfficialEntry>();
+            for (int i = 0; i < 4; i++)
+                s.Officials.Add(new OfficialEntry { Title = titles[i].Text.Trim(), Name = names[i].Text.Trim() });
+
+            bool ok = AppSettings.Save("DSDsp.json");
+            // 空欄は既定文言に戻るため、画面表示も更新する
+            LoadJudgeIntroSettingsToUi();
+            UpdateJudgeList();
+            _currentJudgeScreen = null;
+            UpdateJudgeStatus(ok ? "ジャッジ紹介の設定を保存しました — 再生ボタンで表示" : "設定ファイルの保存に失敗しました");
+            _log?.LogAdd(ok ? "ジャッジ紹介設定を保存" : "ジャッジ紹介設定の保存に失敗", ok ? _log.INFO : _log.ERR);
+        }
 
         private void TabJudgeGroups_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1789,12 +1881,15 @@ namespace DSDsp
         private void UpdateJudgeList()
         {
             var daMaster = _testDataManager?.DA_Master ?? _client?.DataManager.DA_Master;
-            var items = 画面.DSDspDataHelper.Getジャッジリスト_ByGroup(daMaster, _currentJudgeGroupId)
+            var items = 画面.DSDspDataHelper.Getジャッジ紹介アイテム(daMaster, _currentJudgeGroupId)
                 .Select(j => new JudgeListItem
                 {
                     JdgCd       = j.JdgCd,
                     JdgDispName = j.JdgDispName,
                     JdgCtry     = j.JdgCtry,
+                    IndTitle    = j.IndTitle,
+                    IsOfficial  = j.IsOfficial,
+                    ShowCode    = j.ShowCode,
                 })
                 .ToList();
             // 末尾に「終了」行を追加
@@ -1829,8 +1924,9 @@ namespace DSDsp
             }
 
             // 全画面 / クロマキリスト
-            var judgeList = DSDspDataHelper.Getジャッジリスト_ByGroup(dm?.DA_Master, _currentJudgeGroupId);
-            int count = judgeList.Count;
+            // 同一タイトル（ジャッジ／レフリー／技術判定員／役員）ごとにページ分割されるため、最大人数で画面を選ぶ
+            var judgeList = DSDspDataHelper.Getジャッジ紹介アイテム(dm?.DA_Master, _currentJudgeGroupId);
+            int count = judgeList.Count == 0 ? 0 : judgeList.GroupBy(j => j.SectionTitle).Max(g => g.Count());
 
             // 使用する画面ID を決定
             string screenId;
@@ -1896,7 +1992,8 @@ namespace DSDsp
 
             bool isSameScreen = _currentJudgeScreen?.ScreenId == screenId
                 && _currentJudgeScreen is 画面.DSP_PRG_006_S_選手紹介_小 s10prev
-                && s10prev.HonorBango == _selectedJudge.JdgCd;
+                && s10prev.HonorBango == (_selectedJudge.ShowCode ? _selectedJudge.JdgCd : string.Empty)
+                && s10prev.HonorLB選手名Override == _selectedJudge.JdgDispName;
 
             if (!isSameScreen)
             {
@@ -1909,12 +2006,15 @@ namespace DSDsp
                 s010.DS_Status         = dm?.DS_Status;
                 s010.DV_Result         = dm?.DV_Result;
                 s010.HonorMode         = true;
-                s010.HonorBango        = _selectedJudge.JdgCd;
-                s010.HonorAffiliation  = _selectedJudge.JdgCtry;
+                s010.CenterJoinedLayout = true; // 記号・名前・所属を中央揃えで1行表示
+                // レフリー・技術判定員・役員はジャッジ記号を表示しない
+                s010.HonorBango        = _selectedJudge.ShowCode ? _selectedJudge.JdgCd : string.Empty;
+                // 役員は JdgCtry にタイトルが入っているため所属としては表示しない
+                s010.HonorAffiliation  = _selectedJudge.IsOfficial ? string.Empty : _selectedJudge.JdgCtry;
                 // COM002テキストのオーバーライド: "表彰式" → "ジャッジ紹介"
                 s010.COM002TextOverride    = "ジャッジ紹介";
-                // HonorMode 時: LB_区分名=ブランク、LB_選手名=ジャッジ表記名
-                s010.HonorLB区分名Override = string.Empty;
+                // HonorMode 時: LB_区分名=ジャッジタイプ別／役員のタイトル、LB_選手名=ジャッジ表記名
+                s010.HonorLB区分名Override = _selectedJudge.IndTitle;
                 s010.HonorLB選手名Override = _selectedJudge.JdgDispName;
                 // LB_順位=ジャッジ記号（HonorBango）、LB_所属=ジャッジ所属（HonorAffiliation）
 
