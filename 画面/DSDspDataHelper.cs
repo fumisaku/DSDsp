@@ -1160,6 +1160,7 @@ namespace DSDsp.画面
                 var jdgDispName = j["DJ_JdgDispName"]?.ToString()  ?? string.Empty;
                 var jdgCtry     = j["DJ_JdgCtry"]?.ToString()      ?? string.Empty;
 
+                // DJ_JdgTyp が空のエントリは「そのグループに所属しない」扱い（DSWeb が全グループ分を空タイプで保存するため）
                 var grpList = new List<string>();
                 var grpArr = j["DJ_JdgGrps"]?.AsArray();
                 if (grpArr != null)
@@ -1167,7 +1168,8 @@ namespace DSDsp.画面
                     foreach (var g in grpArr)
                     {
                         var grp = g?["DJ_JdgGrp"]?.ToString();
-                        if (!string.IsNullOrEmpty(grp))
+                        var typ = g?["DJ_JdgTyp"]?.ToString();
+                        if (!string.IsNullOrEmpty(grp) && !string.IsNullOrEmpty(typ))
                             grpList.Add(grp!);
                     }
                 }
@@ -1197,7 +1199,8 @@ namespace DSDsp.画面
                 foreach (var g in grpArr)
                 {
                     var grp = g?["DJ_JdgGrp"]?.ToString();
-                    if (!string.IsNullOrEmpty(grp) && seen.Add(grp!))
+                    var typ = g?["DJ_JdgTyp"]?.ToString();
+                    if (!string.IsNullOrEmpty(grp) && !string.IsNullOrEmpty(typ) && seen.Add(grp!))
                         result.Add(grp!);
                 }
             }
